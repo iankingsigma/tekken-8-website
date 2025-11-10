@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Tekken 8 Game Website</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #202040;
+      color: #fff;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+    }
+    h1 {
+      margin-top: 30px;
+      font-size: 2.5em;
+      letter-spacing: 2px;
+    }
+    .fighters {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 30px;
+      margin: 30px 0;
+    }
+    .card {
+      background: #2d2d44;
+      border-radius: 20px;
+      box-shadow: 0 6px 24px rgba(0,0,0,0.3);
+      width: 220px;
+      padding: 20px;
+      transition: transform 0.3s;
+    }
+    .card:hover {
+      transform: scale(1.08);
+      cursor: pointer;
+    }
+    .card.selected {
+      background: #7b1fa2;
+      border: 2px solid #fff176;
+      box-shadow: 0 0 20px #fff17677;
+    }
+    .card img {
+      width: 180px;
+      height: 200px;
+      object-fit: cover;
+      border-radius: 10px;
+    }
+    .choose-btn {
+      background: #66bb6a;
+      color: white;
+      border: none;
+      margin-top: 10px;
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: bold;
+      letter-spacing: 1px;
+      transition: background 0.2s;
+    }
+    .choose-btn:hover {
+      background: #1b5e20;
+      cursor: pointer;
+    }
+    #chosen {
+      margin-top: 40px;
+      font-size: 1.5em;
+      background: #2d2d44;
+      padding: 20px;
+      border-radius: 15px;
+      display: inline-block;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+    }
+    @media (max-width: 600px) {
+      .fighters { flex-direction: column; gap: 16px;}
+      .card { width: 90vw; }
+      .card img { width: 80vw; height: auto;}
+    }
+  </style>
+</head>
+<body>
+  <h1>Tekken 8: Choose Your Fighter!</h1>
+  <div class="fighters" id="fighters"></div>
+  <div id="chosen"></div>
+  <script>
+    const fighters = [
+      {
+        name: "Jin Kazama",
+        img: "https://static.wikia.nocookie.net/tekken/images/6/66/Jin_Kazama_T8.png",
+        description: "The main protagonist of Tekken, skilled in traditional martial arts."
+      },
+      {
+        name: "Kazuya Mishima",
+        img: "https://static.wikia.nocookie.net/tekken/images/2/25/Kazuya_Mishima_T8.png",
+        description: "The fearsome antagonist, ruthless and powerful."
+      },
+      {
+        name: "Ling Xiaoyu",
+        img: "https://static.wikia.nocookie.net/tekken/images/7/76/Ling_Xiaoyu_T8.png",
+        description: "Energetic martial artist, famous for her agility and acrobatics."
+      },
+      {
+        name: "Paul Phoenix",
+        img: "https://static.wikia.nocookie.net/tekken/images/0/0f/Paul_Phoenix_T8.png",
+        description: "Legendary fighter with an iconic hairstyle and fierce punches."
+      },
+      // Add more fighters below with new objects
+    ];
+
+    function renderFighters() {
+      const container = document.getElementById('fighters');
+      container.innerHTML = '';
+      fighters.forEach((f, idx) => {
+        container.innerHTML += `
+          <div class="card" id="card${idx}">
+            <img src="${f.img}" alt="${f.name}">
+            <h2>${f.name}</h2>
+            <p>${f.description}</p>
+            <button class="choose-btn" onclick="chooseFighter(${idx})">Choose</button>
+          </div>
+        `;
+      });
+    }
+
+    function chooseFighter(idx) {
+      // Remove selection from all
+      [...document.querySelectorAll('.card')].forEach(c=>c.classList.remove('selected'));
+      // Add selection to chosen
+      document.getElementById('card' + idx).classList.add('selected');
+      // Display chosen
+      const f = fighters[idx];
+      document.getElementById('chosen').innerHTML =
+        `<h2>You Chose: ${f.name}</h2>
+        <img src="${f.img}" alt="${f.name}" style="width:180px;border-radius:10px;">
+        <p>${f.description}</p>`;
+    }
+
+    renderFighters();
+  </script>
+</body>
+</html>
