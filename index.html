@@ -2,19 +2,19 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Tekken 8 Game Website</title>
+  <title>Tekken 8 Game: Choose Your Fighter!</title>
   <style>
     body {
+      background: #1a1a2e;
       font-family: 'Segoe UI', Arial, sans-serif;
-      background: #202040;
       color: #fff;
+      text-align: center;
       margin: 0;
       padding: 0;
-      text-align: center;
     }
     h1 {
-      margin-top: 30px;
-      font-size: 2.5em;
+      margin-top: 32px;
+      font-size: 2.7em;
       letter-spacing: 2px;
     }
     .fighters {
@@ -22,118 +22,172 @@
       flex-wrap: wrap;
       justify-content: center;
       gap: 30px;
-      margin: 30px 0;
+      margin: 40px 0;
     }
     .card {
-      background: #2d2d44;
-      border-radius: 20px;
-      box-shadow: 0 6px 24px rgba(0,0,0,0.3);
-      width: 220px;
-      padding: 20px;
-      transition: transform 0.3s;
+      background: #16213e;
+      border-radius: 18px;
+      width: 200px;
+      padding: 20px 16px 12px 16px;
+      box-shadow: 0 5px 20px rgba(0,0,0,0.32);
+      transition: transform 0.36s, box-shadow 0.36s;
+      position: relative;
     }
     .card:hover {
-      transform: scale(1.08);
+      transform: scale(1.07);
+      z-index: 1;
+      box-shadow: 0 8px 40px #fbc53199;
       cursor: pointer;
     }
-    .card.selected {
-      background: #7b1fa2;
-      border: 2px solid #fff176;
-      box-shadow: 0 0 20px #fff17677;
-    }
     .card img {
-      width: 180px;
+      width: 160px;
       height: 200px;
       object-fit: cover;
-      border-radius: 10px;
+      border-radius: 8px;
+      margin-bottom: 14px;
+      background: #222246;
+    }
+    .card h2 {
+      font-size: 1.22em;
+      margin: 8px 0 4px 0;
+    }
+    .card p {
+      font-size: 0.96em;
+      opacity: 0.8;
+      min-height: 42px;
+      margin: 0 0 12px 0;
     }
     .choose-btn {
-      background: #66bb6a;
-      color: white;
+      background: linear-gradient(90deg,#fbc531 70%,#e84118 100%);
+      color: #fff;
       border: none;
-      margin-top: 10px;
-      padding: 12px 24px;
-      border-radius: 10px;
+      padding: 11px 24px;
+      border-radius: 8px;
       font-size: 1rem;
       font-weight: bold;
       letter-spacing: 1px;
-      transition: background 0.2s;
+      margin-top: 6px;
+      transition: background 0.18s;
     }
     .choose-btn:hover {
-      background: #1b5e20;
+      background: linear-gradient(90deg,#e84118 70%,#fbc531 100%);
       cursor: pointer;
     }
-    #chosen {
-      margin-top: 40px;
-      font-size: 1.5em;
-      background: #2d2d44;
-      padding: 20px;
-      border-radius: 15px;
-      display: inline-block;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+    .anim-show {
+      animation: fadeUp 0.7s cubic-bezier(.5,.85,.45,1.2);
     }
-    @media (max-width: 600px) {
-      .fighters { flex-direction: column; gap: 16px;}
-      .card { width: 90vw; }
-      .card img { width: 80vw; height: auto;}
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(70px) scale(.9);}
+      60% { transform: translateY(-8px) scale(1.05);}
+      to { opacity: 1; transform: translateY(0) scale(1);}
+    }
+    #chosen-box {
+      margin: 46px auto 0 auto;
+      padding: 23px 38px;
+      background: #222246;
+      display: inline-block;
+      border-radius: 20px;
+      box-shadow: 0 10px 38px #fbc53144;
+      opacity: 0;
+      transform: scale(.9) translateY(60px);
+      transition: opacity 0.7s, transform 0.7s;
+      min-width: 250px;
+      max-width: 380px;
+    }
+    #chosen-box.visible {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+      animation: fadeUp 1s cubic-bezier(.5,.85,.45,1.2);
+    }
+    #chosen-box img {
+      width: 180px;
+      height: 220px;
+      border-radius: 16px;
+      margin-bottom: 14px;
+      background: #2e294e;
+      filter: drop-shadow(0 0 9px #fbc53188);
+    }
+    @media (max-width:650px){
+      .fighters {
+        flex-direction: column;
+        gap: 20px;
+      }
+      .card, #chosen-box {
+        width: 95vw;
+        max-width: 99vw;
+        min-width: 0;
+        padding: 14px 6vw;
+      }
+      #chosen-box img {
+        width: 80vw;
+        height: auto;
+      }
     }
   </style>
 </head>
 <body>
   <h1>Tekken 8: Choose Your Fighter!</h1>
   <div class="fighters" id="fighters"></div>
-  <div id="chosen"></div>
+  <div id="chosen-box"></div>
   <script>
+    // Character list
     const fighters = [
       {
         name: "Jin Kazama",
-        img: "https://static.wikia.nocookie.net/tekken/images/6/66/Jin_Kazama_T8.png",
-        description: "The main protagonist of Tekken, skilled in traditional martial arts."
+        img: "https://static.wikia.nocookie.net/tekken/images/d/d2/Jin_T8_full_render.png",
+        description: "Jin Kazama is the main protagonist of Tekken, mastering the Kazama and Mishima fighting styles. He fights to end the Mishima bloodline's curse and bring peace."
       },
       {
         name: "Kazuya Mishima",
-        img: "https://static.wikia.nocookie.net/tekken/images/2/25/Kazuya_Mishima_T8.png",
-        description: "The fearsome antagonist, ruthless and powerful."
+        img: "https://static.wikia.nocookie.net/tekken/images/1/1c/Kazuya_T8_full_render.png",
+        description: "Kazuya Mishima is ruthless, powered by the Devil Gene. His iron fist and high stakes battles shape Tekken's legendary conflict."
       },
       {
         name: "Ling Xiaoyu",
-        img: "https://static.wikia.nocookie.net/tekken/images/7/76/Ling_Xiaoyu_T8.png",
-        description: "Energetic martial artist, famous for her agility and acrobatics."
+        img: "https://static.wikia.nocookie.net/tekken/images/8/8b/Xiaoyu_T8_full_render.png",
+        description: "Ling Xiaoyu, energetic and agile, brings her acrobatic martial arts and positive spirit everywhere, always eager for a challenge."
       },
       {
         name: "Paul Phoenix",
-        img: "https://static.wikia.nocookie.net/tekken/images/0/0f/Paul_Phoenix_T8.png",
-        description: "Legendary fighter with an iconic hairstyle and fierce punches."
-      },
-      // Add more fighters below with new objects
+        img: "https://static.wikia.nocookie.net/tekken/images/9/95/Paul_T8_full_render.png",
+        description: "Paul Phoenix, with his iconic hair and powerful straight punch, is always ready for a fight and dreams of being the toughest in the universe."
+      }
     ];
 
+    // Render character cards
     function renderFighters() {
       const container = document.getElementById('fighters');
       container.innerHTML = '';
       fighters.forEach((f, idx) => {
         container.innerHTML += `
-          <div class="card" id="card${idx}">
+          <div class="card" id="card${idx}" tabindex="0">
             <img src="${f.img}" alt="${f.name}">
             <h2>${f.name}</h2>
-            <p>${f.description}</p>
+            <p>${f.description.substring(0,48)}...</p>
             <button class="choose-btn" onclick="chooseFighter(${idx})">Choose</button>
           </div>
         `;
       });
     }
 
+    // Show chosen fighter with animation
     function chooseFighter(idx) {
-      // Remove selection from all
-      [...document.querySelectorAll('.card')].forEach(c=>c.classList.remove('selected'));
-      // Add selection to chosen
-      document.getElementById('card' + idx).classList.add('selected');
-      // Display chosen
-      const f = fighters[idx];
-      document.getElementById('chosen').innerHTML =
-        `<h2>You Chose: ${f.name}</h2>
-        <img src="${f.img}" alt="${f.name}" style="width:180px;border-radius:10px;">
-        <p>${f.description}</p>`;
+      const chosen = fighters[idx];
+      const chosenBox = document.getElementById('chosen-box');
+      // Animate presence
+      chosenBox.classList.remove('visible');
+      // For quick successive clicks, delay re-show
+      setTimeout(() => {
+        chosenBox.innerHTML = `
+          <img src="${chosen.img}" alt="${chosen.name}">
+          <h2>${chosen.name}</h2>
+          <p>${chosen.description}</p>
+        `;
+        chosenBox.className = 'visible';
+      }, 100);
+      // Animate selected card
+      document.querySelectorAll('.card').forEach(c => c.style.background='#16213e');
+      document.getElementById('card'+idx).style.background = '#fbc53133';
     }
 
     renderFighters();
