@@ -8,14 +8,14 @@
   <style>
     body { margin:0; background:#191926; color:#eee; font-family:'Orbitron',Arial,sans-serif;}
     #watermark {
-      position:fixed;right:34px;bottom:20px;opacity:.45;font-size:1.15em;
+      position:fixed;right:34px;bottom:20px;opacity:.45;font-size:1.05em;
       font-family:monospace;background:#212140;padding:6px 19px;border-radius:13px;z-index:999;
       pointer-events:none;color:#fbc531;
     }
     #menu, #select, #fightUI { display:none; max-width:900px; margin:32px auto; }
     #menu.active, #select.active, #fightUI.active { display:block; }
     .menu-btn {
-      font-family:'Orbitron',Arial,sans-serif; font-size:1.85em; font-weight:bold;
+      font-family:'Orbitron',Arial,sans-serif; font-size:1.7em; font-weight:bold;
       background: linear-gradient(90deg,#fbc531 65%,#e84118 100%);
       color:#212140;border:none; border-radius:15px;padding:14px 50px;cursor:pointer; margin:17px; box-shadow:0 4px 20px #0002;
       transition:background .18s,color .18s;
@@ -24,7 +24,7 @@
     .title {color:#fbc531;font-size:2.7em;letter-spacing:3px;text-align:center;margin:30px 0 20px 0;text-shadow:0 0 12px #832;}
     #fighterList {display:flex;flex-wrap:wrap;justify-content:center;gap:24px;}
     .char-card {
-      background:#212140;border-radius:22px;box-shadow:0 5px 20px #0017;width:190px;padding:14px;text-align:center;position:relative;cursor:pointer;
+      background:#212140;border-radius:22px;box-shadow:0 5px 20px #0017;width:185px;padding:13px;text-align:center;position:relative;cursor:pointer;
       transition:transform .2s,box-shadow .19s;
       outline:none;
     }
@@ -34,35 +34,62 @@
       z-index:1;
     }
     .char-img {
-      image-rendering: pixelated; width:92px;height:102px;border-radius:13px;background:#292960;margin-bottom:7px;border:2px solid #18181f;
+      image-rendering: pixelated; width:90px;height:98px;border-radius:13px;background:#292960;margin-bottom:6px;border:2px solid #18181f;
       box-shadow:0 2px 16px #0004;
       display:block;
       margin-left:auto;margin-right:auto;
     }
-    .char-name {color:#ffc70c;font-weight:bold;font-size:1.18em;margin:3px 0;}
-    .char-hp {color:#e84118;display:block;font-weight:bold;font-size:.97em;margin-bottom:4px;}
-    .char-desc {font-size:.98em;color:#fff7;min-height:36px;}
-    .char-punch {display:block;margin-top:7px;font-size:1.12em;color:#fbc531;font-weight:bold;}
-    #vsBtn {margin:32px auto 0 auto;display:block;}
-    #pickTitles {display:flex;justify-content:space-between;max-width:450px;margin:0 auto 12px auto;font-size:1.4em;}
-    #canvas { width:640px;height:350px;display:block;margin:22px auto 0 auto;border-radius:22px;
+    .char-name {color:#ffc70c;font-weight:bold;font-size:1.16em;margin:3px 0;}
+    .char-hp {color:#e84118;display:block;font-weight:bold;font-size:.96em;margin-bottom:3px;}
+    .char-desc {font-size:.97em;color:#fff7;min-height:32px;}
+    .char-punch {display:block;margin-top:6px;font-size:1.1em;color:#fbc531;font-weight:bold;}
+    #vsBtn {margin:28px auto 0 auto;display:block;}
+    #pickTitles {display:flex;justify-content:center;max-width:400px;margin:0 auto 10px auto;font-size:1.33em;}
+    #canvas { width:640px;height:350px;display:block;margin:17px auto 0 auto;border-radius:20px;
       box-shadow:0 6px 32px #0007;background:#181825;}
     #fightStats {
-      text-align:center;color:#fed;font-size:1.19em;font-weight:bold;margin-top:13px;
+      text-align:center;color:#fed;font-size:1.17em;font-weight:bold;margin-top:13px;
     }
     #backBtn {
-      position:fixed;top:30px;left:30px;z-index:12;
-      font-family:'Orbitron',Arial; font-size:1.09em;
+      position:fixed;top:28px;left:30px;z-index:12;
+      font-family:'Orbitron',Arial; font-size:1.02em;
       background: linear-gradient(90deg,#e84118 70%,#fbc531 100%);
-      color:#212140;border-radius:14px;border:none;padding:7px 20px;font-weight:bold;cursor:pointer;transition:background .17s;
+      color:#212140;border-radius:12px;border:none;padding:7px 18px;font-weight:bold;cursor:pointer;transition:background .17s;
     }
     #backBtn:hover{background:linear-gradient(90deg,#fbc531 90%,#e84118 100%);}
+    #controls-bar {
+      position:fixed;
+      left:50%;
+      bottom:4px;
+      transform:translateX(-50%);
+      z-index:1200;
+      background:#212140cc;
+      color:#fbc531;
+      padding:8px 20px 7px 20px;
+      border-radius:17px;
+      font-family:'Orbitron',Arial,sans-serif;
+      font-size:1.08em;
+      display:flex;
+      gap:17px;
+      justify-content:center;
+      align-items:center;
+      box-shadow:0 2px 14px #10152599;
+    }
+    #controls-bar span {
+      color:#fff;
+      background:#fbc53133;
+      border-radius:7px;
+      padding:3px 11px;
+      font-weight:bold;
+      letter-spacing:1px;
+    }
     @media(max-width:700px){
-      .char-card {width:88vw;max-width:99vw;}
-      #canvas {width:98vw !important;height:57vw !important;}
-      #pickTitles {font-size:1.15em;}
-      .title{font-size:1.22em;}
-      #backBtn{position:fixed;top:10px;left:8px;padding:5px 14px;}
+      .char-card {width:92vw;max-width:99vw;}
+      #canvas {width:98vw !important;height:54vw !important;}
+      #pickTitles {font-size:1.12em;}
+      .title{font-size:1.13em;}
+      #backBtn{top:10px;left:8px;padding:5px 12px;}
+      #controls-bar{font-size:.9em;}
     }
     .secret-67 {
       position:fixed;font-size:3.5em;font-weight:900;z-index:99;color:#fbc531;
@@ -82,17 +109,18 @@
     <button class="menu-btn" onclick="showSelect()">Arcade</button>
     <button class="menu-btn" onclick="alert('Credits: by ian kishk - inspired by Tekken')">Credits</button>
   </div>
-  <div id="select">
-    <div id="pickTitles">
-      <span id="p1tit">Player: Choose!</span>
-    </div>
-    <div id="fighterList"></div>
-    <button class="menu-btn" id="vsBtn" style="display:none;">Fight!</button>
-  </div>
+  <div id="select"><div id="pickTitles"><span>Player: Choose!</span></div><div id="fighterList"></div><button class="menu-btn" id="vsBtn" style="display:none;">Fight!</button></div>
   <div id="fightUI">
     <button id="backBtn" onclick="showMenu()">Main Menu</button>
     <canvas id="canvas" width="640" height="350"></canvas>
     <div id="fightStats"></div>
+  </div>
+  <div id="controls-bar" style="display:none;">
+    <span>←</span> Move Left
+    <span>→</span> Move Right
+    <span>Z</span> Punch
+    <span>X</span> Kick
+    <span>C</span> Combo
   </div>
   <div id="watermark">by ian kishk</div>
   <script src="script.js"></script>
