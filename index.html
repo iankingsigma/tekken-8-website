@@ -1,295 +1,213 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="UTF-8">
-  <title>Tekken 8 Game: Choose Your Fighter!</title>
+  <title>Tekken 8 Pixel Fight</title>
   <style>
     body {
-      background: #191926;
-      font-family: 'Segoe UI', Arial, sans-serif;
-      color: #fff;
-      margin: 0;
-      padding: 0;
-      text-align: center;
-      min-height: 100dvh;
+      margin: 0; background: #171926; color: #fff; font-family: 'Segoe UI', Arial, sans-serif;
+      min-height: 100vh; position: relative;
     }
-    h1 {
-      margin-top: 32px;
-      font-size: 2.7em;
-      letter-spacing: 2px;
+    h1 { margin-top: 30px; font-size: 2.5em; letter-spacing: 2px; text-align: center;}
+    .watermark {
+      position: fixed; right: 44px; bottom: 20px; opacity: 0.33; font-size: 1.13em;
+      font-family: monospace;background: #000;padding:4px 20px;border-radius:15px;z-index:99999;
+      pointer-events: none;
     }
-    .fighters {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 30px;
-      margin: 40px 0;
-    }
-    .card {
-      background: #16213e;
-      border-radius: 18px;
-      width: 200px;
-      padding: 20px 16px 12px 16px;
-      box-shadow: 0 5px 20px rgba(0,0,0,0.32);
-      transition: transform 0.24s, box-shadow 0.26s;
-      position: relative;
-      z-index: 1;
-      cursor: pointer;
-    }
-    .card:hover {
-      transform: scale(1.08);
-      z-index: 2;
-      box-shadow: 0 8px 40px #fbc53199;
-    }
-    .card img {
-      width: 160px;
-      height: 200px;
-      object-fit: cover;
-      border-radius: 8px;
-      margin-bottom: 14px;
-      background: #222246;
-    }
-    .card h2 {
-      font-size: 1.22em;
-      margin: 8px 0 4px 0;
-    }
-    .card p {
-      font-size: 0.97em;
-      opacity: 0.81;
-      min-height: 42px;
-      margin: 0 0 12px 0;
-    }
-    .choose-btn {
+    .fight-arena {display:flex;justify-content:center;gap:48px;align-items: flex-end;margin-top:40px;}
+    .fighter-pick { width: 270px; }
+    .fighters-list { display:flex; flex-wrap:wrap; gap:24px; justify-content:center; margin-top:26px;}
+    .select-btn {
       background: linear-gradient(90deg,#fbc531 70%,#e84118 100%);
-      color: #2d2d2d;
-      border: none;
-      padding: 11px 24px;
-      border-radius: 8px;
-      font-size: 1rem;
-      font-weight: bold;
-      letter-spacing: 1px;
-      margin-top: 6px;
-      transition: background 0.18s;
-      cursor: pointer;
+      color: #171926; border: none; padding: 10px 22px; border-radius:9px; font-size:1em;
+      font-family:'Segoe UI'; font-weight:bold; margin-top:10px; margin-bottom:2px;cursor:pointer;
+      transition: background 0.22s;
     }
-    .choose-btn:hover {
+    .select-btn:hover {background: linear-gradient(90deg,#e84118 75%,#fbc531 100%); color:#fff;}
+    .pixel { 
+      image-rendering: pixelated; 
+      filter: contrast(1.4) saturate(1.4) drop-shadow(0 0 6px #444); 
+      border-radius: 13px; border:3px solid #58587c;
+      background: #272843;
+      width: 180px; height: 220px;
+    }
+    .name-tag {
+      margin-top: 10px; font-size:1.05em; font-weight:bold; letter-spacing:1px; text-align:center;
+      color:#fbc531
+    }
+    .desc-tag {
+      font-size:0.98em; margin:5px 0 12px 0; color:#fed; text-align:center; opacity:.75;
+    }
+    .damage-tag {
+      color: #e84118; background:#fff2; font-weight:bold; border-radius:8px; font-size:0.95em; padding:4px 12px;
+      display: inline-block;
+      margin-bottom: 7px;
+    }
+    #fight-btn {
       background: linear-gradient(90deg,#e84118 70%,#fbc531 100%);
-      color:#fff;
+      color: #fff; border:none; border-radius:16px; font-size:1.25em; font-family:'Segoe UI';
+      margin-top:30px; padding:14px 48px; font-weight:bold; letter-spacing:1px;cursor:pointer;
+      transition: background 0.15s;
+      display:block;margin-left:auto;margin-right:auto;
     }
-    .page {
-      min-height: 70dvh;
+    #fight-btn:hover{background:linear-gradient(270deg,#fbc531 50%,#e84118 100%);}
+    #fight-result {
+      background:#212140; border-radius:19px; padding:22px 28px; margin:30px auto 0 auto;font-size:1.3em;
+      font-weight:bold; text-align:center; max-width:600px; box-shadow:0 6px 32px #0005;
+      animation:fade-in 0.8s cubic-bezier(.31,1.9,.45,1);
     }
-    #info-page img {
-      width: 230px;
-      height: 290px;
-      border-radius: 16px;
-      margin-top: 22px;
-      margin-bottom: 20px;
-      background: #292960;
-      box-shadow: 0 0 18px #e8411848;
+    @keyframes fade-in{from{opacity:0}to{opacity:1}}
+    .winner-glow{
+      animation:winner-flash 0.7s cubic-bezier(.3,2,.4,1) 1;
     }
-    #info-page {
-      animation: fadeUp 1s cubic-bezier(.5,.85,.45,1.2);
-      margin-bottom:40px;
-    }
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(80px) scale(.92);}
-      60% { transform: translateY(-12px) scale(1.05);}
-      to { opacity: 1; transform: translateY(0) scale(1);}
-    }
-    #back-btn {
-      color: #fff;
-      background: #3c3c61;
-      border: none;
-      border-radius: 8px;
-      font-size: 1.02em;
-      padding: 11px 20px;
-      margin-top: 26px;
-      margin-bottom: 10px;
-      cursor: pointer;
-      transition: background 0.18s;
-    }
-    #back-btn:hover {
-      background: #e84118;
-      color:#fff;
-    }
-    .damage {
-      font-size: 1.13em;
-      font-weight: bold;
-      color: #fbc531;
-      letter-spacing: 1px;
-      margin-bottom: 11px;
-      margin-top: 12px;
+    @keyframes winner-flash {
+      0%{box-shadow:0 0 0 #ff0366;}50%{box-shadow:0 0 45px #fbc531;}100%{box-shadow:0 0 4px #fbc531;}
     }
     .secret-67 {
-      position: fixed;
-      z-index: 99;
-      font-size: 3em;
-      font-weight: bold;
-      color: #e84118;
-      pointer-events: none;
-      animation: meme66 1s linear forwards;
-      user-select: none;
+      position:fixed;font-size:3.5em;font-weight:900;z-index:9999;color:#fbc531;
+      animation:meme67 1.1s linear forwards;
+      user-select:none;pointer-events:none;
+      font-family:Impact,Arial,sans-serif;opacity:.85;text-shadow:1px 3px 15px #000;
     }
-    @keyframes meme66 {
-      from {opacity:0; transform: scale(.5) rotate(-30deg);}
-      60% {opacity:1;}
-      to {opacity:0; transform: scale(1.5) rotate(67deg);}
+    @keyframes meme67 {
+      from {opacity:0;transform:scale(.5)rotate(-30deg);}
+      60%{opacity:1;}
+      to{opacity:0;transform:scale(1.3)rotate(67deg);}
     }
-    #easterEggBtn {
-      background: linear-gradient(90deg,#22c1c3 50%,#fbc531 100%);
-      color: #1a1a1a;
-      border: none;
-      border-radius: 8px;
-      font-size: 1.23em;
-      margin-top: 22px;
-      padding: 9px 22px;
-      cursor:pointer;
-      font-weight:bold;
-      transition: background 0.19s;
-    }
-    #easterEggBtn:hover{
-      background: linear-gradient(90deg,#e84118 70%,#fbc531 100%);
-      color:#fff;
-    }
-    @media (max-width:650px){
-      .fighters {
-        flex-direction: column;
-        gap: 20px;
-      }
-      .card, #info-page {
-        width: 95vw;
-        max-width: 99vw;
-        min-width: 0;
-        padding: 14px 6vw;
-      }
-      #info-page img {
-        width: 80vw;
-        height: auto;
-      }
+    @media(max-width:950px){
+      .fight-arena{flex-direction:column; align-items:center;}
+      .fighter-pick{width:95vw;max-width:312px;margin-top:13px;}
+      .pixel{width:95vw;max-width:170px;height:auto;}
     }
   </style>
 </head>
 <body>
-  <div id="app"></div>
+  <h1>Tekken 8: Pixel Fighter Battle! <span style="font-size:0.55em;color:#fbc531;background:#212140;border-radius:8px;padding:2px 11px">(Choose & Fight)</span></h1>
+  <div id="picker"></div>
+  <div class="watermark">by ian kishk</div>
   <script>
-    // Character list including Meme surprise
+    const images = [
+      "https://raw.githubusercontent.com/iankingsigma/tekkengame/main/img1.png", // Image 1
+      "https://raw.githubusercontent.com/iankingsigma/tekkengame/main/img2.png", // Image 2 (golden 67)
+      "https://raw.githubusercontent.com/iankingsigma/tekkengame/main/img3.png", // Image 3
+      "https://raw.githubusercontent.com/iankingsigma/tekkengame/main/img4.png"  // Image 4
+      // If you wish to use files directly, you can use filepaths instead.
+    ];
+    // Map:
+    // 0: Jin Kazama, front pose
+    // 1: Meme (67)
+    // 2: Jin, back pose
+    // 3: Ling Xiaoyu
+
     const fighters = [
       {
-        id: "jin",
-        name: "Jin Kazama",
-        img: "https://i.imgur.com/XQvKQAK.png",
-        description: "Jin Kazama is the main protagonist of Tekken, mastering Kazama and Mishima fighting styles to end the bloodline's curse.",
-        damage: "97"
+        id:0,
+        name:"Jin Kazama",
+        img: images[0],
+        pixel: images[2],
+        description:"Jin Kazama – the legendary fighter hell-bent on ending his family's curse.",
+        damage:97
       },
       {
-        id: "kazuya",
-        name: "Kazuya Mishima",
-        img: "https://i.imgur.com/ZTeBTqv.png",
-        description: "Kazuya Mishima, ruthless and powered by the Devil Gene, shapes Tekken’s legendary battles with his iron fist.",
-        damage: "100"
+        id:1,
+        name:"Ling Xiaoyu",
+        img: images[3],
+        pixel: images[3],
+        description:"Ling Xiaoyu – an acrobatic martial artist overflowing with energy and technique.",
+        damage:83
       },
       {
-        id: "xiaoyu",
-        name: "Ling Xiaoyu",
-        img: "https://i.imgur.com/vKCoQ98.png",
-        description: "Ling Xiaoyu is energetic, agile and playful, bringing acrobatic martial arts and positive spirit.",
-        damage: "83"
-      },
-      {
-        id: "paul",
-        name: "Paul Phoenix",
-        img: "https://i.imgur.com/WtrOSuS.png",
-        description: "Paul Phoenix, famous for his hair and punch, dreams of being the toughest fighter in the universe!",
-        damage: "95"
-      },
-      {
-        id: "meme",
-        name: "Meme",
-        img: "https://i.imgur.com/BlKO8La.png",
-        description: "What happens if you unleash the Meme fighter?",
-        damage: "???"
+        id:2,
+        name:"Meme (67)",
+        img: images[1],
+        pixel: images[1],
+        description:"Secret Meme Fighter: 67. What happens when you fight?",
+        damage:67
       }
     ];
-    // Easter Egg character
-    const secret67 = {
-      id: "67",
-      name: "Character 67",
-      img: "https://i.imgur.com/WahPMtg.png",
-      description: "Congratulations! You found the secret 67th character. Chaos will now begin.",
-      damage: "67 x ∞"
-    };
 
-    // SPA navigation
-    function router() {
-      const page = location.hash.replace('#','');
-      if(!page) renderHome();
-      else if(page.startsWith('info-')) renderInfo(page.replace('info-',''));
+    let picks = [null, null];
+
+    function renderPicker() {
+      document.getElementById('picker').innerHTML = `
+        <div class="fighters-list">
+          ${fighters.map((f, idx) => `
+            <div class="fighter-pick">
+              <img src="${f.img}" alt="${f.name}" class="pixel">
+              <div class="name-tag">${f.name}</div>
+              <div class="desc-tag">${f.description}</div>
+              <div class="damage-tag">Damage: ${f.damage}</div>
+              <button class="select-btn" onclick="pickFighter(0,${idx})">${picks[0]===idx?"✓ Picked":"Pick as Fighter 1"}</button>
+              <button class="select-btn" onclick="pickFighter(1,${idx})">${picks[1]===idx?"✓ Picked":"Pick as Fighter 2"}</button>
+            </div>
+          `).join("")}
+        </div>
+        <div class="fight-arena" style="margin-top:44px">
+            <div class="fighter-pick" id="arena-left">${renderPixel(picks[0])}</div>
+            <div style="font-size:2.5em;font-weight:bold;margin-top:80px">&nbsp;VS&nbsp;</div>
+            <div class="fighter-pick" id="arena-right">${renderPixel(picks[1])}</div>
+        </div>
+        <button id="fight-btn" ${picks[0]!==null&&picks[1]!==null?"":"disabled"}>FIGHT!</button>
+        <div id="fight-result"></div>
+      `;
+      document.getElementById('fight-btn').onclick = fight;
     }
 
-    // Render Home Page
-    function renderHome() {
-      document.title = 'Tekken 8 Game: Choose Your Fighter!';
-      document.getElementById('app').innerHTML = `
-        <div class="page">
-        <h1>Tekken 8: Choose Your Fighter!</h1>
-        <div class="fighters">
-          ${fighters.map((f,i) => `
-            <div class="card" onclick="location.hash='info-${f.id}';" tabindex="0">
-              <img src="${f.img}" alt="${f.name}">
-              <h2>${f.name}</h2>
-              <p>${f.description.slice(0,45)}...</p>
-              <button class="choose-btn">Choose</button>
-            </div>
-          `).join('')}
-        </div>
+    function pickFighter(pos, idx) {
+      picks[pos]=idx;
+      if (picks[0]===picks[1]) picks[1]=null; // can't fight self unless 67 meme
+      renderPicker();
+    }
+
+    function renderPixel(idx) {
+      if (idx===null) return '<div style="height:220px;opacity:.33"><em>Pick a fighter</em></div>';
+      let f=fighters[idx];
+      return `<img src="${f.pixel}" alt="${f.name}" class="pixel winner-pixel"><div class="name-tag">${f.name}</div>`;
+    }
+
+    function fight() {
+      const left=fighters[picks[0]], right=fighters[picks[1]];
+      let winner;
+      // meme (67) logic: spam screen with 67, then always wins for fun!
+      if (left.name==='Meme (67)') {spam67();winner=left;}
+      else if (right.name==='Meme (67)') {spam67();winner=right;}
+      else {
+        // normal: random win, or higher damage for more likely win.
+        let leftCh=left.damage+Math.random()*10, rightCh=right.damage+Math.random()*10;
+        winner = leftCh>rightCh?left:right;
+      }
+      // Show result
+      document.getElementById('fight-result').innerHTML = `
+        <div>${left.name} vs. ${right.name}</div>
+        <div style="font-size:1.7em;margin-top:14px">
+          Winner: <span style="color:#fbc531;text-shadow:0 0 12px #e84118;font-weight:bold">${winner.name}!</span>
         </div>
       `;
+      // winner glow
+      setTimeout(()=> {
+        Array.from(document.getElementsByClassName('winner-pixel')).forEach((img,i)=>{
+          if (fighters[picks[i]]===winner) img.classList.add('winner-glow');
+          else img.classList.remove('winner-glow');
+        });
+      },50);
     }
 
-    // Render Info Page (character details)
-    function renderInfo(id) {
-      let char = fighters.find(x=>x.id===id);
-      // Easter egg: meme triggers the 67th character
-      if(id=='meme') char = secret67;
-      document.title = char ? `${char.name} | Tekken 8` : 'Tekken 8';
-      document.getElementById('app').innerHTML = char ? `
-        <div class="page" id="info-page">
-          <img src="${char.img}" alt="${char.name}">
-          <h2>${char.name}</h2>
-          <div class="damage">Damage: ${char.damage}</div>
-          <p>${char.description}</p>
-          <button id="back-btn">&larr; Back</button>
-          ${id==='meme' ? `<button id="easterEggBtn">Unleash 67!</button>` : ""}
-        </div>
-      ` : `<h2>Character not found.</h2><button id="back-btn">&larr; Back</button>`;
-      document.getElementById('back-btn').onclick = () => { location.hash=''; };
-
-      // Trigger meme easter egg
-      if(id==='meme') {
-        document.getElementById('easterEggBtn').onclick = spam67;
-      }
-    }
-
-    // Spams 67 on screen
     function spam67() {
-      for(let i=0;i<67;++i) {
-        setTimeout(()=> {
-          const span = document.createElement('span');
-          span.className='secret-67';
-          span.textContent='67';
-          span.style.left = Math.random()*window.innerWidth*.8 + 'px';
-          span.style.top = Math.random()*window.innerHeight*.8 + 'px';
-          document.body.appendChild(span);
-          setTimeout(()=>span.remove(),850+Math.random()*500);
-        }, Math.random()*900);
+      for(let i=0;i<67;i++) {
+        setTimeout(()=>{
+          const s=document.createElement('span');
+          s.className='secret-67';
+          s.textContent='67';
+          s.style.left=(Math.random()*window.innerWidth*0.8)+'px';
+          s.style.top=(Math.random()*window.innerHeight*0.82)+'px';
+          document.body.appendChild(s);
+          setTimeout(()=>s.remove(), 1300+Math.random()*700);
+        },Math.random()*700);
       }
     }
 
-    // SPA navigation
-    window.addEventListener('hashchange',router);
-    window.addEventListener('DOMContentLoaded',router);
-
+    window.pickFighter=pickFighter; // make global
+    renderPicker();
   </script>
 </body>
 </html>
