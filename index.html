@@ -14,8 +14,29 @@
       font-family: monospace;background: #000;padding:4px 20px;border-radius:15px;z-index:99999;
       pointer-events: none;
     }
-    .fight-arena {display:flex;justify-content:center;gap:48px;align-items: flex-end;margin-top:40px;}
-    .fighter-pick { width: 270px; }
+    .random-btn {
+      position: fixed;
+      top: 26px;
+      right: 36px;
+      background: linear-gradient(90deg,#fbc531 70%,#e84118 100%);
+      color: #232;
+      border: none;
+      border-radius: 17px;
+      font-size: 1.12em;
+      padding: 14px 28px;
+      font-weight: bold;
+      letter-spacing: 1px;
+      cursor: pointer;
+      z-index: 1000;
+      transition: background 0.18s, color 0.18s;
+      box-shadow: 0 4px 24px #1a1a2e88;
+    }
+    .random-btn:hover {
+      background: linear-gradient(90deg,#e84118 80%,#fbc531 100%);
+      color: #fff;
+    }
+    .fight-arena {display:flex;justify-content:center;gap:54px;align-items: flex-end;margin-top:40px;min-height:260px;}
+    .fighter-pick { width: 270px; position: relative;}
     .fighters-list { display:flex; flex-wrap:wrap; gap:24px; justify-content:center; margin-top:26px;}
     .select-btn {
       background: linear-gradient(90deg,#fbc531 70%,#e84118 100%);
@@ -30,6 +51,8 @@
       border-radius: 13px; border:3px solid #58587c;
       background: #272843;
       width: 180px; height: 220px;
+      transition: transform 0.32s cubic-bezier(.2,1.75,.45,.95);
+      position: relative;
     }
     .name-tag {
       margin-top: 10px; font-size:1.05em; font-weight:bold; letter-spacing:1px; text-align:center;
@@ -50,6 +73,7 @@
       transition: background 0.15s;
       display:block;margin-left:auto;margin-right:auto;
     }
+    #fight-btn:disabled { opacity: .5; cursor: not-allowed;}
     #fight-btn:hover{background:linear-gradient(270deg,#fbc531 50%,#e84118 100%);}
     #fight-result {
       background:#212140; border-radius:19px; padding:22px 28px; margin:30px auto 0 auto;font-size:1.3em;
@@ -58,10 +82,44 @@
     }
     @keyframes fade-in{from{opacity:0}to{opacity:1}}
     .winner-glow{
-      animation:winner-flash 0.7s cubic-bezier(.3,2,.4,1) 1;
+      animation:winner-flash 0.7s cubic-bezier(.3,2,.4,1) 2;
     }
     @keyframes winner-flash {
-      0%{box-shadow:0 0 0 #ff0366;}50%{box-shadow:0 0 45px #fbc531;}100%{box-shadow:0 0 4px #fbc531;}
+      0%{box-shadow:0 0 0 #ff0366;}
+      50%{box-shadow:0 0 45px #fbc531;}
+      100%{box-shadow:0 0 4px #fbc531;}
+    }
+    /* Punch animation */
+    .punch-left { animation: punch-left 0.42s cubic-bezier(.36,2,.68,.98) 1;}
+    @keyframes punch-left {
+      0%{transform:translateX(0);}
+      60%{transform:translateX(-56px) scale(1.12);}
+      85%{transform:translateX(-36px) scale(0.96);}
+      100%{transform:translateX(0);}
+    }
+    .punch-right {animation: punch-right 0.42s cubic-bezier(.36,2,.68,.98) 1;}
+    @keyframes punch-right {
+      0%{transform:translateX(0);}
+      60%{transform:translateX(56px) scale(1.12);}
+      85%{transform:translateX(36px) scale(0.96);}
+      100%{transform:translateX(0);}
+    }
+    .hit-effect {
+      position:absolute;top:50%;left:50%;transform:translate(-50%,-52%);
+      color: #fbc531;
+      font-size:2.5em;
+      font-weight:900;
+      text-shadow:0 2px 24px #e84118,0 0 6px #fff;
+      pointer-events:none;
+      animation:hit 0.55s;
+      font-family:Impact,Arial,sans-serif;
+      z-index:2;
+    }
+    @keyframes hit {
+      from {opacity:0;transform:scale(.3);}
+      40%{opacity:1;transform:scale(1.5);}
+      60%{opacity:.7;}
+      to {opacity:0;transform:scale(.6);}
     }
     .secret-67 {
       position:fixed;font-size:3.5em;font-weight:900;z-index:9999;color:#fbc531;
@@ -78,26 +136,23 @@
       .fight-arena{flex-direction:column; align-items:center;}
       .fighter-pick{width:95vw;max-width:312px;margin-top:13px;}
       .pixel{width:95vw;max-width:170px;height:auto;}
+      .random-btn{position:fixed;top:10px;right:10px;padding:12px 18px;font-size:1em;}
     }
   </style>
 </head>
 <body>
   <h1>Tekken 8: Pixel Fighter Battle! <span style="font-size:0.55em;color:#fbc531;background:#212140;border-radius:8px;padding:2px 11px">(Choose & Fight)</span></h1>
+  <button class="random-btn" id="randbtn">Random Fight!</button>
   <div id="picker"></div>
   <div class="watermark">by ian kishk</div>
   <script>
+    // Provide working image URLs (host in your repo or github raw), here as placeholders:
     const images = [
-      "https://raw.githubusercontent.com/iankingsigma/tekkengame/main/img1.png", // Image 1
-      "https://raw.githubusercontent.com/iankingsigma/tekkengame/main/img2.png", // Image 2 (golden 67)
-      "https://raw.githubusercontent.com/iankingsigma/tekkengame/main/img3.png", // Image 3
-      "https://raw.githubusercontent.com/iankingsigma/tekkengame/main/img4.png"  // Image 4
-      // If you wish to use files directly, you can use filepaths instead.
+      "https://raw.githubusercontent.com/iankingsigma/tekkengame/main/img1.png", // Jin Kazama (front pose)
+      "https://raw.githubusercontent.com/iankingsigma/tekkengame/main/img2.png", // golden 67 (Meme)
+      "https://raw.githubusercontent.com/iankingsigma/tekkengame/main/img3.png", // Jin, back pose
+      "https://raw.githubusercontent.com/iankingsigma/tekkengame/main/img4.png"  // Ling Xiaoyu
     ];
-    // Map:
-    // 0: Jin Kazama, front pose
-    // 1: Meme (67)
-    // 2: Jin, back pose
-    // 3: Ling Xiaoyu
 
     const fighters = [
       {
@@ -105,7 +160,7 @@
         name:"Jin Kazama",
         img: images[0],
         pixel: images[2],
-        description:"Jin Kazama – the legendary fighter hell-bent on ending his family's curse.",
+        description:"Jin Kazama – legendary fighter hell-bent on ending his family's curse.",
         damage:97
       },
       {
@@ -113,7 +168,7 @@
         name:"Ling Xiaoyu",
         img: images[3],
         pixel: images[3],
-        description:"Ling Xiaoyu – an acrobatic martial artist overflowing with energy and technique.",
+        description:"Ling Xiaoyu – acrobatic martial artist overflowing with energy and technique.",
         damage:83
       },
       {
@@ -127,6 +182,7 @@
     ];
 
     let picks = [null, null];
+    let lastResult = "";
 
     function renderPicker() {
       document.getElementById('picker').innerHTML = `
@@ -142,10 +198,10 @@
             </div>
           `).join("")}
         </div>
-        <div class="fight-arena" style="margin-top:44px">
-            <div class="fighter-pick" id="arena-left">${renderPixel(picks[0])}</div>
+        <div class="fight-arena" id="fight-arena">
+            <div class="fighter-pick" id="arena-left">${renderPixel(picks[0], 0)}</div>
             <div style="font-size:2.5em;font-weight:bold;margin-top:80px">&nbsp;VS&nbsp;</div>
-            <div class="fighter-pick" id="arena-right">${renderPixel(picks[1])}</div>
+            <div class="fighter-pick" id="arena-right">${renderPixel(picks[1], 1)}</div>
         </div>
         <button id="fight-btn" ${picks[0]!==null&&picks[1]!==null?"":"disabled"}>FIGHT!</button>
         <div id="fight-result"></div>
@@ -155,41 +211,91 @@
 
     function pickFighter(pos, idx) {
       picks[pos]=idx;
-      if (picks[0]===picks[1]) picks[1]=null; // can't fight self unless 67 meme
+      // Prevent fighting self (unless Meme 67 is chosen)
+      if (picks[0]===picks[1] && fighters[idx].name!=="Meme (67)") picks[1]=null;
       renderPicker();
     }
 
-    function renderPixel(idx) {
+    function renderPixel(idx, pos) {
       if (idx===null) return '<div style="height:220px;opacity:.33"><em>Pick a fighter</em></div>';
       let f=fighters[idx];
-      return `<img src="${f.pixel}" alt="${f.name}" class="pixel winner-pixel"><div class="name-tag">${f.name}</div>`;
+      return `<img src="${f.pixel}" alt="${f.name}" class="pixel winner-pixel" data-pos="${pos}">
+              <div class="name-tag">${f.name}</div>`;
+    }
+
+    // Punch animation logic
+    function punch(p1, p2, callback) {
+      const leftImg = document.querySelector("img[data-pos='0']");
+      const rightImg = document.querySelector("img[data-pos='1']");
+      if (!leftImg || !rightImg) return callback();
+      // Random attack order
+      let first = Math.random() > 0.5 ? "left" : "right";
+      if(first==="left"){
+        leftImg.classList.add('punch-right');
+        showHitEffect(rightImg,"POW!");
+        setTimeout(()=>{
+          leftImg.classList.remove('punch-right');
+          setTimeout(()=>{
+            rightImg.classList.add('punch-left');
+            showHitEffect(leftImg,"WHAM!");
+            setTimeout(()=>{
+              rightImg.classList.remove('punch-left');
+              callback();
+            },400);
+          },250);
+        },400);
+      } else {
+        rightImg.classList.add('punch-left');
+        showHitEffect(leftImg,"POW!");
+        setTimeout(()=>{
+          rightImg.classList.remove('punch-left');
+          setTimeout(()=>{
+            leftImg.classList.add('punch-right');
+            showHitEffect(rightImg,"WHAM!");
+            setTimeout(()=>{
+              leftImg.classList.remove('punch-right');
+              callback();
+            },400);
+          },250);
+        },400);
+      }
+    }
+
+    function showHitEffect(img, text){
+      if(!img) return;
+      const hit=document.createElement('div');
+      hit.className='hit-effect';
+      hit.textContent=text;
+      img.parentNode.appendChild(hit);
+      setTimeout(()=>hit.remove(),480);
     }
 
     function fight() {
       const left=fighters[picks[0]], right=fighters[picks[1]];
-      let winner;
-      // meme (67) logic: spam screen with 67, then always wins for fun!
-      if (left.name==='Meme (67)') {spam67();winner=left;}
-      else if (right.name==='Meme (67)') {spam67();winner=right;}
-      else {
-        // normal: random win, or higher damage for more likely win.
-        let leftCh=left.damage+Math.random()*10, rightCh=right.damage+Math.random()*10;
-        winner = leftCh>rightCh?left:right;
-      }
-      // Show result
-      document.getElementById('fight-result').innerHTML = `
-        <div>${left.name} vs. ${right.name}</div>
-        <div style="font-size:1.7em;margin-top:14px">
-          Winner: <span style="color:#fbc531;text-shadow:0 0 12px #e84118;font-weight:bold">${winner.name}!</span>
-        </div>
-      `;
-      // winner glow
-      setTimeout(()=> {
-        Array.from(document.getElementsByClassName('winner-pixel')).forEach((img,i)=>{
-          if (fighters[picks[i]]===winner) img.classList.add('winner-glow');
-          else img.classList.remove('winner-glow');
-        });
-      },50);
+      punch(left, right, ()=>{
+        let winner;
+        if (left.name==='Meme (67)') {spam67();winner=left;}
+        else if (right.name==='Meme (67)') {spam67();winner=right;}
+        else {
+          let leftCh=left.damage+Math.random()*10, rightCh=right.damage+Math.random()*10;
+          winner = leftCh>rightCh?left:right;
+        }
+        // Show result
+        document.getElementById('fight-result').innerHTML = `
+          <div>${left.name} vs. ${right.name}</div>
+          <div style="font-size:1.7em;margin-top:14px">
+            Winner: <span style="color:#fbc531;text-shadow:0 0 12px #e84118;font-weight:bold">${winner.name}!</span>
+          </div>
+        `;
+        lastResult = winner.name;
+        // winner glow
+        setTimeout(()=> {
+          Array.from(document.getElementsByClassName('winner-pixel')).forEach((img,i)=>{
+            if (fighters[picks[i]]===winner) img.classList.add('winner-glow');
+            else img.classList.remove('winner-glow');
+          });
+        },50);
+      });
     }
 
     function spam67() {
@@ -206,7 +312,22 @@
       }
     }
 
-    window.pickFighter=pickFighter; // make global
+    function randomFight() {
+      // Pick two random fighters (allow Meme, allow same only for Meme)
+      let idx1 = Math.floor(Math.random()*fighters.length);
+      let idx2;
+      do {
+        idx2 = Math.floor(Math.random()*fighters.length);
+      } while (idx2===idx1 && fighters[idx1].name!=="Meme (67)");
+      picks=[idx1,idx2];
+      renderPicker();
+      setTimeout(fight,600);
+    }
+
+    // Expose pick and randomFight globally
+    window.pickFighter = pickFighter;
+    document.getElementById('randbtn').onclick=randomFight;
+
     renderPicker();
   </script>
 </body>
