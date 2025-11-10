@@ -1,52 +1,92 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tekken 8 - Pixel Edition</title>
+  <meta charset="UTF-8">
+  <title>Pixel Tekken - by ian kishk</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Orbitron:700&display=swap">
   <style>
-    body {
-      background: linear-gradient(to bottom right, #0c0c0c, #181818);
-      margin: 0;
-      overflow: hidden;
-      color: white;
-      font-family: 'Press Start 2P', monospace;
-      text-align: center;
+    body { margin:0; background:#191926; color:#eee; font-family:'Orbitron',Arial,sans-serif;}
+    #watermark {
+      position:fixed;right:34px;bottom:20px;opacity:.45;font-size:1.15em;
+      font-family:monospace;background:#212140;padding:6px 19px;border-radius:13px;z-index:999;
+      pointer-events:none;color:#fbc531;
     }
-    #gameCanvas {
-      image-rendering: pixelated;
-      image-rendering: crisp-edges;
-      background-color: #222;
-      display: block;
-      margin: 30px auto;
-      border: 3px solid #fff;
+    #menu, #select, #fightUI { display:none; max-width:900px; margin:32px auto; }
+    #menu.active, #select.active, #fightUI.active { display:block; }
+    .menu-btn {
+      font-family:'Orbitron',Arial,sans-serif; font-size:1.88em; font-weight:bold;
+      background: linear-gradient(90deg,#fbc531 65%,#e84118 100%);
+      color:#212140;border:none; border-radius:15px;padding:16px 55px;cursor:pointer; margin:17px; box-shadow:0 4px 20px #0002;
+      transition:background .18s,color .18s;
     }
-    .hud {
-      display: flex;
-      justify-content: space-between;
-      width: 80%;
-      margin: auto;
+    .menu-btn:hover {background:linear-gradient(90deg,#e84118 80%,#fbc531 100%);color:#fff;}
+    .title {color:#fbc531;font-size:2.7em;letter-spacing:3px;text-align:center;margin:30px 0 20px 0;text-shadow:0 0 12px #832;}
+    #fighterList {display:flex;flex-wrap:wrap;justify-content:center;gap:24px;}
+    .char-card {
+      background:#212140;border-radius:22px;box-shadow:0 5px 20px #0017;width:190px;padding:14px;text-align:center;position:relative;cursor:pointer;
+      transition:transform .2s,box-shadow .19s;
+      outline:none;
     }
-    .hpBar {
-      width: 40%;
-      height: 10px;
-      background: #555;
-      border: 1px solid white;
+    .char-card:hover, .char-card.selected {
+      transform:scale(1.13);box-shadow:0 8px 49px #fbc53188;
+      border:2px solid #fbc531;
+      z-index:1;
     }
-    .hpFill {
-      height: 100%;
-      background: lime;
-      width: 100%;
+    .char-img {
+      image-rendering: pixelated; width:92px;height:102px;border-radius:13px;background:#292960;margin-bottom:7px;border:2px solid #18181f;
+      box-shadow:0 2px 16px #0004;
+      display:block;
+      margin-left:auto;margin-right:auto;
+    }
+    .char-name {color:#ffc70c;font-weight:bold;font-size:1.18em;margin:3px 0;}
+    .char-hp {color:#e84118;display:block;font-weight:bold;font-size:.97em;margin-bottom:4px;}
+    .char-desc {font-size:.98em;color:#fff7;min-height:36px;}
+    .char-punch {display:block;margin-top:7px;font-size:1.12em;color:#fbc531;font-weight:bold;}
+    #vsBtn {margin:32px auto 0 auto;display:block;}
+    #pickTitles {display:flex;justify-content:space-between;max-width:450px;margin:0 auto 12px auto;font-size:1.6em;}
+    #canvas { width:640px;height:350px;display:block;margin:22px auto 0 auto;border-radius:22px;
+      box-shadow:0 6px 32px #0007;background:#181825;}
+    #fightStats {
+      text-align:center;color:#fed;font-size:1.19em;font-weight:bold;margin-top:13px;
+    }
+    #backBtn {
+      position:fixed;top:30px;left:30px;z-index:12;
+      font-family:'Orbitron',Arial; font-size:1.09em;
+      background: linear-gradient(90deg,#e84118 70%,#fbc531 100%);
+      color:#212140;border-radius:14px;border:none;padding:7px 20px;font-weight:bold;cursor:pointer;transition:background .17s;
+    }
+    #backBtn:hover{background:linear-gradient(90deg,#fbc531 90%,#e84118 100%);}
+    @media(max-width:700px){
+      .char-card {width:88vw;max-width:99vw;}
+      #canvas {width:98vw !important;height:57vw !important;}
+      #pickTitles {font-size:1.15em;}
+      .title{font-size:1.22em;}
+      #backBtn{position:fixed;top:10px;left:8px;padding:5px 14px;}
     }
   </style>
 </head>
 <body>
-  <h1>TEKKEN 8: Pixel Edition 💥</h1>
-  <div class="hud">
-    <div class="hpBar"><div id="p1hp" class="hpFill"></div></div>
-    <div class="hpBar"><div id="p2hp" class="hpFill"></div></div>
+  <div id="menu" class="active">
+    <div class="title">Pixel Tekken</div>
+    <button class="menu-btn" onclick="showSelect()">Arcade</button>
+    <button class="menu-btn" onclick="showSelect(true)">2P Vs</button>
+    <button class="menu-btn" onclick="alert('Credits: by ian kishk - inspired by Tekken, Mario')">Credits</button>
   </div>
-  <canvas id="gameCanvas" width="256" height="144"></canvas>
+  <div id="select">
+    <div id="pickTitles">
+      <span id="p1tit">Player 1: Choose!</span>
+      <span id="p2tit">Player 2: Choose!</span>
+    </div>
+    <div id="fighterList"></div>
+    <button class="menu-btn" id="vsBtn" style="display:none;">Fight!</button>
+  </div>
+  <div id="fightUI">
+    <button id="backBtn" onclick="showMenu()">Main Menu</button>
+    <canvas id="canvas" width="640" height="350"></canvas>
+    <div id="fightStats"></div>
+  </div>
+  <div id="watermark">by ian kishk</div>
   <script src="script.js"></script>
 </body>
 </html>
