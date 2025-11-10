@@ -1,128 +1,1290 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Pixel Tekken - by ian kishk</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Orbitron:700&display=swap">
-  <style>
-    body { margin:0; background:#191926; color:#eee; font-family:'Orbitron',Arial,sans-serif;}
-    #watermark {
-      position:fixed;right:34px;bottom:20px;opacity:.45;font-size:1.05em;
-      font-family:monospace;background:#212140;padding:6px 19px;border-radius:13px;z-index:999;
-      pointer-events:none;color:#fbc531;
-    }
-    #menu, #select, #fightUI { display:none; max-width:900px; margin:32px auto; }
-    #menu.active, #select.active, #fightUI.active { display:block; }
-    .menu-btn {
-      font-family:'Orbitron',Arial,sans-serif; font-size:1.7em; font-weight:bold;
-      background: linear-gradient(90deg,#fbc531 65%,#e84118 100%);
-      color:#212140;border:none; border-radius:15px;padding:14px 50px;cursor:pointer; margin:17px; box-shadow:0 4px 20px #0002;
-      transition:background .18s,color .18s;
-    }
-    .menu-btn:hover {background:linear-gradient(90deg,#e84118 80%,#fbc531 100%);color:#fff;}
-    .title {color:#fbc531;font-size:2.7em;letter-spacing:3px;text-align:center;margin:30px 0 20px 0;text-shadow:0 0 12px #832;}
-    #fighterList {display:flex;flex-wrap:wrap;justify-content:center;gap:24px;}
-    .char-card {
-      background:#212140;border-radius:22px;box-shadow:0 5px 20px #0017;width:185px;padding:13px;text-align:center;position:relative;cursor:pointer;
-      transition:transform .2s,box-shadow .19s;
-      outline:none;
-    }
-    .char-card:hover, .char-card.selected {
-      transform:scale(1.13);box-shadow:0 8px 49px #fbc53188;
-      border:2px solid #fbc531;
-      z-index:1;
-    }
-    .char-img {
-      image-rendering: pixelated; width:90px;height:98px;border-radius:13px;background:#292960;margin-bottom:6px;border:2px solid #18181f;
-      box-shadow:0 2px 16px #0004;
-      display:block;
-      margin-left:auto;margin-right:auto;
-    }
-    .char-name {color:#ffc70c;font-weight:bold;font-size:1.16em;margin:3px 0;}
-    .char-hp {color:#e84118;display:block;font-weight:bold;font-size:.96em;margin-bottom:3px;}
-    .char-desc {font-size:.97em;color:#fff7;min-height:32px;}
-    .char-punch {display:block;margin-top:6px;font-size:1.1em;color:#fbc531;font-weight:bold;}
-    #vsBtn {margin:28px auto 0 auto;display:block;}
-    #pickTitles {display:flex;justify-content:center;max-width:400px;margin:0 auto 10px auto;font-size:1.33em;}
-    #canvas { width:640px;height:350px;display:block;margin:17px auto 0 auto;border-radius:20px;
-      box-shadow:0 6px 32px #0007;background:#181825;}
-    #fightStats {
-      text-align:center;color:#fed;font-size:1.17em;font-weight:bold;margin-top:13px;
-    }
-    #backBtn {
-      position:fixed;top:28px;left:30px;z-index:12;
-      font-family:'Orbitron',Arial; font-size:1.02em;
-      background: linear-gradient(90deg,#e84118 70%,#fbc531 100%);
-      color:#212140;border-radius:12px;border:none;padding:7px 18px;font-weight:bold;cursor:pointer;transition:background .17s;
-    }
-    #backBtn:hover{background:linear-gradient(90deg,#fbc531 90%,#e84118 100%);}
-    #controls-bar {
-      position:fixed;
-      left:50%;
-      bottom:4px;
-      transform:translateX(-50%);
-      z-index:1200;
-      background:#212140cc;
-      color:#fbc531;
-      padding:8px 20px 7px 20px;
-      border-radius:17px;
-      font-family:'Orbitron',Arial,sans-serif;
-      font-size:1.08em;
-      display:flex;
-      gap:17px;
-      justify-content:center;
-      align-items:center;
-      box-shadow:0 2px 14px #10152599;
-    }
-    #controls-bar span {
-      color:#fff;
-      background:#fbc53133;
-      border-radius:7px;
-      padding:3px 11px;
-      font-weight:bold;
-      letter-spacing:1px;
-    }
-    @media(max-width:700px){
-      .char-card {width:92vw;max-width:99vw;}
-      #canvas {width:98vw !important;height:54vw !important;}
-      #pickTitles {font-size:1.12em;}
-      .title{font-size:1.13em;}
-      #backBtn{top:10px;left:8px;padding:5px 12px;}
-      #controls-bar{font-size:.9em;}
-    }
-    .secret-67 {
-      position:fixed;font-size:3.5em;font-weight:900;z-index:99;color:#fbc531;
-      animation:meme67 1.1s linear forwards;
-      user-select:none;pointer-events:none;font-family:Impact,Arial,sans-serif;opacity:.85;text-shadow:1px 3px 15px #000;
-    }
-    @keyframes meme67 {
-      from {opacity:0;transform:scale(.5)rotate(-30deg);}
-      60%{opacity:1;}
-      to{opacity:0;transform:scale(1.3)rotate(67deg);}
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TEKKEN 3D - PIXEL FIGHTER</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/gsap.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Orbitron', 'Arial', sans-serif;
+        }
+
+        body {
+            background: #000;
+            color: #fff;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            image-rendering: pixelated;
+        }
+
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: #000;
+            z-index: 10;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        /* Loading Screen */
+        #loading {
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3a 100%);
+        }
+
+        .loading-content {
+            text-align: center;
+        }
+
+        .pixel-logo {
+            font-size: 5rem;
+            color: #ff0033;
+            text-shadow: 0 0 20px #ff0033, 0 0 40px #ff0033;
+            margin-bottom: 2rem;
+            letter-spacing: 5px;
+        }
+
+        .loading-bar-container {
+            width: 400px;
+            height: 20px;
+            background: #222244;
+            border: 2px solid #ff0033;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 2rem auto;
+        }
+
+        .loading-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #ff0033 0%, #ffcc00 100%);
+            transition: width 0.3s;
+        }
+
+        .loading-text {
+            font-size: 1.2rem;
+            color: #ffcc00;
+            margin-bottom: 1rem;
+        }
+
+        .tip {
+            font-size: 1rem;
+            color: #aaa;
+            font-style: italic;
+        }
+
+        /* Main Menu */
+        #mainMenu {
+            background: linear-gradient(135deg, #000 0%, #1a0a2a 100%);
+        }
+
+        .menu-content {
+            text-align: center;
+            z-index: 2;
+        }
+
+        .main-title {
+            font-size: 5rem;
+            color: #ff0033;
+            text-shadow: 0 0 20px #ff0033, 0 0 40px #ff0033;
+            margin-bottom: 3rem;
+            letter-spacing: 8px;
+        }
+
+        .menu-options {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 3rem;
+        }
+
+        .menu-btn {
+            font-size: 1.8rem;
+            color: #fff;
+            background: rgba(255, 0, 51, 0.3);
+            border: 2px solid #ff0033;
+            padding: 15px 40px;
+            cursor: pointer;
+            text-align: center;
+            min-width: 300px;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .menu-btn:hover {
+            background: rgba(255, 0, 51, 0.7);
+            transform: scale(1.05);
+            box-shadow: 0 0 20px #ff0033;
+        }
+
+        .menu-footer {
+            position: absolute;
+            bottom: 2rem;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 2rem;
+        }
+
+        .high-score, .version {
+            color: #ffcc00;
+            font-size: 1rem;
+        }
+
+        /* Character Select */
+        #characterSelect {
+            background: linear-gradient(135deg, #000 0%, #0a1a2a 100%);
+        }
+
+        .select-ui {
+            width: 90%;
+            max-width: 1200px;
+            height: 90%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .select-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+            border-bottom: 2px solid #ff0033;
+            margin-bottom: 2rem;
+        }
+
+        .player-tag {
+            font-size: 1.5rem;
+            color: #ffcc00;
+            background: rgba(255, 0, 51, 0.3);
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+        }
+
+        .select-title {
+            font-size: 2.5rem;
+            color: #ffcc00;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+
+        .timer {
+            font-size: 1.5rem;
+            color: #ff0033;
+            background: #111;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            border: 2px solid #ff0033;
+        }
+
+        .character-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.5rem;
+            flex: 1;
+            margin-bottom: 2rem;
+        }
+
+        .character-card {
+            background: rgba(255, 0, 51, 0.1);
+            border: 2px solid #333;
+            border-radius: 10px;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .character-card:hover {
+            border-color: #ffcc00;
+            transform: translateY(-5px);
+        }
+
+        .character-card.selected {
+            border-color: #ff0033;
+            box-shadow: 0 0 20px #ff0033;
+            background: rgba(255, 0, 51, 0.3);
+        }
+
+        .character-icon {
+            width: 120px;
+            height: 120px;
+            background: #111;
+            border-radius: 50%;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: #ffcc00;
+            border: 3px solid #333;
+        }
+
+        .character-name {
+            font-size: 1.2rem;
+            color: #fff;
+            text-align: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .character-style {
+            font-size: 0.9rem;
+            color: #ffcc00;
+            text-align: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .character-stats {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin-top: 0.5rem;
+        }
+
+        .stat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .stat-value {
+            color: #ff0033;
+            font-weight: bold;
+        }
+
+        .stat-label {
+            color: #aaa;
+            font-size: 0.8rem;
+        }
+
+        .character-preview {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid #ff0033;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .preview-model {
+            width: 200px;
+            height: 200px;
+            background: #111;
+            border: 2px solid #ffcc00;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            color: #ffcc00;
+        }
+
+        .character-info {
+            flex: 1;
+            padding: 0 2rem;
+        }
+
+        .char-name {
+            font-size: 2rem;
+            color: #ffcc00;
+            margin-bottom: 0.5rem;
+        }
+
+        .char-style {
+            font-size: 1.2rem;
+            color: #ff0033;
+            margin-bottom: 1rem;
+        }
+
+        .char-desc {
+            font-size: 1rem;
+            color: #aaa;
+            line-height: 1.5;
+        }
+
+        .select-controls {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .nav-btn {
+            font-size: 1.2rem;
+            color: #fff;
+            background: rgba(255, 0, 51, 0.3);
+            border: 2px solid #ff0033;
+            padding: 10px 30px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+        }
+
+        .nav-btn:hover {
+            background: rgba(255, 0, 51, 0.7);
+        }
+
+        .nav-btn.confirm {
+            background: rgba(255, 204, 0, 0.3);
+            border-color: #ffcc00;
+        }
+
+        .nav-btn.confirm:hover {
+            background: rgba(255, 204, 0, 0.7);
+        }
+
+        .nav-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Game Screen */
+        #gameScreen {
+            background: #000;
+            justify-content: flex-start;
+            padding-top: 1rem;
+        }
+
+        #gameCanvas {
+            width: 100%;
+            height: 70%;
+            background: #000;
+        }
+
+        .hud {
+            width: 90%;
+            max-width: 1200px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1rem;
+        }
+
+        .player-hud {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 40%;
+        }
+
+        .player-name {
+            font-size: 1.5rem;
+            color: #ffcc00;
+            margin-bottom: 0.5rem;
+            text-align: center;
+        }
+
+        .health-container {
+            width: 100%;
+            background: #222;
+            border: 2px solid #333;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .health-bar {
+            height: 30px;
+            background: linear-gradient(90deg, #ff0033 0%, #ffcc00 100%);
+            width: 100%;
+            transition: width 0.3s;
+        }
+
+        .health-text {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 1px 1px 2px #000;
+        }
+
+        .round-info {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .round-text {
+            font-size: 1.5rem;
+            color: #ffcc00;
+            margin-bottom: 0.5rem;
+        }
+
+        .timer {
+            font-size: 2rem;
+            color: #ff0033;
+            background: #111;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            border: 2px solid #ff0033;
+        }
+
+        .combo-display {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 3rem;
+            color: #ffcc00;
+            text-shadow: 0 0 10px #ff0033;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 20;
+            pointer-events: none;
+        }
+
+        .combo-display.active {
+            opacity: 1;
+        }
+
+        /* Controls Screen */
+        #controlsScreen {
+            background: linear-gradient(135deg, #000 0%, #1a2a0a 100%);
+        }
+
+        .controls-content {
+            width: 90%;
+            max-width: 1000px;
+            height: 90%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .controls-header {
+            font-size: 2.5rem;
+            color: #ffcc00;
+            text-align: center;
+            margin-bottom: 2rem;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            flex: 1;
+        }
+
+        .control-group {
+            background: rgba(255, 204, 0, 0.1);
+            border: 2px solid #ffcc00;
+            border-radius: 10px;
+            padding: 1.5rem;
+        }
+
+        .control-title {
+            font-size: 1.5rem;
+            color: #ffcc00;
+            margin-bottom: 1rem;
+            text-align: center;
+            border-bottom: 1px solid #ffcc00;
+            padding-bottom: 0.5rem;
+        }
+
+        .control-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 1rem 0;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #333;
+        }
+
+        .control-key {
+            background: #ff0033;
+            color: #000;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            font-weight: bold;
+            min-width: 60px;
+            text-align: center;
+        }
+
+        .control-action {
+            color: #fff;
+            font-size: 1.1rem;
+        }
+
+        .combo-list {
+            list-style: none;
+            margin-top: 1rem;
+        }
+
+        .combo-item {
+            margin: 0.8rem 0;
+            padding: 0.8rem;
+            background: rgba(255, 0, 51, 0.2);
+            border-left: 3px solid #ff0033;
+            border-radius: 0 5px 5px 0;
+        }
+
+        .controls-footer {
+            display: flex;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+
+        /* Secret 67 Effect */
+        .secret-67 {
+            position: fixed;
+            font-size: 4rem;
+            font-weight: 900;
+            z-index: 1000;
+            color: #ffcc00;
+            animation: meme67 2s ease-out forwards;
+            user-select: none;
+            pointer-events: none;
+            text-shadow: 3px 3px 0 #ff0033;
+            opacity: 0;
+        }
+
+        @keyframes meme67 {
+            0% { opacity: 0; transform: scale(0) rotate(-180deg); }
+            20% { opacity: 1; transform: scale(1.2) rotate(-120deg); }
+            40% { transform: scale(1.1) rotate(-60deg); }
+            60% { transform: scale(1.3) rotate(0deg); }
+            80% { opacity: 1; transform: scale(1.4) rotate(67deg); }
+            100% { opacity: 0; transform: scale(1.5) rotate(67deg) translateY(-200px); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .pixel-logo, .main-title { font-size: 3rem; }
+            .menu-btn { font-size: 1.2rem; min-width: 250px; }
+            .character-grid { grid-template-columns: repeat(2, 1fr); }
+            .preview-model { width: 150px; height: 150px; font-size: 2rem; }
+            .char-name { font-size: 1.5rem; }
+            .controls-grid { grid-template-columns: 1fr; }
+        }
+    </style>
 </head>
 <body>
-  <div id="menu" class="active">
-    <div class="title">Pixel Tekken</div>
-    <button class="menu-btn" onclick="showSelect()">Arcade</button>
-    <button class="menu-btn" onclick="alert('Credits: by ian kishk - inspired by Tekken')">Credits</button>
-  </div>
-  <div id="select"><div id="pickTitles"><span>Player: Choose!</span></div><div id="fighterList"></div><button class="menu-btn" id="vsBtn" style="display:none;">Fight!</button></div>
-  <div id="fightUI">
-    <button id="backBtn" onclick="showMenu()">Main Menu</button>
-    <canvas id="canvas" width="640" height="350"></canvas>
-    <div id="fightStats"></div>
-  </div>
-  <div id="controls-bar" style="display:none;">
-    <span>←</span> Move Left
-    <span>→</span> Move Right
-    <span>Z</span> Punch
-    <span>X</span> Kick
-    <span>C</span> Combo
-  </div>
-  <div id="watermark">by ian kishk</div>
-  <script src="script.js"></script>
+    <!-- Loading Screen -->
+    <div id="loading" class="screen active">
+        <div class="loading-content">
+            <div class="pixel-logo">TEKKEN 3D</div>
+            <div class="loading-bar-container">
+                <div class="loading-bar" id="loadingBar"></div>
+            </div>
+            <div class="loading-text" id="loadingText">INITIALIZING 3D ENGINE...</div>
+            <div class="tip">TIP: Master combos for maximum damage!</div>
+        </div>
+    </div>
+
+    <!-- Main Menu -->
+    <div id="mainMenu" class="screen">
+        <div class="menu-content">
+            <h1 class="main-title">TEKKEN 3D</h1>
+            <div class="menu-options">
+                <button class="menu-btn" onclick="showScreen('characterSelect')">ARCADE MODE</button>
+                <button class="menu-btn" onclick="showScreen('versusSelect')">VERSUS MODE</button>
+                <button class="menu-btn" onclick="showScreen('practice')">PRACTICE</button>
+                <button class="menu-btn" onclick="showScreen('controls')">CONTROLS</button>
+                <button class="menu-btn" onclick="showScreen('gallery')">GALLERY</button>
+            </div>
+            <div class="menu-footer">
+                <div class="high-score">HIGH SCORE: <span id="highScore">0</span></div>
+                <div class="version">v2.0.3 | 67 EDITION</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Character Selection -->
+    <div id="characterSelect" class="screen">
+        <div class="select-ui">
+            <div class="select-header">
+                <div class="player-tag">PLAYER 1</div>
+                <div class="select-title">CHOOSE YOUR FIGHTER</div>
+                <div class="timer">10</div>
+            </div>
+            
+            <div class="character-grid" id="characterGrid"></div>
+            
+            <div class="character-preview">
+                <div class="preview-model" id="previewModel"></div>
+                <div class="character-info">
+                    <div class="char-name" id="previewName">SELECT FIGHTER</div>
+                    <div class="char-style" id="previewStyle">-</div>
+                    <div class="char-desc" id="previewDesc">Choose your combatant</div>
+                </div>
+            </div>
+            
+            <div class="select-controls">
+                <button class="nav-btn" id="backBtn" onclick="showScreen('mainMenu')">BACK</button>
+                <button class="nav-btn confirm" id="confirmBtn" onclick="startBattle()" disabled>CONFIRM</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Controls Screen -->
+    <div id="controlsScreen" class="screen">
+        <div class="controls-content">
+            <div class="controls-header">CONTROLS & MOVES</div>
+            
+            <div class="controls-grid">
+                <div class="control-group">
+                    <div class="control-title">BASIC CONTROLS</div>
+                    <div class="control-item">
+                        <div class="control-key">← →</div>
+                        <div class="control-action">Move</div>
+                    </div>
+                    <div class="control-item">
+                        <div class="control-key">Z</div>
+                        <div class="control-action">Left Punch</div>
+                    </div>
+                    <div class="control-item">
+                        <div class="control-key">X</div>
+                        <div class="control-action">Right Punch</div>
+                    </div>
+                    <div class="control-item">
+                        <div class="control-key">A</div>
+                        <div class="control-action">Left Kick</div>
+                    </div>
+                    <div class="control-item">
+                        <div class="control-key">S</div>
+                        <div class="control-action">Right Kick</div>
+                    </div>
+                    <div class="control-item">
+                        <div class="control-key">SPACE</div>
+                        <div class="control-action">Block</div>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <div class="control-title">SPECIAL COMBOS</div>
+                    <ul class="combo-list">
+                        <li class="combo-item">→ → + Z : Dragon Uppercut</li>
+                        <li class="combo-item">↓ → + X : Fireball</li>
+                        <li class="combo-item">Z + X : Double Punch</li>
+                        <li class="combo-item">A + S : Spin Kick</li>
+                        <li class="combo-item">↓ ↓ + A : Low Sweep</li>
+                        <li class="combo-item">← ← + S : Back Kick</li>
+                        <li class="combo-item">Z → X → A : Ultimate Combo</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="controls-footer">
+                <button class="nav-btn" onclick="showScreen('mainMenu')">BACK TO MAIN MENU</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="gameScreen" class="screen">
+        <canvas id="gameCanvas"></canvas>
+        <div class="hud">
+            <div class="player-hud">
+                <div class="player-name" id="p1Name">PLAYER</div>
+                <div class="health-container">
+                    <div class="health-bar" id="p1Health"></div>
+                    <div class="health-text" id="p1HealthText">100%</div>
+                </div>
+            </div>
+            
+            <div class="round-info">
+                <div class="round-text" id="roundText">ROUND 1</div>
+                <div class="timer" id="roundTimer">99</div>
+            </div>
+            
+            <div class="player-hud">
+                <div class="player-name" id="p2Name">CPU</div>
+                <div class="health-container">
+                    <div class="health-bar" id="p2Health"></div>
+                    <div class="health-text" id="p2HealthText">100%</div>
+                </div>
+            </div>
+        </div>
+        <div class="combo-display" id="comboDisplay">COMBO!</div>
+        <button class="nav-btn" onclick="showScreen('characterSelect')" style="margin-top: 20px;">EXIT BATTLE</button>
+    </div>
+
+    <script>
+        // Game Data
+        const CHARACTERS = [
+            {
+                id: 67,
+                name: "KENSHIRO 67",
+                style: "Meme Style",
+                hp: 1200,
+                color: "#ffcc00",
+                icon: "67",
+                description: "Legendary meme fighter with unpredictable moves and devastating combos. Harnesses the power of the golden number.",
+                moves: {
+                    punch: 40,
+                    kick: 35,
+                    special: 80
+                },
+                combos: [
+                    { input: ["right", "right", "punch"], name: "DRAGON UPPERCUT", damage: 120 },
+                    { input: ["down", "right", "punch"], name: "FIREBALL", damage: 100 },
+                    { input: ["punch", "punch"], name: "DOUBLE PUNCH", damage: 90 },
+                    { input: ["punch", "right", "punch", "kick"], name: "GOLDEN COMBO", damage: 200 }
+                ]
+            },
+            {
+                id: 41,
+                name: "RAIJIN 41",
+                style: "Thunder God Style",
+                hp: 1400,
+                color: "#ff0033",
+                icon: "41",
+                description: "A powerful striker with lightning-fast attacks and overwhelming power. Each strike carries thunderous force.",
+                moves: {
+                    punch: 45,
+                    kick: 30,
+                    special: 75
+                },
+                combos: [
+                    { input: ["down", "down", "kick"], name: "LOW SWEEP", damage: 110 },
+                    { input: ["left", "left", "kick"], name: "BACK KICK", damage: 95 },
+                    { input: ["kick", "kick"], name: "SPIN KICK", damage: 85 },
+                    { input: ["down", "punch", "kick"], name: "THUNDER STRIKE", damage: 150 }
+                ]
+            },
+            {
+                id: 21,
+                name: "KAZE 21",
+                style: "Wind Style",
+                hp: 1000,
+                color: "#00ccff",
+                icon: "21",
+                description: "Swift and agile fighter with incredible speed. Uses wind-based techniques to overwhelm opponents.",
+                moves: {
+                    punch: 35,
+                    kick: 45,
+                    special: 90
+                },
+                combos: [
+                    { input: ["right", "down", "punch"], name: "WIND SLASH", damage: 130 },
+                    { input: ["punch", "kick"], name: "QUICK STRIKE", damage: 80 },
+                    { input: ["down", "up", "kick"], name: "TORNADO", damage: 140 },
+                    { input: ["kick", "punch", "kick"], name: "CYCLONE", damage: 160 }
+                ]
+            },
+            {
+                id: 201,
+                name: "TITAN 201",
+                style: "Earth Style",
+                hp: 1600,
+                color: "#9933ff",
+                icon: "201",
+                description: "A defensive powerhouse with incredible endurance. Slow but devastating when connecting attacks.",
+                moves: {
+                    punch: 50,
+                    kick: 40,
+                    special: 70
+                },
+                combos: [
+                    { input: ["down", "punch"], name: "EARTH SMASH", damage: 150 },
+                    { input: ["left", "right", "punch"], name: "CHARGE PUNCH", damage: 125 },
+                    { input: ["punch", "punch", "kick"], name: "TITAN COMBO", damage: 160 },
+                    { input: ["down", "down", "punch", "kick"], name: "MOUNTAIN CRUSHER", damage: 180 }
+                ]
+            }
+        ];
+
+        // Game State
+        let gameState = {
+            currentScreen: 'loading',
+            selectedCharacter: null,
+            player: null,
+            cpu: null,
+            keys: {},
+            combo: [],
+            lastKeyTime: 0,
+            gameActive: false,
+            roundTime: 99,
+            comboCount: 0,
+            round: 1,
+            score: 0,
+            highScore: localStorage.getItem('tekkenHighScore') || 0
+        };
+
+        // Three.js variables
+        let scene, camera, renderer, playerModel, cpuModel, arena;
+        let mixerPlayer, mixerCpu;
+        let clock = new THREE.Clock();
+
+        // Initialize Game
+        function init() {
+            document.getElementById('highScore').textContent = gameState.highScore;
+            simulateLoading();
+            setupEventListeners();
+            renderCharacterSelect();
+        }
+
+        // Simulate loading progress
+        function simulateLoading() {
+            let progress = 0;
+            const loadingBar = document.getElementById('loadingBar');
+            const loadingText = document.getElementById('loadingText');
+            const stages = [
+                "INITIALIZING 3D ENGINE...",
+                "LOADING CHARACTER DATA...",
+                "SETTING UP ARENA...",
+                "CALIBRATING CONTROLS...",
+                "READY TO FIGHT!"
+            ];
+            
+            const interval = setInterval(() => {
+                progress += Math.random() * 15;
+                if (progress >= 100) {
+                    progress = 100;
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        showScreen('mainMenu');
+                    }, 500);
+                }
+                
+                loadingBar.style.width = `${progress}%`;
+                loadingText.textContent = stages[Math.min(Math.floor(progress / 20), stages.length - 1)];
+            }, 200);
+        }
+
+        // Screen Management
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            document.getElementById(screenId).classList.add('active');
+            gameState.currentScreen = screenId;
+            
+            if (screenId === 'gameScreen') {
+                initThreeJS();
+                startGame();
+            }
+        }
+
+        // Character Selection
+        function renderCharacterSelect() {
+            const grid = document.getElementById('characterGrid');
+            grid.innerHTML = '';
+            
+            CHARACTERS.forEach((character, index) => {
+                const card = document.createElement('div');
+                card.className = 'character-card';
+                card.innerHTML = `
+                    <div class="character-icon" style="background: ${character.color}20; border-color: ${character.color}">
+                        ${character.icon}
+                    </div>
+                    <div class="character-name">${character.name}</div>
+                    <div class="character-style">${character.style}</div>
+                    <div class="character-stats">
+                        <div class="stat">
+                            <div class="stat-value">${character.moves.punch}</div>
+                            <div class="stat-label">PUNCH</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value">${character.moves.kick}</div>
+                            <div class="stat-label">KICK</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value">${character.hp}</div>
+                            <div class="stat-label">HP</div>
+                        </div>
+                    </div>
+                `;
+                
+                card.addEventListener('click', () => {
+                    document.querySelectorAll('.character-card').forEach(c => {
+                        c.classList.remove('selected');
+                    });
+                    card.classList.add('selected');
+                    gameState.selectedCharacter = index;
+                    document.getElementById('confirmBtn').disabled = false;
+                    
+                    // Update preview
+                    document.getElementById('previewName').textContent = character.name;
+                    document.getElementById('previewStyle').textContent = character.style;
+                    document.getElementById('previewDesc').textContent = character.description;
+                    document.getElementById('previewModel').textContent = character.icon;
+                    document.getElementById('previewModel').style.borderColor = character.color;
+                });
+                
+                grid.appendChild(card);
+            });
+        }
+
+        // Start Battle
+        function startBattle() {
+            if (gameState.selectedCharacter === null) return;
+            showScreen('gameScreen');
+        }
+
+        // Three.js Initialization
+        function initThreeJS() {
+            // Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x000000);
+            
+            // Camera
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 5, 10);
+            camera.lookAt(0, 0, 0);
+            
+            // Renderer
+            const canvas = document.getElementById('gameCanvas');
+            renderer = new THREE.WebGLRenderer({ canvas, antialias: false });
+            renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+            renderer.setPixelRatio(1); // Pixelated look
+            
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0x404040);
+            scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+            directionalLight.position.set(5, 10, 7);
+            scene.add(directionalLight);
+            
+            // Arena
+            const arenaGeometry = new THREE.BoxGeometry(20, 1, 10);
+            const arenaMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0x1a1a2a,
+                shininess: 30
+            });
+            arena = new THREE.Mesh(arenaGeometry, arenaMaterial);
+            arena.position.y = -0.5;
+            scene.add(arena);
+            
+            // Add grid pattern to arena
+            const gridHelper = new THREE.GridHelper(20, 20, 0xff0033, 0x333333);
+            gridHelper.position.y = 0.01;
+            scene.add(gridHelper);
+            
+            // Player and CPU models (simplified for this example)
+            createFighters();
+        }
+
+        function createFighters() {
+            const playerChar = CHARACTERS[gameState.selectedCharacter];
+            const cpuIndex = (gameState.selectedCharacter + 1) % CHARACTERS.length;
+            const cpuChar = CHARACTERS[cpuIndex];
+            
+            // Player model
+            const playerGeometry = new THREE.BoxGeometry(1, 2, 1);
+            const playerMaterial = new THREE.MeshPhongMaterial({ 
+                color: new THREE.Color(playerChar.color)
+            });
+            playerModel = new THREE.Mesh(playerGeometry, playerMaterial);
+            playerModel.position.set(-3, 1, 0);
+            scene.add(playerModel);
+            
+            // CPU model
+            const cpuGeometry = new THREE.BoxGeometry(1, 2, 1);
+            const cpuMaterial = new THREE.MeshPhongMaterial({ 
+                color: new THREE.Color(cpuChar.color)
+            });
+            cpuModel = new THREE.Mesh(cpuGeometry, cpuMaterial);
+            cpuModel.position.set(3, 1, 0);
+            scene.add(cpuModel);
+            
+            // Update HUD
+            document.getElementById('p1Name').textContent = playerChar.name;
+            document.getElementById('p2Name').textContent = cpuChar.name;
+            document.getElementById('roundText').textContent = `ROUND ${gameState.round}`;
+        }
+
+        // Game Setup
+        function startGame() {
+            const playerChar = CHARACTERS[gameState.selectedCharacter];
+            const cpuIndex = (gameState.selectedCharacter + 1) % CHARACTERS.length;
+            const cpuChar = CHARACTERS[cpuIndex];
+            
+            gameState.player = {
+                character: playerChar,
+                x: -3,
+                y: 1,
+                z: 0,
+                health: playerChar.hp,
+                facing: 1,
+                state: 'idle',
+                stateTimer: 0
+            };
+            
+            gameState.cpu = {
+                character: cpuChar,
+                x: 3,
+                y: 1,
+                z: 0,
+                health: cpuChar.hp,
+                facing: -1,
+                state: 'idle',
+                stateTimer: 0
+            };
+            
+            updateHealthBars();
+            
+            gameState.gameActive = true;
+            gameState.roundTime = 99;
+            gameState.comboCount = 0;
+            
+            // Start game loop
+            animate();
+        }
+
+        // Event Listeners
+        function setupEventListeners() {
+            document.addEventListener('keydown', (e) => {
+                gameState.keys[e.key.toLowerCase()] = true;
+                
+                // Add to combo sequence
+                if (['arrowleft', 'arrowright', 'arrowup', 'arrowdown', 'z', 'x', 'a', 's'].includes(e.key.toLowerCase())) {
+                    const keyMap = {
+                        'arrowleft': 'left',
+                        'arrowright': 'right',
+                        'arrowup': 'up',
+                        'arrowdown': 'down',
+                        'z': 'punch',
+                        'x': 'punch',
+                        'a': 'kick',
+                        's': 'kick'
+                    };
+                    
+                    const currentTime = Date.now();
+                    if (currentTime - gameState.lastKeyTime > 1000) {
+                        gameState.combo = [];
+                    }
+                    
+                    gameState.combo.push(keyMap[e.key.toLowerCase()]);
+                    gameState.lastKeyTime = currentTime;
+                    
+                    checkCombos();
+                }
+            });
+            
+            document.addEventListener('keyup', (e) => {
+                gameState.keys[e.key.toLowerCase()] = false;
+            });
+
+            // Handle window resize
+            window.addEventListener('resize', () => {
+                if (camera && renderer) {
+                    const canvas = document.getElementById('gameCanvas');
+                    camera.aspect = canvas.clientWidth / canvas.clientHeight;
+                    camera.updateProjectionMatrix();
+                    renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+                }
+            });
+        }
+
+        // Combo System
+        function checkCombos() {
+            if (!gameState.player) return;
+            
+            const character = gameState.player.character;
+            
+            for (const combo of character.combos) {
+                if (gameState.combo.length < combo.input.length) continue;
+                
+                const recentInput = gameState.combo.slice(-combo.input.length);
+                if (JSON.stringify(recentInput) === JSON.stringify(combo.input)) {
+                    // Combo successful!
+                    executeCombo(combo);
+                    gameState.combo = [];
+                    break;
+                }
+            }
+        }
+
+        function executeCombo(combo) {
+            gameState.comboCount++;
+            const display = document.getElementById('comboDisplay');
+            display.textContent = `${combo.name} x${gameState.comboCount}`;
+            display.classList.add('active');
+            
+            // Apply damage to CPU
+            gameState.cpu.health = Math.max(0, gameState.cpu.health - combo.damage);
+            updateHealthBars();
+            
+            // Add to score
+            gameState.score += combo.damage * gameState.comboCount;
+            
+            // Visual effects
+            if (playerModel) {
+                playerModel.scale.set(1.2, 1.2, 1.2);
+                setTimeout(() => {
+                    playerModel.scale.set(1, 1, 1);
+                }, 100);
+            }
+            
+            // Secret 67 effect for high damage combos
+            if (combo.damage > 100 && Math.random() > 0.7) {
+                spawn67();
+            }
+            
+            setTimeout(() => {
+                display.classList.remove('active');
+            }, 1000);
+        }
+
+        // Animation Loop
+        function animate() {
+            if (!gameState.gameActive) return;
+            
+            requestAnimationFrame(animate);
+            
+            const delta = clock.getDelta();
+            
+            update();
+            render();
+            
+            // Update Three.js animations
+            if (mixerPlayer) mixerPlayer.update(delta);
+            if (mixerCpu) mixerCpu.update(delta);
+        }
+
+        // Update Game State
+        function update() {
+            if (!gameState.player || !gameState.cpu) return;
+            
+            // Player movement
+            if (gameState.keys['arrowleft']) {
+                gameState.player.x = Math.max(-8, gameState.player.x - 0.1);
+                gameState.player.facing = -1;
+                if (playerModel) playerModel.rotation.y = Math.PI;
+            }
+            if (gameState.keys['arrowright']) {
+                gameState.player.x = Math.min(8, gameState.player.x + 0.1);
+                gameState.player.facing = 1;
+                if (playerModel) playerModel.rotation.y = 0;
+            }
+            
+            // Update player model position
+            if (playerModel) {
+                playerModel.position.x = gameState.player.x;
+            }
+            
+            // CPU AI (simple)
+            const distance = gameState.cpu.x - gameState.player.x;
+            if (Math.abs(distance) > 2) {
+                gameState.cpu.x += (distance > 0 ? -0.05 : 0.05);
+                if (cpuModel) {
+                    cpuModel.rotation.y = (distance > 0 ? Math.PI : 0);
+                }
+            }
+            
+            // Update CPU model position
+            if (cpuModel) {
+                cpuModel.position.x = gameState.cpu.x;
+            }
+            
+            // Random CPU attacks
+            if (Math.random() < 0.02) {
+                gameState.cpu.state = 'attack';
+                gameState.cpu.stateTimer = 20;
+                
+                // Simple CPU damage
+                if (Math.abs(distance) < 3) {
+                    gameState.player.health = Math.max(0, gameState.player.health - 30);
+                    updateHealthBars();
+                    
+                    // Visual feedback
+                    if (playerModel) {
+                        playerModel.position.x += gameState.cpu.facing * 0.5;
+                    }
+                }
+            }
+            
+            // Update state timers
+            if (gameState.player.stateTimer > 0) gameState.player.stateTimer--;
+            if (gameState.cpu.stateTimer > 0) gameState.cpu.stateTimer--;
+            
+            // Round timer
+            if (gameState.roundTime > 0 && Math.random() < 0.01) {
+                gameState.roundTime--;
+                document.getElementById('roundTimer').textContent = gameState.roundTime;
+            }
+            
+            // Check win conditions
+            if (gameState.player.health <= 0 || gameState.cpu.health <= 0 || gameState.roundTime <= 0) {
+                endRound();
+            }
+        }
+
+        // Render Game
+        function render() {
+            if (renderer && scene && camera) {
+                renderer.render(scene, camera);
+            }
+        }
+
+        function updateHealthBars() {
+            const p1Percent = gameState.player.health / gameState.player.character.hp;
+            const p2Percent = gameState.cpu.health / gameState.cpu.character.hp;
+            
+            document.getElementById('p1Health').style.width = `${p1Percent * 100}%`;
+            document.getElementById('p2Health').style.width = `${p2Percent * 100}%`;
+            
+            document.getElementById('p1HealthText').textContent = `${Math.round(p1Percent * 100)}%`;
+            document.getElementById('p2HealthText').textContent = `${Math.round(p2Percent * 100)}%`;
+        }
+
+        function endRound() {
+            gameState.gameActive = false;
+            
+            let message = "TIME OVER!";
+            if (gameState.player.health <= 0) {
+                message = "CPU WINS!";
+            } else if (gameState.cpu.health <= 0) {
+                message = "PLAYER WINS!";
+                gameState.score += 1000;
+                
+                // Update high score
+                if (gameState.score > gameState.highScore) {
+                    gameState.highScore = gameState.score;
+                    localStorage.setItem('tekkenHighScore', gameState.highScore);
+                    document.getElementById('highScore').textContent = gameState.highScore;
+                }
+                
+                spawn67(); // Victory 67 effect
+            }
+            
+            setTimeout(() => {
+                alert(`${message}\nScore: ${gameState.score}`);
+                showScreen('characterSelect');
+            }, 1000);
+        }
+
+        function spawn67() {
+            for (let i = 0; i < 15; i++) {
+                setTimeout(() => {
+                    const element = document.createElement('div');
+                    element.className = 'secret-67';
+                    element.textContent = '67';
+                    element.style.left = `${Math.random() * 80 + 10}%`;
+                    element.style.top = `${Math.random() * 80 + 10}%`;
+                    document.body.appendChild(element);
+                    
+                    setTimeout(() => {
+                        element.remove();
+                    }, 2000);
+                }, i * 100);
+            }
+        }
+
+        // Initialize game when loaded
+        window.addEventListener('load', init);
+    </script>
 </body>
 </html>
