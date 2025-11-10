@@ -3,7 +3,7 @@
 // Pixel fighters (customizable: add more fighters here; use pixel art, emoji, or loaded images for avatars)
 const CHARACTERS = [
   {
-    name: "Jin Kazama",
+    name: "41",
     hp: 120,
     punch: 23,
     description: "The fierce hero with unmatched combos.",
@@ -12,7 +12,7 @@ const CHARACTERS = [
     avatar: [[0,0,"#c80018"],[1,20,"#e84118"],[-1,20,"#e84118"]]
   },
   {
-    name: "Paul Phoenix",
+    name: "21",
     hp: 115,
     punch: 20,
     description: "He dreams of being the toughest in the universe.",
@@ -21,7 +21,7 @@ const CHARACTERS = [
     avatar: [[0,0,"#faa805"],[1,20,"#c80018"],[-1,20,"#c80018"]]
   },
   {
-    name: "Ling Xiaoyu",
+    name: "401",
     hp: 97,
     punch: 18,
     description: "An acrobat full of surprises.",
@@ -30,7 +30,7 @@ const CHARACTERS = [
     avatar: [[0,0,"#58a11d"],[1,20,"#fbc531"],[-1,20,"#fbc531"]]
   },
   {
-    name: "Kazuya Mishima",
+    name: "666",
     hp: 118,
     punch: 21,
     description: "Devil-powered and ruthless.",
@@ -39,7 +39,7 @@ const CHARACTERS = [
     avatar: [[0,0,"#841dae"],[1,20,"#e84118"],[-1,20,"#e84118"]]
   },
   {
-    name: "Julia Chang",
+    name: "69",
     hp: 103,
     punch: 18,
     description: "Nature’s brawler with strong spirit.",
@@ -48,7 +48,7 @@ const CHARACTERS = [
     avatar: [[0,0,"#04aff5"],[1,20,"#fbc531"],[-1,20,"#fbc531"]]
   },
   {
-    name: "Meme (67)",
+    name: "67)",
     hp: 67,
     punch: 67,
     description: "The forbidden meme fighter. Chaos!",
