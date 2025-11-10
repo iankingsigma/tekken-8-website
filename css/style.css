@@ -552,6 +552,48 @@ body {
     margin-top: 2rem;
 }
 
+/* Blood Effect */
+.blood-effect {
+    position: absolute;
+    width: 100px;
+    height: 100px;
+    background: radial-gradient(circle, rgba(255,0,0,0.8) 0%, rgba(255,0,0,0) 70%);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 15;
+    opacity: 0;
+    transform: scale(0);
+}
+
+.blood-effect.active {
+    animation: bloodSplash 0.5s forwards;
+}
+
+@keyframes bloodSplash {
+    0% {
+        opacity: 0;
+        transform: scale(0);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(1.2);
+    }
+}
+
+/* Damage Flash */
+.damage-flash {
+    animation: damageFlash 0.3s;
+}
+
+@keyframes damageFlash {
+    0%, 100% { filter: brightness(1); }
+    50% { filter: brightness(2) contrast(2); }
+}
+
 /* Secret 67 Effect */
 .secret-67 {
     position: fixed;
