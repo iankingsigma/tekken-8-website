@@ -129,24 +129,26 @@ function startGame() {
     
     gameState.player = {
         character: playerChar,
-        x: -3,
-        y: 1,
+        x: -5,
+        y: 0,
         z: 0,
         health: playerChar.hp,
         facing: 1,
         state: 'idle',
-        stateTimer: 0
+        stateTimer: 0,
+        attackCooldown: 0
     };
     
     gameState.cpu = {
         character: cpuChar,
-        x: 3,
-        y: 1,
+        x: 5,
+        y: 0,
         z: 0,
         health: cpuChar.hp,
         facing: -1,
         state: 'idle',
-        stateTimer: 0
+        stateTimer: 0,
+        attackCooldown: 0
     };
     
     updateHealthBars();
@@ -176,19 +178,21 @@ function setupEventListeners() {
     
     // Game controls
     document.addEventListener('keydown', (e) => {
-        gameState.keys[e.key.toLowerCase()] = true;
+        const key = e.key.toLowerCase();
+        gameState.keys[key] = true;
         
         // Add to combo sequence
-        if (['arrowleft', 'arrowright', 'arrowup', 'arrowdown', 'z', 'x', 'a', 's'].includes(e.key.toLowerCase())) {
+        if (['arrowleft', 'arrowright', 'arrowup', 'arrowdown', 'z', 'x', 'a', 's', ' '].includes(key)) {
             const keyMap = {
                 'arrowleft': 'left',
                 'arrowright': 'right',
                 'arrowup': 'up',
                 'arrowdown': 'down',
                 'z': 'punch',
-                'x': 'punch',
-                'a': 'kick',
-                's': 'kick'
+                'x': 'kick',
+                'a': 'punch',
+                's': 'kick',
+                ' ': 'block'
             };
             
             const currentTime = Date.now();
@@ -196,10 +200,23 @@ function setupEventListeners() {
                 gameState.combo = [];
             }
             
-            gameState.combo.push(keyMap[e.key.toLowerCase()]);
-            gameState.lastKeyTime = currentTime;
-            
-            checkCombos();
+            if (keyMap[key]) {
+                gameState.combo.push(keyMap[key]);
+                gameState.lastKeyTime = currentTime;
+                
+                checkCombos();
+            }
+        }
+        
+        // Player attacks
+        if (gameState.gameActive && gameState.player.attackCooldown <= 0) {
+            if (key === 'z' || key === 'a') {
+                doPlayerAttack('punch');
+            } else if (key === 'x' || key === 's') {
+                doPlayerAttack('kick');
+            } else if (key === ' ') {
+                doPlayerAttack('block');
+            }
         }
     });
     
@@ -216,6 +233,56 @@ function setupEventListeners() {
             window.renderer.setSize(canvas.clientWidth, canvas.clientHeight);
         }
     });
+}
+
+// Player Attack
+function doPlayerAttack(type) {
+    if (!gameState.gameActive || gameState.player.attackCooldown > 0) return;
+    
+    const distance = Math.abs(gameState.player.x - gameState.cpu.x);
+    if (distance > 3) return; // Too far to attack
+    
+    gameState.player.attackCooldown = 20;
+    
+    // Attack animation
+    if (window.playerModel) {
+        // Lean forward for attack
+        window.playerModel.position.z = -0.5;
+        setTimeout(() => {
+            if (window.playerModel) window.playerModel.position.z = 0;
+        }, 100);
+    }
+    
+    // Calculate damage
+    let damage = 0;
+    if (type === 'punch') {
+        damage = gameState.player.character.moves.punch + Math.floor(Math.random() * 10);
+    } else if (type === 'kick') {
+        damage = gameState.player.character.moves.kick + Math.floor(Math.random() * 10);
+    } else if (type === 'block') {
+        // Block reduces incoming damage
+        return;
+    }
+    
+    // Apply damage to CPU
+    gameState.cpu.health = Math.max(0, gameState.cpu.health - damage);
+    updateHealthBars();
+    
+    // Visual effects
+    createBloodEffect(gameState.cpu.x, 1, 0);
+    applyDamageFlash('cpu');
+    
+    // Knockback
+    if (window.cpuModel) {
+        const knockback = 0.3;
+        window.cpuModel.position.x += knockback;
+        setTimeout(() => {
+            if (window.cpuModel) window.cpuModel.position.x -= knockback * 0.5;
+        }, 100);
+    }
+    
+    // Add to score
+    gameState.score += damage;
 }
 
 // Combo System
@@ -252,10 +319,30 @@ function executeCombo(combo) {
     
     // Visual effects
     if (window.playerModel) {
-        window.playerModel.scale.set(1.2, 1.2, 1.2);
+        // Attack animation
+        window.playerModel.position.z = -0.8;
         setTimeout(() => {
-            window.playerModel.scale.set(1, 1, 1);
-        }, 100);
+            if (window.playerModel) window.playerModel.position.z = 0;
+        }, 150);
+    }
+    
+    // Blood effect at CPU position
+    createBloodEffect(gameState.cpu.x, 1, 0);
+    
+    // Damage flash on CPU
+    applyDamageFlash('cpu');
+    
+    // Screen shake for powerful combos
+    if (combo.damage > 100) {
+        const canvas = document.getElementById('gameCanvas');
+        const originalTransform = canvas.style.transform || '';
+        canvas.style.transform = 'translateX(-5px)';
+        setTimeout(() => {
+            canvas.style.transform = 'translateX(5px)';
+            setTimeout(() => {
+                canvas.style.transform = originalTransform;
+            }, 50);
+        }, 50);
     }
     
     // Secret 67 effect for high damage combos
@@ -288,51 +375,79 @@ function animate() {
 function update() {
     if (!gameState.player || !gameState.cpu) return;
     
+    // Update cooldowns
+    if (gameState.player.attackCooldown > 0) gameState.player.attackCooldown--;
+    if (gameState.cpu.attackCooldown > 0) gameState.cpu.attackCooldown--;
+    
     // Player movement
     if (gameState.keys['arrowleft']) {
         gameState.player.x = Math.max(-8, gameState.player.x - 0.1);
         gameState.player.facing = -1;
-        if (window.playerModel) window.playerModel.rotation.y = Math.PI;
+        if (window.playerModel) {
+            window.playerModel.position.x = gameState.player.x;
+            window.playerModel.rotation.y = Math.PI;
+        }
     }
     if (gameState.keys['arrowright']) {
         gameState.player.x = Math.min(8, gameState.player.x + 0.1);
         gameState.player.facing = 1;
-        if (window.playerModel) window.playerModel.rotation.y = 0;
+        if (window.playerModel) {
+            window.playerModel.position.x = gameState.player.x;
+            window.playerModel.rotation.y = 0;
+        }
     }
     
-    // Update player model position
-    if (window.playerModel) {
-        window.playerModel.position.x = gameState.player.x;
-    }
-    
-    // CPU AI (simple)
+    // CPU AI
     const distance = gameState.cpu.x - gameState.player.x;
-    if (Math.abs(distance) > 2) {
+    
+    // CPU movement
+    if (Math.abs(distance) > 2.5) {
         gameState.cpu.x += (distance > 0 ? -0.05 : 0.05);
         if (window.cpuModel) {
+            window.cpuModel.position.x = gameState.cpu.x;
             window.cpuModel.rotation.y = (distance > 0 ? Math.PI : 0);
         }
     }
     
-    // Update CPU model position
-    if (window.cpuModel) {
-        window.cpuModel.position.x = gameState.cpu.x;
-    }
-    
     // Random CPU attacks
-    if (Math.random() < 0.02) {
+    if (Math.random() < 0.015 && gameState.cpu.attackCooldown <= 0 && Math.abs(distance) < 3) {
+        gameState.cpu.attackCooldown = 30;
         gameState.cpu.state = 'attack';
         gameState.cpu.stateTimer = 20;
         
-        // Simple CPU damage
-        if (Math.abs(distance) < 3) {
-            gameState.player.health = Math.max(0, gameState.player.health - 30);
-            updateHealthBars();
-            
-            // Visual feedback
-            if (window.playerModel) {
-                window.playerModel.position.x += gameState.cpu.facing * 0.5;
-            }
+        // CPU attack animation
+        if (window.cpuModel) {
+            window.cpuModel.position.z = -0.5;
+            setTimeout(() => {
+                if (window.cpuModel) window.cpuModel.position.z = 0;
+            }, 100);
+        }
+        
+        // CPU damage calculation
+        const attackType = Math.random() > 0.5 ? 'punch' : 'kick';
+        let damage = 0;
+        
+        if (attackType === 'punch') {
+            damage = gameState.cpu.character.moves.punch + Math.floor(Math.random() * 8);
+        } else {
+            damage = gameState.cpu.character.moves.kick + Math.floor(Math.random() * 8);
+        }
+        
+        // Apply damage to player
+        gameState.player.health = Math.max(0, gameState.player.health - damage);
+        updateHealthBars();
+        
+        // Visual feedback
+        applyDamageFlash('player');
+        createBloodEffect(gameState.player.x, 1, 0);
+        
+        // Knockback
+        if (window.playerModel) {
+            const knockback = 0.3;
+            window.playerModel.position.x -= knockback;
+            setTimeout(() => {
+                if (window.playerModel) window.playerModel.position.x += knockback * 0.5;
+            }, 100);
         }
     }
     
@@ -368,6 +483,26 @@ function updateHealthBars() {
     
     document.getElementById('p1HealthText').textContent = `${Math.round(p1Percent * 100)}%`;
     document.getElementById('p2HealthText').textContent = `${Math.round(p2Percent * 100)}%`;
+    
+    // Change health bar color based on health
+    const p1HealthBar = document.getElementById('p1Health');
+    const p2HealthBar = document.getElementById('p2Health');
+    
+    if (p1Percent < 0.3) {
+        p1HealthBar.style.background = 'linear-gradient(90deg, #ff0000 0%, #cc0000 100%)';
+    } else if (p1Percent < 0.6) {
+        p1HealthBar.style.background = 'linear-gradient(90deg, #ff9900 0%, #cc6600 100%)';
+    } else {
+        p1HealthBar.style.background = 'linear-gradient(90deg, #ff0033 0%, #ffcc00 100%)';
+    }
+    
+    if (p2Percent < 0.3) {
+        p2HealthBar.style.background = 'linear-gradient(90deg, #ff0000 0%, #cc0000 100%)';
+    } else if (p2Percent < 0.6) {
+        p2HealthBar.style.background = 'linear-gradient(90deg, #ff9900 0%, #cc6600 100%)';
+    } else {
+        p2HealthBar.style.background = 'linear-gradient(90deg, #ff0033 0%, #ffcc00 100%)';
+    }
 }
 
 function endRound() {
@@ -410,6 +545,67 @@ function spawn67() {
                 element.remove();
             }, 2000);
         }, i * 100);
+    }
+}
+
+// Damage flash effect
+function applyDamageFlash(character) {
+    if (character === 'player' && window.playerModel) {
+        // Store original colors
+        if (!window.playerOriginalColors) {
+            window.playerOriginalColors = [];
+            window.playerModel.children.forEach(child => {
+                if (child.material) {
+                    window.playerOriginalColors.push(child.material.color.clone());
+                }
+            });
+        }
+        
+        // Flash red
+        window.playerModel.children.forEach((child, index) => {
+            if (child.material && window.playerOriginalColors[index]) {
+                child.material.color.set(0xff0000);
+            }
+        });
+        
+        // Reset after delay
+        setTimeout(() => {
+            if (window.playerModel && window.playerOriginalColors) {
+                window.playerModel.children.forEach((child, index) => {
+                    if (child.material && window.playerOriginalColors[index]) {
+                        child.material.color.copy(window.playerOriginalColors[index]);
+                    }
+                });
+            }
+        }, 200);
+    } else if (character === 'cpu' && window.cpuModel) {
+        // Store original colors
+        if (!window.cpuOriginalColors) {
+            window.cpuOriginalColors = [];
+            window.cpuModel.children.forEach(child => {
+                if (child.material) {
+                    window.cpuOriginalColors.push(child.material.color.clone());
+                }
+            });
+        }
+        
+        // Flash red
+        window.cpuModel.children.forEach((child, index) => {
+            if (child.material && window.cpuOriginalColors[index]) {
+                child.material.color.set(0xff0000);
+            }
+        });
+        
+        // Reset after delay
+        setTimeout(() => {
+            if (window.cpuModel && window.cpuOriginalColors) {
+                window.cpuModel.children.forEach((child, index) => {
+                    if (child.material && window.cpuOriginalColors[index]) {
+                        child.material.color.copy(window.cpuOriginalColors[index]);
+                    }
+                });
+            }
+        }, 200);
     }
 }
 
