@@ -39,13 +39,15 @@
             <h1 class="main-title">BRAINROT FIGHTERS</h1>
             <div class="menu-options">
                 <button class="menu-btn" id="arcadeBtn">ARCADE MODE</button>
-                <button class="menu-btn" id="versusBtn" style="display:none">VERSUS MODE</button>
                 <button class="menu-btn" id="practiceBtn">PRACTICE MODE</button>
+                <button class="menu-btn" id="shopBtn">SHOP</button>
                 <button class="menu-btn" id="controlsBtn">CONTROLS</button>
+                <button class="menu-btn" id="updatesBtn">UPDATE LOG</button>
+                <button class="menu-btn" id="creditsBtn">CREDITS</button>
             </div>
             <div class="menu-footer">
                 <div class="high-score">HIGH SCORE: <span id="highScore">0</span></div>
-                <div class="version">v3.0.0 | BRAINROT EDITION</div>
+                <div class="version">v3.1.0 | BRAINROT EDITION</div>
             </div>
         </div>
     </div>
@@ -56,7 +58,13 @@
             <div class="select-header">
                 <div class="player-tag">PLAYER 1</div>
                 <div class="select-title">CHOOSE YOUR BRAINROTTER</div>
-                <div class="timer">10</div>
+                <div class="difficulty-select">
+                    <select id="difficultySelect">
+                        <option value="easy">EASY</option>
+                        <option value="medium" selected>MEDIUM</option>
+                        <option value="hard">HARD</option>
+                    </select>
+                </div>
             </div>
             
             <div class="character-grid" id="characterGrid"></div>
@@ -82,55 +90,77 @@
         <div class="controls-content">
             <div class="controls-header">CONTROLS & MOVES</div>
             
-            <div class="controls-grid">
-                <div class="control-group">
-                    <div class="control-title">BASIC CONTROLS</div>
-                    <div class="control-item">
-                        <div class="control-key">← →</div>
-                        <div class="control-action">Move Left/Right</div>
+            <div class="controls-scroll">
+                <div class="controls-grid">
+                    <div class="control-group">
+                        <div class="control-title">BASIC CONTROLS</div>
+                        <div class="control-item">
+                            <div class="control-key">← →</div>
+                            <div class="control-action">Move Left/Right</div>
+                        </div>
+                        <div class="control-item">
+                            <div class="control-key">Z</div>
+                            <div class="control-action">Left Punch</div>
+                        </div>
+                        <div class="control-item">
+                            <div class="control-key">X</div>
+                            <div class="control-action">Right Punch</div>
+                        </div>
+                        <div class="control-item">
+                            <div class="control-key">A</div>
+                            <div class="control-action">Left Kick</div>
+                        </div>
+                        <div class="control-item">
+                            <div class="control-key">S</div>
+                            <div class="control-action">Right Kick</div>
+                        </div>
+                        <div class="control-item">
+                            <div class="control-key">SPACE</div>
+                            <div class="control-action">Block</div>
+                        </div>
+                        <div class="control-item">
+                            <div class="control-key">C</div>
+                            <div class="control-action">Special Combo</div>
+                        </div>
                     </div>
-                    <div class="control-item">
-                        <div class="control-key">↑ ↓</div>
-                        <div class="control-action">Move Up/Down</div>
+                    
+                    <div class="control-group">
+                        <div class="control-title">BRAINROT COMBOS</div>
+                        <ul class="combo-list">
+                            <li class="combo-item">→ → + Z : Dragon Uppercut</li>
+                            <li class="combo-item">↓ → + X : Fireball</li>
+                            <li class="combo-item">Z + X : Double Punch</li>
+                            <li class="combo-item">A + S : Spin Kick</li>
+                            <li class="combo-item">↓ ↓ + A : Low Sweep</li>
+                            <li class="combo-item">← ← + S : Back Kick</li>
+                            <li class="combo-item">Z → X → A : ULTIMATE BRAINROT</li>
+                            <li class="combo-item">SPAM ANY BUTTONS : RANDOM BRAINROT</li>
+                        </ul>
                     </div>
-                    <div class="control-item">
-                        <div class="control-key">Z</div>
-                        <div class="control-action">Left Punch</div>
+
+                    <div class="control-group">
+                        <div class="control-title">TABLET CONTROLS</div>
+                        <div class="control-item">
+                            <div class="control-key">JOYSTICK</div>
+                            <div class="control-action">Move Character</div>
+                        </div>
+                        <div class="control-item">
+                            <div class="control-key">PUNCH</div>
+                            <div class="control-action">Punch Attack</div>
+                        </div>
+                        <div class="control-item">
+                            <div class="control-key">KICK</div>
+                            <div class="control-action">Kick Attack</div>
+                        </div>
+                        <div class="control-item">
+                            <div class="control-key">COMBO</div>
+                            <div class="control-action">Special Attack</div>
+                        </div>
+                        <div class="control-item">
+                            <div class="control-key">BLOCK</div>
+                            <div class="control-action">Block Attacks</div>
+                        </div>
                     </div>
-                    <div class="control-item">
-                        <div class="control-key">X</div>
-                        <div class="control-action">Right Punch</div>
-                    </div>
-                    <div class="control-item">
-                        <div class="control-key">A</div>
-                        <div class="control-action">Left Kick</div>
-                    </div>
-                    <div class="control-item">
-                        <div class="control-key">S</div>
-                        <div class="control-action">Right Kick</div>
-                    </div>
-                    <div class="control-item">
-                        <div class="control-key">SPACE</div>
-                        <div class="control-action">Block</div>
-                    </div>
-                    <div class="control-item">
-                        <div class="control-key">C</div>
-                        <div class="control-action">Special Combo</div>
-                    </div>
-                </div>
-                
-                <div class="control-group">
-                    <div class="control-title">BRAINROT COMBOS</div>
-                    <ul class="combo-list">
-                        <li class="combo-item">→ → + Z : Dragon Uppercut</li>
-                        <li class="combo-item">↓ → + X : Fireball</li>
-                        <li class="combo-item">Z + X : Double Punch</li>
-                        <li class="combo-item">A + S : Spin Kick</li>
-                        <li class="combo-item">↓ ↓ + A : Low Sweep</li>
-                        <li class="combo-item">← ← + S : Back Kick</li>
-                        <li class="combo-item">Z → X → A : ULTIMATE BRAINROT</li>
-                        <li class="combo-item">SPAM ANY BUTTONS : RANDOM BRAINROT</li>
-                    </ul>
                 </div>
             </div>
             
@@ -207,10 +237,89 @@
         </div>
     </div>
 
+    <!-- Shop Screen -->
+    <div id="shopScreen" class="screen">
+        <div class="shop-content">
+            <h1 class="main-title">BRAINROT SHOP</h1>
+            <div class="shop-info">
+                <div class="coins-display">COINS: <span id="coinsAmount">0</span></div>
+            </div>
+            <div class="shop-items" id="shopItems">
+                <!-- Items will be loaded here -->
+            </div>
+            <button class="nav-btn" id="shopBackBtn">BACK TO MENU</button>
+        </div>
+    </div>
+
+    <!-- Update Log Screen -->
+    <div id="updatesScreen" class="screen">
+        <div class="updates-content">
+            <h1 class="main-title">UPDATE LOG</h1>
+            <div class="updates-scroll">
+                <div class="update-version">
+                    <h3>v3.1.0 - BRAINROT UPDATE</h3>
+                    <ul>
+                        <li>Added CPU memory system - CPU learns from your moves</li>
+                        <li>Added difficulty levels (Easy, Medium, Hard)</li>
+                        <li>Added parry system - CPU has 50% chance to parry attacks</li>
+                        <li>Added shop with purchasable items</li>
+                        <li>Fixed tablet controls</li>
+                        <li>Added forward/backward movement in 3D space</li>
+                        <li>Added scrollable controls menu</li>
+                        <li>Added credits screen</li>
+                        <li>Removed versus mode</li>
+                    </ul>
+                </div>
+                <div class="update-version">
+                    <h3>v3.0.0 - MAJOR UPDATE</h3>
+                    <ul>
+                        <li>Complete game redesign</li>
+                        <li>Added device detection (Tablet/Desktop)</li>
+                        <li>Added touch controls for tablets</li>
+                        <li>Added practice mode</li>
+                        <li>Improved CPU AI</li>
+                        <li>Enhanced 3D graphics</li>
+                    </ul>
+                </div>
+            </div>
+            <button class="nav-btn" id="updatesBackBtn">BACK TO MENU</button>
+        </div>
+    </div>
+
+    <!-- Credits Screen -->
+    <div id="creditsScreen" class="screen">
+        <div class="credits-content">
+            <h1 class="main-title">CREDITS</h1>
+            <div class="credits-list">
+                <div class="credit-item">
+                    <div class="credit-name">IAN</div>
+                    <div class="credit-role">Lead Developer & Game Design</div>
+                </div>
+                <div class="credit-item">
+                    <div class="credit-name">ZIAD</div>
+                    <div class="credit-role">AI Programming & Combat System</div>
+                </div>
+                <div class="credit-item">
+                    <div class="credit-name">AAHIL</div>
+                    <div class="credit-role">3D Graphics & UI Design</div>
+                </div>
+                <div class="credit-item">
+                    <div class="credit-name">SPECIAL THANKS</div>
+                    <div class="credit-role">The Brainrot Community</div>
+                </div>
+            </div>
+            <div class="credits-footer">
+                <p>Thank you for playing Brainrot Fighters!</p>
+            </div>
+            <button class="nav-btn" id="creditsBackBtn">BACK TO MENU</button>
+        </div>
+    </div>
+
     <script src="js/game.js"></script>
     <script src="js/characters.js"></script>
     <script src="js/threejs-renderer.js"></script>
     <script src="js/ui.js"></script>
     <script src="js/touch-controls.js"></script>
+    <script src="js/shop.js"></script>
 </body>
 </html>
