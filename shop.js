@@ -40,17 +40,25 @@ const SHOP_ITEMS = [
 
 function loadShopItems() {
     const shopItems = document.getElementById('shopItems');
+    if (!shopItems) {
+        console.error('Shop items container not found');
+        return;
+    }
+    
     shopItems.innerHTML = '';
     
     SHOP_ITEMS.forEach(item => {
+        const isOwned = gameState.playerInventory[item.id];
+        const canAfford = gameState.coins >= item.price;
+        
         const itemElement = document.createElement('div');
         itemElement.className = 'shop-item';
         itemElement.innerHTML = `
             <div class="item-name">${item.name}</div>
             <div class="item-desc">${item.description}</div>
             <div class="item-price">${item.price} COINS</div>
-            <button class="buy-btn" data-id="${item.id}" ${gameState.coins < item.price ? 'disabled' : ''}>
-                ${gameState.playerInventory[item.id] ? 'OWNED' : 'BUY'}
+            <button class="buy-btn" data-id="${item.id}" ${isOwned || !canAfford ? 'disabled' : ''}>
+                ${isOwned ? 'OWNED' : (canAfford ? 'BUY' : 'NEED COINS')}
             </button>
         `;
         
@@ -64,11 +72,17 @@ function loadShopItems() {
             buyItem(itemId);
         });
     });
+    
+    // Update coins display
+    document.getElementById('coinsAmount').textContent = gameState.coins;
 }
 
 function buyItem(itemId) {
     const item = SHOP_ITEMS.find(i => i.id === itemId);
-    if (!item) return;
+    if (!item) {
+        console.error('Item not found:', itemId);
+        return;
+    }
     
     if (gameState.coins >= item.price) {
         gameState.coins -= item.price;
@@ -88,11 +102,15 @@ function buyItem(itemId) {
         localStorage.setItem('playerInventory', JSON.stringify(gameState.playerInventory));
         
         // Update UI
-        document.getElementById('coinsAmount').textContent = gameState.coins;
         loadShopItems();
         
         alert(`Successfully purchased ${item.name}!`);
     } else {
         alert('Not enough coins!');
     }
+}
+
+// Initialize shop when script loads
+if (document.getElementById('shopScreen') && document.getElementById('shopScreen').classList.contains('active')) {
+    loadShopItems();
 }
