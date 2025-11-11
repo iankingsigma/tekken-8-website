@@ -1,98 +1,104 @@
 // Three.js Initialization
 function initThreeJS() {
-    // Scene
-    window.scene = new THREE.Scene();
-    window.scene.background = new THREE.Color(0x000000);
-    
-    // Camera - Adjusted for better view
-    window.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-    window.camera.position.set(0, 8, 15);
-    window.camera.lookAt(0, 0, 0);
-    
-    // Renderer
-    const canvas = document.getElementById('gameCanvas');
-    window.renderer = new THREE.WebGLRenderer({ 
-        canvas, 
-        antialias: false,
-        alpha: true
-    });
-    window.renderer.setSize(canvas.clientWidth, canvas.clientHeight);
-    window.renderer.setPixelRatio(1);
-    window.renderer.shadowMap.enabled = true;
-    
-    // Enhanced Lighting
-    const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
-    window.scene.add(ambientLight);
-    
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-    directionalLight.position.set(10, 15, 10);
-    directionalLight.castShadow = true;
-    directionalLight.shadow.mapSize.width = 2048;
-    directionalLight.shadow.mapSize.height = 2048;
-    window.scene.add(directionalLight);
-    
-    const backLight = new THREE.DirectionalLight(0x4444ff, 0.3);
-    backLight.position.set(-5, 5, -5);
-    window.scene.add(backLight);
-    
-    // Enhanced Arena
-    const arenaGeometry = new THREE.BoxGeometry(25, 1, 12);
-    const arenaMaterial = new THREE.MeshPhongMaterial({ 
-        color: 0x1a1a2a,
-        shininess: 50,
-        specular: 0x222244
-    });
-    window.arena = new THREE.Mesh(arenaGeometry, arenaMaterial);
-    window.arena.position.y = -1;
-    window.arena.receiveShadow = true;
-    window.scene.add(window.arena);
-    
-    // Arena details
-    const gridHelper = new THREE.GridHelper(25, 25, 0xff0033, 0x222244);
-    gridHelper.position.y = 0.01;
-    window.scene.add(gridHelper);
-    
-    // Arena border
-    const borderGeometry = new THREE.BoxGeometry(26, 0.5, 13);
-    const borderMaterial = new THREE.MeshPhongMaterial({ 
-        color: 0xff0033,
-        emissive: 0x330000
-    });
-    const border = new THREE.Mesh(borderGeometry, borderMaterial);
-    border.position.y = -0.75;
-    window.scene.add(border);
-    
-    // Create humanoid fighters
-    createHumanoidFighters();
-    
-    // Initialize clock
-    window.clock = new THREE.Clock();
+    try {
+        // Scene
+        window.scene = new THREE.Scene();
+        window.scene.background = new THREE.Color(0x000000);
+        
+        // Camera - Adjusted for better view
+        const canvas = document.getElementById('gameCanvas');
+        if (!canvas) {
+            console.error('Canvas element not found');
+            return;
+        }
+        
+        window.camera = new THREE.PerspectiveCamera(60, canvas.clientWidth / canvas.clientHeight, 0.1, 1000);
+        window.camera.position.set(0, 8, 15);
+        window.camera.lookAt(0, 0, 0);
+        
+        // Renderer
+        window.renderer = new THREE.WebGLRenderer({ 
+            canvas, 
+            antialias: false,
+            alpha: true
+        });
+        window.renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+        window.renderer.setPixelRatio(1);
+        window.renderer.shadowMap.enabled = true;
+        
+        // Enhanced Lighting
+        const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+        window.scene.add(ambientLight);
+        
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+        directionalLight.position.set(10, 15, 10);
+        directionalLight.castShadow = true;
+        directionalLight.shadow.mapSize.width = 2048;
+        directionalLight.shadow.mapSize.height = 2048;
+        window.scene.add(directionalLight);
+        
+        const backLight = new THREE.DirectionalLight(0x4444ff, 0.3);
+        backLight.position.set(-5, 5, -5);
+        window.scene.add(backLight);
+        
+        // Enhanced Arena
+        const arenaGeometry = new THREE.BoxGeometry(25, 1, 12);
+        const arenaMaterial = new THREE.MeshPhongMaterial({ 
+            color: 0x1a1a2a,
+            shininess: 50,
+            specular: 0x222244
+        });
+        window.arena = new THREE.Mesh(arenaGeometry, arenaMaterial);
+        window.arena.position.y = -1;
+        window.arena.receiveShadow = true;
+        window.scene.add(window.arena);
+        
+        // Arena details
+        const gridHelper = new THREE.GridHelper(25, 25, 0xff0033, 0x222244);
+        gridHelper.position.y = 0.01;
+        window.scene.add(gridHelper);
+        
+        // Arena border
+        const borderGeometry = new THREE.BoxGeometry(26, 0.5, 13);
+        const borderMaterial = new THREE.MeshPhongMaterial({ 
+            color: 0xff0033,
+            emissive: 0x330000
+        });
+        const border = new THREE.Mesh(borderGeometry, borderMaterial);
+        border.position.y = -0.75;
+        window.scene.add(border);
+        
+        // Create humanoid fighters
+        createHumanoidFighters();
+        
+        // Initialize clock
+        window.clock = new THREE.Clock();
+        
+        console.log('Three.js initialized successfully');
+    } catch (error) {
+        console.error('Error initializing Three.js:', error);
+    }
 }
 
 function createHumanoidFighters() {
-    const playerChar = CHARACTERS[gameState.selectedCharacter];
-    let cpuChar;
-    
-    if (gameState.gameMode === 'versus') {
-        cpuChar = CHARACTERS[(gameState.selectedCharacter + 1) % CHARACTERS.length];
-    } else {
-        const cpuIndex = (gameState.selectedCharacter + Math.floor(Math.random() * (CHARACTERS.length - 1)) + 1) % CHARACTERS.length;
-        cpuChar = CHARACTERS[cpuIndex];
+    if (!gameState.player || !gameState.cpu) {
+        console.error('Game state not properly initialized');
+        return;
     }
     
+    const playerChar = gameState.player.character;
+    const cpuChar = gameState.cpu.character;
+    
     // Create player character
-    window.playerModel = createHumanoidModel(playerChar.color, -5, 0);
+    window.playerModel = createHumanoidModel(playerChar.color, gameState.player.x, 0);
     window.scene.add(window.playerModel);
     
     // Create CPU character
-    window.cpuModel = createHumanoidModel(cpuChar.color, 5, 0);
+    window.cpuModel = createHumanoidModel(cpuChar.color, gameState.cpu.x, 0);
     window.cpuModel.rotation.y = Math.PI; // Face player
     window.scene.add(window.cpuModel);
     
-    // Update HUD
-    document.getElementById('p1Name').textContent = playerChar.name;
-    document.getElementById('p2Name').textContent = cpuChar.name;
-    document.getElementById('roundText').textContent = `ROUND ${gameState.round}`;
+    console.log('Fighters created:', playerChar.name, 'vs', cpuChar.name);
 }
 
 function createHumanoidModel(color, x, z) {
@@ -166,6 +172,8 @@ function createHumanoidModel(color, x, z) {
 }
 
 function createBloodEffect(x, y, z) {
+    if (!window.scene) return;
+    
     const bloodGeometry = new THREE.SphereGeometry(0.3, 8, 8);
     const bloodMaterial = new THREE.MeshPhongMaterial({ 
         color: 0xff0000,
@@ -198,25 +206,27 @@ function createBloodEffect(x, y, z) {
     animateBlood();
 }
 
-function applyDamageFlash(character) {
-    if (character === 'player' && window.playerModel) {
-        // Flash red
-        window.playerModel.children.forEach(child => {
-            const originalColor = child.material.color.clone();
-            child.material.color.set(0xff0000);
-            
-            setTimeout(() => {
-                child.material.color.copy(originalColor);
-            }, 200);
-        });
-    } else if (character === 'cpu' && window.cpuModel) {
-        window.cpuModel.children.forEach(child => {
-            const originalColor = child.material.color.clone();
-            child.material.color.set(0xff0000);
-            
-            setTimeout(() => {
-                child.material.color.copy(originalColor);
-            }, 200);
-        });
+function applyDamageFlash(character, color = 0xff0000) {
+    let model;
+    if (character === 'player') {
+        model = window.playerModel;
+    } else if (character === 'cpu') {
+        model = window.cpuModel;
     }
+    
+    if (!model) return;
+    
+    // Flash the model
+    model.children.forEach(child => {
+        if (child.material) {
+            const originalColor = child.material.color.clone();
+            child.material.color.set(color);
+            
+            setTimeout(() => {
+                if (child.material) {
+                    child.material.color.copy(originalColor);
+                }
+            }, 200);
+        }
+    });
 }
