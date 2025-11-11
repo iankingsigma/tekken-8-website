@@ -1,6 +1,6 @@
 // Game State
 let gameState = {
-    currentScreen: 'loading',
+    currentScreen: 'deviceDetection',
     selectedCharacter: null,
     player: null,
     cpu: null,
@@ -12,15 +12,37 @@ let gameState = {
     comboCount: 0,
     round: 1,
     score: 0,
-    highScore: localStorage.getItem('tekkenHighScore') || 0
+    highScore: localStorage.getItem('brainrotHighScore') || 0,
+    deviceType: 'desktop',
+    gameMode: 'arcade',
+    cpuLearning: {},
+    practiceStats: {
+        comboCount: 0,
+        damageDealt: 0,
+        startTime: 0
+    }
 };
 
 // Initialize Game
 function init() {
     document.getElementById('highScore').textContent = gameState.highScore;
-    simulateLoading();
+    detectDevice();
     setupEventListeners();
     renderCharacterSelect();
+}
+
+// Device Detection
+function detectDevice() {
+    const isTablet = /iPad|Android|Tablet/i.test(navigator.userAgent) || 
+                    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    
+    gameState.deviceType = isTablet ? 'tablet' : 'desktop';
+    document.getElementById('deviceType').textContent = 
+        gameState.deviceType === 'tablet' ? 'TABLET MODE' : 'DESKTOP MODE';
+    
+    // Show/hide versus mode based on device
+    const versusBtn = document.getElementById('versusBtn');
+    versusBtn.style.display = gameState.deviceType === 'tablet' ? 'block' : 'none';
 }
 
 // Simulate loading progress
@@ -29,11 +51,11 @@ function simulateLoading() {
     const loadingBar = document.getElementById('loadingBar');
     const loadingText = document.getElementById('loadingText');
     const stages = [
-        "INITIALIZING 3D ENGINE...",
-        "LOADING CHARACTER DATA...",
+        "INITIALIZING BRAINROT ENGINE...",
+        "LOADING BRAINROTTERS...",
         "SETTING UP ARENA...",
         "CALIBRATING CONTROLS...",
-        "READY TO FIGHT!"
+        "READY TO BRAINROT!"
     ];
     
     const interval = setInterval(() => {
@@ -62,6 +84,15 @@ function showScreen(screenId) {
     if (screenId === 'gameScreen') {
         initThreeJS();
         startGame();
+    } else if (screenId === 'practiceScreen') {
+        startPracticeMode();
+    }
+    
+    // Show/hide touch controls
+    const touchControls = document.getElementById('touchControls');
+    if (touchControls) {
+        touchControls.classList.toggle('active', 
+            screenId === 'gameScreen' && gameState.deviceType === 'tablet');
     }
 }
 
@@ -116,16 +147,51 @@ function renderCharacterSelect() {
 }
 
 // Start Battle
-function startBattle() {
+function startBattle(mode = 'arcade') {
     if (gameState.selectedCharacter === null) return;
+    gameState.gameMode = mode;
     showScreen('gameScreen');
+}
+
+// Start Practice Mode
+function startPracticeMode() {
+    gameState.practiceStats = {
+        comboCount: 0,
+        damageDealt: 0,
+        startTime: Date.now()
+    };
+    updatePracticeStats();
+}
+
+function updatePracticeStats() {
+    document.getElementById('practiceComboCount').textContent = gameState.practiceStats.comboCount;
+    document.getElementById('practiceDamage').textContent = gameState.practiceStats.damageDealt;
+    const elapsed = Math.floor((Date.now() - gameState.practiceStats.startTime) / 1000);
+    document.getElementById('practiceTime').textContent = `${elapsed}s`;
 }
 
 // Game Setup
 function startGame() {
     const playerChar = CHARACTERS[gameState.selectedCharacter];
-    const cpuIndex = (gameState.selectedCharacter + 1) % CHARACTERS.length;
-    const cpuChar = CHARACTERS[cpuIndex];
+    let cpuChar;
+    
+    if (gameState.gameMode === 'versus') {
+        // For versus mode, use second player's selected character
+        cpuChar = CHARACTERS[(gameState.selectedCharacter + 1) % CHARACTERS.length];
+    } else {
+        // For arcade/practice, pick random CPU
+        const cpuIndex = (gameState.selectedCharacter + Math.floor(Math.random() * (CHARACTERS.length - 1)) + 1) % CHARACTERS.length;
+        cpuChar = CHARACTERS[cpuIndex];
+    }
+    
+    // Initialize CPU learning if not exists
+    if (!gameState.cpuLearning[gameState.selectedCharacter]) {
+        gameState.cpuLearning[gameState.selectedCharacter] = {
+            dodgeChance: 0.1,
+            counterChance: 0.1,
+            comboPrediction: 0.1
+        };
+    }
     
     gameState.player = {
         character: playerChar,
@@ -148,7 +214,8 @@ function startGame() {
         facing: -1,
         state: 'idle',
         stateTimer: 0,
-        attackCooldown: 0
+        attackCooldown: 0,
+        learning: gameState.cpuLearning[gameState.selectedCharacter]
     };
     
     updateHealthBars();
@@ -163,18 +230,50 @@ function startGame() {
 
 // Event Listeners
 function setupEventListeners() {
+    // Device detection buttons
+    document.getElementById('forceTablet').addEventListener('click', () => {
+        gameState.deviceType = 'tablet';
+        document.getElementById('deviceType').textContent = 'TABLET MODE';
+        document.getElementById('versusBtn').style.display = 'block';
+        simulateLoading();
+    });
+    
+    document.getElementById('forceDesktop').addEventListener('click', () => {
+        gameState.deviceType = 'desktop';
+        document.getElementById('deviceType').textContent = 'DESKTOP MODE';
+        document.getElementById('versusBtn').style.display = 'none';
+        simulateLoading();
+    });
+    
     // Menu buttons
     document.getElementById('arcadeBtn').addEventListener('click', () => showScreen('characterSelect'));
-    document.getElementById('versusBtn').addEventListener('click', () => alert('Versus mode coming soon!'));
-    document.getElementById('practiceBtn').addEventListener('click', () => alert('Practice mode coming soon!'));
+    document.getElementById('versusBtn').addEventListener('click', () => {
+        if (gameState.deviceType === 'tablet') {
+            startBattle('versus');
+        }
+    });
+    document.getElementById('practiceBtn').addEventListener('click', () => showScreen('practiceScreen'));
     document.getElementById('controlsBtn').addEventListener('click', () => showScreen('controlsScreen'));
-    document.getElementById('galleryBtn').addEventListener('click', () => alert('Gallery coming soon!'));
+    
+    // Practice mode buttons
+    document.getElementById('comboPracticeBtn').addEventListener('click', () => {
+        gameState.gameMode = 'practice';
+        showScreen('characterSelect');
+    });
+    document.getElementById('freePracticeBtn').addEventListener('click', () => {
+        gameState.gameMode = 'practice';
+        showScreen('characterSelect');
+    });
+    document.getElementById('dummySettingsBtn').addEventListener('click', () => {
+        alert('Dummy settings: CPU will not attack, perfect for combo practice!');
+    });
+    document.getElementById('practiceBackBtn').addEventListener('click', () => showScreen('mainMenu'));
     
     // Navigation buttons
     document.getElementById('backBtn').addEventListener('click', () => showScreen('mainMenu'));
     document.getElementById('controlsBackBtn').addEventListener('click', () => showScreen('mainMenu'));
     document.getElementById('exitBattleBtn').addEventListener('click', () => showScreen('characterSelect'));
-    document.getElementById('confirmBtn').addEventListener('click', startBattle);
+    document.getElementById('confirmBtn').addEventListener('click', () => startBattle('arcade'));
     
     // Game controls
     document.addEventListener('keydown', (e) => {
@@ -182,17 +281,18 @@ function setupEventListeners() {
         gameState.keys[key] = true;
         
         // Add to combo sequence
-        if (['arrowleft', 'arrowright', 'arrowup', 'arrowdown', 'z', 'x', 'a', 's', ' '].includes(key)) {
+        if (['arrowleft', 'arrowright', 'arrowup', 'arrowdown', 'z', 'x', 'a', 's', ' ', 'c'].includes(key)) {
             const keyMap = {
                 'arrowleft': 'left',
                 'arrowright': 'right',
                 'arrowup': 'up',
                 'arrowdown': 'down',
                 'z': 'punch',
-                'x': 'kick',
-                'a': 'punch',
+                'x': 'punch',
+                'a': 'kick',
                 's': 'kick',
-                ' ': 'block'
+                ' ': 'block',
+                'c': 'special'
             };
             
             const currentTime = Date.now();
@@ -210,12 +310,14 @@ function setupEventListeners() {
         
         // Player attacks
         if (gameState.gameActive && gameState.player.attackCooldown <= 0) {
-            if (key === 'z' || key === 'a') {
+            if (key === 'z' || key === 'x') {
                 doPlayerAttack('punch');
-            } else if (key === 'x' || key === 's') {
+            } else if (key === 'a' || key === 's') {
                 doPlayerAttack('kick');
             } else if (key === ' ') {
                 doPlayerAttack('block');
+            } else if (key === 'c') {
+                doPlayerAttack('special');
             }
         }
     });
@@ -259,6 +361,8 @@ function doPlayerAttack(type) {
         damage = gameState.player.character.moves.punch + Math.floor(Math.random() * 10);
     } else if (type === 'kick') {
         damage = gameState.player.character.moves.kick + Math.floor(Math.random() * 10);
+    } else if (type === 'special') {
+        damage = gameState.player.character.moves.special + Math.floor(Math.random() * 15);
     } else if (type === 'block') {
         // Block reduces incoming damage
         return;
@@ -267,6 +371,12 @@ function doPlayerAttack(type) {
     // Apply damage to CPU
     gameState.cpu.health = Math.max(0, gameState.cpu.health - damage);
     updateHealthBars();
+    
+    // Update practice stats
+    if (gameState.gameMode === 'practice') {
+        gameState.practiceStats.damageDealt += damage;
+        updatePracticeStats();
+    }
     
     // Visual effects
     createBloodEffect(gameState.cpu.x, 1, 0);
@@ -291,6 +401,13 @@ function checkCombos() {
     
     const character = gameState.player.character;
     
+    // Random brainrot combo for spamming
+    if (gameState.combo.length >= 3 && Math.random() > 0.7) {
+        executeRandomCombo();
+        gameState.combo = [];
+        return;
+    }
+    
     for (const combo of character.combos) {
         if (gameState.combo.length < combo.input.length) continue;
         
@@ -304,6 +421,18 @@ function checkCombos() {
     }
 }
 
+function executeRandomCombo() {
+    const randomCombos = [
+        { name: "RANDOM BRAINROT", damage: 80 + Math.floor(Math.random() * 50) },
+        { name: "SPAM ATTACK", damage: 60 + Math.floor(Math.random() * 40) },
+        { name: "CHAOS STRIKE", damage: 100 + Math.floor(Math.random() * 30) },
+        { name: "MEME COMBO", damage: 70 + Math.floor(Math.random() * 60) }
+    ];
+    
+    const combo = randomCombos[Math.floor(Math.random() * randomCombos.length)];
+    executeCombo(combo);
+}
+
 function executeCombo(combo) {
     gameState.comboCount++;
     const display = document.getElementById('comboDisplay');
@@ -313,6 +442,13 @@ function executeCombo(combo) {
     // Apply damage to CPU
     gameState.cpu.health = Math.max(0, gameState.cpu.health - combo.damage);
     updateHealthBars();
+    
+    // Update practice stats
+    if (gameState.gameMode === 'practice') {
+        gameState.practiceStats.comboCount++;
+        gameState.practiceStats.damageDealt += combo.damage;
+        updatePracticeStats();
+    }
     
     // Add to score
     gameState.score += combo.damage * gameState.comboCount;
@@ -350,6 +486,12 @@ function executeCombo(combo) {
         spawn67();
     }
     
+    // CPU learning - increase dodge chance
+    if (gameState.cpu.learning) {
+        gameState.cpu.learning.dodgeChance = Math.min(0.5, gameState.cpu.learning.dodgeChance + 0.05);
+        gameState.cpu.learning.counterChance = Math.min(0.4, gameState.cpu.learning.counterChance + 0.03);
+    }
+    
     setTimeout(() => {
         display.classList.remove('active');
     }, 1000);
@@ -379,7 +521,7 @@ function update() {
     if (gameState.player.attackCooldown > 0) gameState.player.attackCooldown--;
     if (gameState.cpu.attackCooldown > 0) gameState.cpu.attackCooldown--;
     
-    // Player movement
+    // Player movement with up/down
     if (gameState.keys['arrowleft']) {
         gameState.player.x = Math.max(-8, gameState.player.x - 0.1);
         gameState.player.facing = -1;
@@ -396,59 +538,59 @@ function update() {
             window.playerModel.rotation.y = 0;
         }
     }
-    
-    // CPU AI
-    const distance = gameState.cpu.x - gameState.player.x;
-    
-    // CPU movement
-    if (Math.abs(distance) > 2.5) {
-        gameState.cpu.x += (distance > 0 ? -0.05 : 0.05);
-        if (window.cpuModel) {
-            window.cpuModel.position.x = gameState.cpu.x;
-            window.cpuModel.rotation.y = (distance > 0 ? Math.PI : 0);
+    if (gameState.keys['arrowup']) {
+        gameState.player.y = Math.min(2, gameState.player.y + 0.1);
+        if (window.playerModel) {
+            window.playerModel.position.y = gameState.player.y;
+        }
+    }
+    if (gameState.keys['arrowdown']) {
+        gameState.player.y = Math.max(-1, gameState.player.y - 0.1);
+        if (window.playerModel) {
+            window.playerModel.position.y = gameState.player.y;
         }
     }
     
-    // Random CPU attacks
-    if (Math.random() < 0.015 && gameState.cpu.attackCooldown <= 0 && Math.abs(distance) < 3) {
-        gameState.cpu.attackCooldown = 30;
-        gameState.cpu.state = 'attack';
-        gameState.cpu.stateTimer = 20;
+    // CPU AI with learning
+    const distance = gameState.cpu.x - gameState.player.x;
+    const verticalDistance = gameState.cpu.y - gameState.player.y;
+    
+    // CPU movement with vertical tracking
+    if (Math.abs(distance) > 2.5) {
+        gameState.cpu.x += (distance > 0 ? -0.05 : 0.05);
+    }
+    
+    if (Math.abs(verticalDistance) > 0.5) {
+        gameState.cpu.y += (verticalDistance > 0 ? -0.03 : 0.03);
+    }
+    
+    if (window.cpuModel) {
+        window.cpuModel.position.x = gameState.cpu.x;
+        window.cpuModel.position.y = gameState.cpu.y;
+        window.cpuModel.rotation.y = (distance > 0 ? Math.PI : 0);
+    }
+    
+    // Smarter CPU attacks with learning
+    if (Math.random() < 0.02 && gameState.cpu.attackCooldown <= 0 && Math.abs(distance) < 3) {
+        // Use learned behavior
+        const shouldDodge = Math.random() < gameState.cpu.learning.dodgeChance;
+        const shouldCounter = Math.random() < gameState.cpu.learning.counterChance;
         
-        // CPU attack animation
-        if (window.cpuModel) {
-            window.cpuModel.position.z = -0.5;
-            setTimeout(() => {
-                if (window.cpuModel) window.cpuModel.position.z = 0;
-            }, 100);
-        }
-        
-        // CPU damage calculation
-        const attackType = Math.random() > 0.5 ? 'punch' : 'kick';
-        let damage = 0;
-        
-        if (attackType === 'punch') {
-            damage = gameState.cpu.character.moves.punch + Math.floor(Math.random() * 8);
+        if (shouldDodge) {
+            // Dodge movement
+            gameState.cpu.x += (Math.random() > 0.5 ? 1 : -1) * 2;
+            gameState.cpu.y += (Math.random() > 0.5 ? 0.5 : -0.5);
+        } else if (shouldCounter && gameState.player.attackCooldown > 0) {
+            // Counter attack when player is vulnerable
+            doCpuAttack('special');
         } else {
-            damage = gameState.cpu.character.moves.kick + Math.floor(Math.random() * 8);
+            // Normal attack
+            const attackTypes = ['punch', 'kick', 'special'];
+            const attackType = attackTypes[Math.floor(Math.random() * attackTypes.length)];
+            doCpuAttack(attackType);
         }
         
-        // Apply damage to player
-        gameState.player.health = Math.max(0, gameState.player.health - damage);
-        updateHealthBars();
-        
-        // Visual feedback
-        applyDamageFlash('player');
-        createBloodEffect(gameState.player.x, 1, 0);
-        
-        // Knockback
-        if (window.playerModel) {
-            const knockback = 0.3;
-            window.playerModel.position.x -= knockback;
-            setTimeout(() => {
-                if (window.playerModel) window.playerModel.position.x += knockback * 0.5;
-            }, 100);
-        }
+        gameState.cpu.attackCooldown = 25;
     }
     
     // Update state timers
@@ -464,6 +606,48 @@ function update() {
     // Check win conditions
     if (gameState.player.health <= 0 || gameState.cpu.health <= 0 || gameState.roundTime <= 0) {
         endRound();
+    }
+}
+
+function doCpuAttack(type) {
+    gameState.cpu.state = 'attack';
+    gameState.cpu.stateTimer = 20;
+    
+    // CPU attack animation
+    if (window.cpuModel) {
+        window.cpuModel.position.z = -0.5;
+        setTimeout(() => {
+            if (window.cpuModel) window.cpuModel.position.z = 0;
+        }, 100);
+    }
+    
+    // CPU damage calculation (stronger in later rounds)
+    let damage = 0;
+    const roundMultiplier = 1 + (gameState.round - 1) * 0.2;
+    
+    if (type === 'punch') {
+        damage = (gameState.cpu.character.moves.punch + Math.floor(Math.random() * 8)) * roundMultiplier;
+    } else if (type === 'kick') {
+        damage = (gameState.cpu.character.moves.kick + Math.floor(Math.random() * 8)) * roundMultiplier;
+    } else if (type === 'special') {
+        damage = (gameState.cpu.character.moves.special + Math.floor(Math.random() * 12)) * roundMultiplier;
+    }
+    
+    // Apply damage to player
+    gameState.player.health = Math.max(0, gameState.player.health - damage);
+    updateHealthBars();
+    
+    // Visual feedback
+    applyDamageFlash('player');
+    createBloodEffect(gameState.player.x, 1, 0);
+    
+    // Knockback
+    if (window.playerModel) {
+        const knockback = 0.3;
+        window.playerModel.position.x -= knockback;
+        setTimeout(() => {
+            if (window.playerModel) window.playerModel.position.x += knockback * 0.5;
+        }, 100);
     }
 }
 
@@ -511,6 +695,11 @@ function endRound() {
     let message = "TIME OVER!";
     if (gameState.player.health <= 0) {
         message = "CPU WINS!";
+        // CPU learns from victory
+        if (gameState.cpu.learning) {
+            gameState.cpu.learning.dodgeChance = Math.min(0.6, gameState.cpu.learning.dodgeChance + 0.1);
+            gameState.cpu.learning.counterChance = Math.min(0.5, gameState.cpu.learning.counterChance + 0.08);
+        }
     } else if (gameState.cpu.health <= 0) {
         message = "PLAYER WINS!";
         gameState.score += 1000;
@@ -518,7 +707,7 @@ function endRound() {
         // Update high score
         if (gameState.score > gameState.highScore) {
             gameState.highScore = gameState.score;
-            localStorage.setItem('tekkenHighScore', gameState.highScore);
+            localStorage.setItem('brainrotHighScore', gameState.highScore);
             document.getElementById('highScore').textContent = gameState.highScore;
         }
         
@@ -526,8 +715,12 @@ function endRound() {
     }
     
     setTimeout(() => {
-        alert(`${message}\nScore: ${gameState.score}`);
-        showScreen('characterSelect');
+        if (gameState.gameMode === 'practice') {
+            showScreen('practiceScreen');
+        } else {
+            alert(`${message}\nScore: ${gameState.score}`);
+            showScreen('characterSelect');
+        }
     }, 1000);
 }
 
