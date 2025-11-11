@@ -71,8 +71,14 @@ function initThreeJS() {
 
 function createHumanoidFighters() {
     const playerChar = CHARACTERS[gameState.selectedCharacter];
-    const cpuIndex = (gameState.selectedCharacter + 1) % CHARACTERS.length;
-    const cpuChar = CHARACTERS[cpuIndex];
+    let cpuChar;
+    
+    if (gameState.gameMode === 'versus') {
+        cpuChar = CHARACTERS[(gameState.selectedCharacter + 1) % CHARACTERS.length];
+    } else {
+        const cpuIndex = (gameState.selectedCharacter + Math.floor(Math.random() * (CHARACTERS.length - 1)) + 1) % CHARACTERS.length;
+        cpuChar = CHARACTERS[cpuIndex];
+    }
     
     // Create player character
     window.playerModel = createHumanoidModel(playerChar.color, -5, 0);
