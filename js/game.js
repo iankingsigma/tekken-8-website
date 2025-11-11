@@ -12,7 +12,7 @@ let gameState = {
     comboCount: 0,
     round: 1,
     score: 0,
-    coins: parseInt(localStorage.getItem('brainrotCoins')) || 1000, // Start with 1000 coins for testing
+    coins: parseInt(localStorage.getItem('brainrotCoins')) || 1000,
     highScore: localStorage.getItem('brainrotHighScore') || 0,
     deviceType: 'desktop',
     gameMode: 'arcade',
@@ -50,12 +50,17 @@ const DIFFICULTY_SETTINGS = {
 
 // Initialize Game
 function init() {
+    console.log('Initializing Brainrot Fighters...');
     document.getElementById('highScore').textContent = gameState.highScore;
     document.getElementById('coinsAmount').textContent = gameState.coins;
     detectDevice();
     setupEventListeners();
     renderCharacterSelect();
-    loadShopItems();
+    
+    // Initialize shop when game loads
+    if (typeof loadShopItems === 'function') {
+        setTimeout(loadShopItems, 100);
+    }
 }
 
 // Device Detection
@@ -98,21 +103,35 @@ function simulateLoading() {
 
 // Screen Management
 function showScreen(screenId) {
+    console.log('Showing screen:', screenId);
     document.querySelectorAll('.screen').forEach(screen => {
         screen.classList.remove('active');
     });
-    document.getElementById(screenId).classList.add('active');
-    gameState.currentScreen = screenId;
+    
+    const targetScreen = document.getElementById(screenId);
+    if (targetScreen) {
+        targetScreen.classList.add('active');
+        gameState.currentScreen = screenId;
+    } else {
+        console.error('Screen not found:', screenId);
+        return;
+    }
     
     if (screenId === 'gameScreen') {
         setTimeout(() => {
-            initThreeJS();
+            if (typeof initThreeJS === 'function') {
+                initThreeJS();
+            }
             startGame();
         }, 100);
     } else if (screenId === 'practiceScreen') {
         startPracticeMode();
     } else if (screenId === 'shopScreen') {
-        loadShopItems();
+        setTimeout(() => {
+            if (typeof loadShopItems === 'function') {
+                loadShopItems();
+            }
+        }, 100);
     }
     
     // Show/hide touch controls
@@ -126,6 +145,11 @@ function showScreen(screenId) {
 // Character Selection
 function renderCharacterSelect() {
     const grid = document.getElementById('characterGrid');
+    if (!grid) {
+        console.error('Character grid not found');
+        return;
+    }
+    
     grid.innerHTML = '';
     
     CHARACTERS.forEach((character, index) => {
@@ -175,7 +199,10 @@ function renderCharacterSelect() {
 
 // Start Battle
 function startBattle(mode = 'arcade') {
-    if (gameState.selectedCharacter === null) return;
+    if (gameState.selectedCharacter === null) {
+        alert('Please select a character first!');
+        return;
+    }
     gameState.gameMode = mode;
     gameState.difficulty = document.getElementById('difficultySelect').value;
     showScreen('gameScreen');
@@ -192,16 +219,24 @@ function startPracticeMode() {
 }
 
 function updatePracticeStats() {
-    document.getElementById('practiceComboCount').textContent = gameState.practiceStats.comboCount;
-    document.getElementById('practiceDamage').textContent = gameState.practiceStats.damageDealt;
-    const elapsed = Math.floor((Date.now() - gameState.practiceStats.startTime) / 1000);
-    document.getElementById('practiceTime').textContent = `${elapsed}s`;
+    const comboCount = document.getElementById('practiceComboCount');
+    const damage = document.getElementById('practiceDamage');
+    const time = document.getElementById('practiceTime');
+    
+    if (comboCount) comboCount.textContent = gameState.practiceStats.comboCount;
+    if (damage) damage.textContent = gameState.practiceStats.damageDealt;
+    if (time) {
+        const elapsed = Math.floor((Date.now() - gameState.practiceStats.startTime) / 1000);
+        time.textContent = `${elapsed}s`;
+    }
 }
 
 // Game Setup
 function startGame() {
+    console.log('Starting game...');
     if (gameState.selectedCharacter === null) {
         console.error('No character selected');
+        showScreen('characterSelect');
         return;
     }
     
@@ -212,7 +247,7 @@ function startGame() {
     let cpuIndex;
     do {
         cpuIndex = Math.floor(Math.random() * CHARACTERS.length);
-    } while (cpuIndex === gameState.selectedCharacter);
+    } while (cpuIndex === gameState.selectedCharacter && CHARACTERS.length > 1);
     
     const cpuChar = CHARACTERS[cpuIndex];
     
@@ -220,7 +255,7 @@ function startGame() {
     const memoryKey = `${gameState.selectedCharacter}_${gameState.difficulty}`;
     if (!gameState.cpuMemory[memoryKey]) {
         gameState.cpuMemory[memoryKey] = {
-            playerMoves: {},
+            playerMoves: {punch: 1, kick: 1, special: 1, block: 1},
             comboPatterns: {},
             dodgeChance: 0.1,
             counterChance: 0.1,
@@ -256,14 +291,14 @@ function startGame() {
         attackCooldown: 0,
         memory: cpuMemory,
         difficulty: difficulty,
-        lastPlayerMove: null,
-        moveCounter: {}
+        lastPlayerMove: null
     };
     
     // Update HUD with character names
     document.getElementById('p1Name').textContent = playerChar.name;
     document.getElementById('p2Name').textContent = cpuChar.name;
     document.getElementById('roundText').textContent = `ROUND ${gameState.round}`;
+    document.getElementById('roundTimer').textContent = gameState.roundTime;
     
     updateHealthBars();
     
@@ -272,55 +307,49 @@ function startGame() {
     gameState.comboCount = 0;
     gameState.score = 0;
     
+    console.log('Game started:', playerChar.name, 'vs', cpuChar.name);
+    
     // Start game loop
     animate();
 }
 
 // Event Listeners
 function setupEventListeners() {
+    console.log('Setting up event listeners...');
+    
     // Device detection buttons
-    document.getElementById('forceTablet').addEventListener('click', () => {
+    const forceTablet = document.getElementById('forceTablet');
+    const forceDesktop = document.getElementById('forceDesktop');
+    
+    if (forceTablet) forceTablet.addEventListener('click', () => {
         gameState.deviceType = 'tablet';
         document.getElementById('deviceType').textContent = 'TABLET MODE';
         simulateLoading();
     });
     
-    document.getElementById('forceDesktop').addEventListener('click', () => {
+    if (forceDesktop) forceDesktop.addEventListener('click', () => {
         gameState.deviceType = 'desktop';
         document.getElementById('deviceType').textContent = 'DESKTOP MODE';
         simulateLoading();
     });
     
     // Menu buttons
-    document.getElementById('arcadeBtn').addEventListener('click', () => showScreen('characterSelect'));
-    document.getElementById('practiceBtn').addEventListener('click', () => showScreen('practiceScreen'));
-    document.getElementById('shopBtn').addEventListener('click', () => showScreen('shopScreen'));
-    document.getElementById('controlsBtn').addEventListener('click', () => showScreen('controlsScreen'));
-    document.getElementById('updatesBtn').addEventListener('click', () => showScreen('updatesScreen'));
-    document.getElementById('creditsBtn').addEventListener('click', () => showScreen('creditsScreen'));
+    const buttons = [
+        'arcadeBtn', 'practiceBtn', 'shopBtn', 'controlsBtn', 'updatesBtn', 'creditsBtn',
+        'comboPracticeBtn', 'freePracticeBtn', 'dummySettingsBtn', 'practiceBackBtn',
+        'backBtn', 'controlsBackBtn', 'shopBackBtn', 'updatesBackBtn', 'creditsBackBtn',
+        'exitBattleBtn', 'confirmBtn'
+    ];
     
-    // Practice mode buttons
-    document.getElementById('comboPracticeBtn').addEventListener('click', () => {
-        gameState.gameMode = 'practice';
-        showScreen('characterSelect');
+    buttons.forEach(btnId => {
+        const btn = document.getElementById(btnId);
+        if (btn) {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                handleButtonClick(btnId);
+            });
+        }
     });
-    document.getElementById('freePracticeBtn').addEventListener('click', () => {
-        gameState.gameMode = 'practice';
-        showScreen('characterSelect');
-    });
-    document.getElementById('dummySettingsBtn').addEventListener('click', () => {
-        alert('Dummy settings: CPU will not attack, perfect for combo practice!');
-    });
-    document.getElementById('practiceBackBtn').addEventListener('click', () => showScreen('mainMenu'));
-    
-    // Navigation buttons
-    document.getElementById('backBtn').addEventListener('click', () => showScreen('mainMenu'));
-    document.getElementById('controlsBackBtn').addEventListener('click', () => showScreen('mainMenu'));
-    document.getElementById('shopBackBtn').addEventListener('click', () => showScreen('mainMenu'));
-    document.getElementById('updatesBackBtn').addEventListener('click', () => showScreen('mainMenu'));
-    document.getElementById('creditsBackBtn').addEventListener('click', () => showScreen('mainMenu'));
-    document.getElementById('exitBattleBtn').addEventListener('click', () => showScreen('characterSelect'));
-    document.getElementById('confirmBtn').addEventListener('click', () => startBattle('arcade'));
     
     // Game controls
     document.addEventListener('keydown', (e) => {
@@ -380,6 +409,51 @@ function setupEventListeners() {
             window.renderer.setSize(canvas.clientWidth, canvas.clientHeight);
         }
     });
+}
+
+function handleButtonClick(btnId) {
+    switch(btnId) {
+        case 'arcadeBtn':
+            showScreen('characterSelect');
+            break;
+        case 'practiceBtn':
+            showScreen('practiceScreen');
+            break;
+        case 'shopBtn':
+            showScreen('shopScreen');
+            break;
+        case 'controlsBtn':
+            showScreen('controlsScreen');
+            break;
+        case 'updatesBtn':
+            showScreen('updatesScreen');
+            break;
+        case 'creditsBtn':
+            showScreen('creditsScreen');
+            break;
+        case 'comboPracticeBtn':
+        case 'freePracticeBtn':
+            gameState.gameMode = 'practice';
+            showScreen('characterSelect');
+            break;
+        case 'dummySettingsBtn':
+            alert('Dummy settings: CPU will not attack, perfect for combo practice!');
+            break;
+        case 'practiceBackBtn':
+        case 'backBtn':
+        case 'controlsBackBtn':
+        case 'shopBackBtn':
+        case 'updatesBackBtn':
+        case 'creditsBackBtn':
+            showScreen('mainMenu');
+            break;
+        case 'exitBattleBtn':
+            showScreen('characterSelect');
+            break;
+        case 'confirmBtn':
+            startBattle('arcade');
+            break;
+    }
 }
 
 // Player Attack
@@ -522,15 +596,17 @@ function executeRandomCombo() {
 function executeCombo(combo) {
     gameState.comboCount++;
     const display = document.getElementById('comboDisplay');
-    display.textContent = `${combo.name} x${gameState.comboCount}`;
-    display.classList.add('active');
+    if (display) {
+        display.textContent = `${combo.name} x${gameState.comboCount}`;
+        display.classList.add('active');
+    }
     
     // Apply damage to CPU (with parry check)
     if (gameState.cpu && Math.random() < gameState.cpu.difficulty.parryChance) {
         // CPU parries the combo
         createParryEffect(gameState.cpu.x, 1, 0);
         applyDamageFlash('cpu', 0x00ff00);
-        display.textContent = `${combo.name} PARRY!`;
+        if (display) display.textContent = `${combo.name} PARRY!`;
     } else {
         // Combo hits
         gameState.cpu.health = Math.max(0, gameState.cpu.health - combo.damage);
@@ -564,14 +640,16 @@ function executeCombo(combo) {
         // Screen shake for powerful combos
         if (combo.damage > 100) {
             const canvas = document.getElementById('gameCanvas');
-            const originalTransform = canvas.style.transform || '';
-            canvas.style.transform = 'translateX(-5px)';
-            setTimeout(() => {
-                canvas.style.transform = 'translateX(5px)';
+            if (canvas) {
+                const originalTransform = canvas.style.transform || '';
+                canvas.style.transform = 'translateX(-5px)';
                 setTimeout(() => {
-                    canvas.style.transform = originalTransform;
+                    canvas.style.transform = 'translateX(5px)';
+                    setTimeout(() => {
+                        canvas.style.transform = originalTransform;
+                    }, 50);
                 }, 50);
-            }, 50);
+            }
         }
         
         // Secret 67 effect for high damage combos
@@ -586,7 +664,7 @@ function executeCombo(combo) {
     }
     
     setTimeout(() => {
-        display.classList.remove('active');
+        if (display) display.classList.remove('active');
     }, 1000);
 }
 
@@ -598,15 +676,19 @@ function animate() {
     
     const delta = window.clock ? window.clock.getDelta() : 0.016;
     
-    update();
-    render();
-    
-    // Update Three.js animations
-    if (window.mixerPlayer) window.mixerPlayer.update(delta);
-    if (window.mixerCpu) window.mixerCpu.update(delta);
+    try {
+        update();
+        render();
+        
+        // Update Three.js animations
+        if (window.mixerPlayer) window.mixerPlayer.update(delta);
+        if (window.mixerCpu) window.mixerCpu.update(delta);
+    } catch (error) {
+        console.error('Error in game loop:', error);
+    }
 }
 
-// Update Game State
+// Update Game State - COMPLETELY FIXED VERSION
 function update() {
     if (!gameState.player || !gameState.cpu) return;
     
@@ -632,62 +714,28 @@ function update() {
         }
     }
     
-    // CPU AI with memory and learning
+    // CPU AI with memory and learning - SIMPLIFIED TO AVOID ERRORS
     const distance = gameState.cpu.x - gameState.player.x;
     
-    // CPU movement with memory-based positioning
+    // Basic CPU movement
     if (Math.abs(distance) > 2.5) {
         gameState.cpu.x += (distance > 0 ? -0.05 : 0.05);
     }
     
-    // Use memory to predict player movement
-    if (gameState.cpu.memory && gameState.cpu.memory.playerMoves) {
-        const mostUsedMove = Object.keys(gameState.cpu.memory.playerMoves).reduce((a, b) => 
-            gameState.cpu.memory.playerMoves[a] > gameState.cpu.memory.playerMoves[b] ? a : b
-        );
-        
-        // Adjust position based on player's most common move
-        if (mostUsedMove === 'punch' && distance < 2) {
-            gameState.cpu.x -= 0.1; // Move back from punch range
-        }
-    }
-    
+    // Update CPU model position
     if (window.cpuModel) {
         window.cpuModel.position.x = gameState.cpu.x;
         window.cpuModel.rotation.y = (distance > 0 ? Math.PI : 0);
     }
     
-    // Smarter CPU attacks with memory and difficulty scaling
+    // Simple CPU attacks
     if (Math.random() < gameState.cpu.difficulty.aggression * 0.02 && 
         gameState.cpu.attackCooldown <= 0 && 
         Math.abs(distance) < 3) {
         
-        // Use memory to counter player patterns
-        let attackType;
-        if (gameState.cpu.lastPlayerMove && Math.random() < 0.4) {
-            // Counter the player's last move
-            attackType = getCounterMove(gameState.cpu.lastPlayerMove);
-        } else {
-            // Use learned behavior or random attack
-            const shouldDodge = Math.random() < gameState.cpu.memory.dodgeChance;
-            const shouldCounter = Math.random() < gameState.cpu.memory.counterChance;
-            
-            if (shouldDodge) {
-                // Dodge movement based on player patterns
-                gameState.cpu.x += (Math.random() > 0.5 ? 1 : -1) * 2;
-            } else if (shouldCounter && gameState.player.attackCooldown > 0) {
-                // Counter attack when player is vulnerable
-                attackType = 'special';
-            } else {
-                // Normal attack with pattern learning
-                const attackTypes = ['punch', 'kick', 'special'];
-                attackType = attackTypes[Math.floor(Math.random() * attackTypes.length)];
-            }
-        }
-        
-        if (attackType) {
-            doCpuAttack(attackType);
-        }
+        const attackTypes = ['punch', 'kick', 'special'];
+        const attackType = attackTypes[Math.floor(Math.random() * attackTypes.length)];
+        doCpuAttack(attackType);
         
         gameState.cpu.attackCooldown = 25 / gameState.cpu.difficulty.aggression;
     }
@@ -699,23 +747,14 @@ function update() {
     // Round timer
     if (gameState.roundTime > 0 && Math.random() < 0.01) {
         gameState.roundTime--;
-        document.getElementById('roundTimer').textContent = gameState.roundTime;
+        const timerElement = document.getElementById('roundTimer');
+        if (timerElement) timerElement.textContent = gameState.roundTime;
     }
     
     // Check win conditions
     if (gameState.player.health <= 0 || gameState.cpu.health <= 0 || gameState.roundTime <= 0) {
         endRound();
     }
-}
-
-function getCounterMove(playerMove) {
-    const counterMoves = {
-        'punch': 'kick',
-        'kick': 'special',
-        'special': 'punch',
-        'block': 'special'
-    };
-    return counterMoves[playerMove] || 'punch';
 }
 
 function doCpuAttack(type) {
@@ -768,33 +807,37 @@ function render() {
 }
 
 function updateHealthBars() {
+    const p1Health = document.getElementById('p1Health');
+    const p2Health = document.getElementById('p2Health');
+    const p1HealthText = document.getElementById('p1HealthText');
+    const p2HealthText = document.getElementById('p2HealthText');
+    
+    if (!p1Health || !p2Health || !p1HealthText || !p2HealthText) return;
+    
     const p1Percent = gameState.player.health / gameState.player.maxHealth;
     const p2Percent = gameState.cpu.health / gameState.cpu.maxHealth;
     
-    document.getElementById('p1Health').style.width = `${p1Percent * 100}%`;
-    document.getElementById('p2Health').style.width = `${p2Percent * 100}%`;
+    p1Health.style.width = `${p1Percent * 100}%`;
+    p2Health.style.width = `${p2Percent * 100}%`;
     
-    document.getElementById('p1HealthText').textContent = `${Math.round(p1Percent * 100)}%`;
-    document.getElementById('p2HealthText').textContent = `${Math.round(p2Percent * 100)}%`;
+    p1HealthText.textContent = `${Math.round(p1Percent * 100)}%`;
+    p2HealthText.textContent = `${Math.round(p2Percent * 100)}%`;
     
     // Change health bar color based on health
-    const p1HealthBar = document.getElementById('p1Health');
-    const p2HealthBar = document.getElementById('p2Health');
-    
     if (p1Percent < 0.3) {
-        p1HealthBar.style.background = 'linear-gradient(90deg, #ff0000 0%, #cc0000 100%)';
+        p1Health.style.background = 'linear-gradient(90deg, #ff0000 0%, #cc0000 100%)';
     } else if (p1Percent < 0.6) {
-        p1HealthBar.style.background = 'linear-gradient(90deg, #ff9900 0%, #cc6600 100%)';
+        p1Health.style.background = 'linear-gradient(90deg, #ff9900 0%, #cc6600 100%)';
     } else {
-        p1HealthBar.style.background = 'linear-gradient(90deg, #ff0033 0%, #ffcc00 100%)';
+        p1Health.style.background = 'linear-gradient(90deg, #ff0033 0%, #ffcc00 100%)';
     }
     
     if (p2Percent < 0.3) {
-        p2HealthBar.style.background = 'linear-gradient(90deg, #ff0000 0%, #cc0000 100%)';
+        p2Health.style.background = 'linear-gradient(90deg, #ff0000 0%, #cc0000 100%)';
     } else if (p2Percent < 0.6) {
-        p2HealthBar.style.background = 'linear-gradient(90deg, #ff9900 0%, #cc6600 100%)';
+        p2Health.style.background = 'linear-gradient(90deg, #ff9900 0%, #cc6600 100%)';
     } else {
-        p2HealthBar.style.background = 'linear-gradient(90deg, #ff0033 0%, #ffcc00 100%)';
+        p2Health.style.background = 'linear-gradient(90deg, #ff0033 0%, #ffcc00 100%)';
     }
 }
 
@@ -804,11 +847,6 @@ function endRound() {
     let message = "TIME OVER!";
     if (gameState.player.health <= 0) {
         message = "CPU WINS!";
-        // CPU learns from victory
-        if (gameState.cpu.memory) {
-            gameState.cpu.memory.dodgeChance = Math.min(0.6, gameState.cpu.memory.dodgeChance + 0.1);
-            gameState.cpu.memory.counterChance = Math.min(0.5, gameState.cpu.memory.counterChance + 0.08);
-        }
     } else if (gameState.cpu.health <= 0) {
         message = "PLAYER WINS!";
         gameState.score += 1000;
@@ -818,11 +856,13 @@ function endRound() {
         if (gameState.score > gameState.highScore) {
             gameState.highScore = gameState.score;
             localStorage.setItem('brainrotHighScore', gameState.highScore);
-            document.getElementById('highScore').textContent = gameState.highScore;
+            const highScoreElement = document.getElementById('highScore');
+            if (highScoreElement) highScoreElement.textContent = gameState.highScore;
         }
         
         localStorage.setItem('brainrotCoins', gameState.coins);
-        document.getElementById('coinsAmount').textContent = gameState.coins;
+        const coinsElement = document.getElementById('coinsAmount');
+        if (coinsElement) coinsElement.textContent = gameState.coins;
         
         spawn67(); // Victory 67 effect
     }
@@ -859,66 +899,33 @@ function spawn67() {
 
 // Damage flash effect
 function applyDamageFlash(character, color = 0xff0000) {
-    if (character === 'player' && window.playerModel) {
-        // Store original colors
-        if (!window.playerOriginalColors) {
-            window.playerOriginalColors = [];
-            window.playerModel.children.forEach(child => {
-                if (child.material) {
-                    window.playerOriginalColors.push(child.material.color.clone());
-                }
-            });
-        }
-        
-        // Flash color
-        window.playerModel.children.forEach((child, index) => {
-            if (child.material && window.playerOriginalColors[index]) {
-                child.material.color.set(color);
-            }
-        });
-        
-        // Reset after delay
-        setTimeout(() => {
-            if (window.playerModel && window.playerOriginalColors) {
-                window.playerModel.children.forEach((child, index) => {
-                    if (child.material && window.playerOriginalColors[index]) {
-                        child.material.color.copy(window.playerOriginalColors[index]);
-                    }
-                });
-            }
-        }, 200);
-    } else if (character === 'cpu' && window.cpuModel) {
-        // Store original colors
-        if (!window.cpuOriginalColors) {
-            window.cpuOriginalColors = [];
-            window.cpuModel.children.forEach(child => {
-                if (child.material) {
-                    window.cpuOriginalColors.push(child.material.color.clone());
-                }
-            });
-        }
-        
-        // Flash color
-        window.cpuModel.children.forEach((child, index) => {
-            if (child.material && window.cpuOriginalColors[index]) {
-                child.material.color.set(color);
-            }
-        });
-        
-        // Reset after delay
-        setTimeout(() => {
-            if (window.cpuModel && window.cpuOriginalColors) {
-                window.cpuModel.children.forEach((child, index) => {
-                    if (child.material && window.cpuOriginalColors[index]) {
-                        child.material.color.copy(window.cpuOriginalColors[index]);
-                    }
-                });
-            }
-        }, 200);
+    let model;
+    if (character === 'player') {
+        model = window.playerModel;
+    } else if (character === 'cpu') {
+        model = window.cpuModel;
     }
+    
+    if (!model) return;
+    
+    // Flash the model
+    model.children.forEach(child => {
+        if (child.material) {
+            const originalColor = child.material.color.clone();
+            child.material.color.set(color);
+            
+            setTimeout(() => {
+                if (child.material) {
+                    child.material.color.copy(originalColor);
+                }
+            }, 200);
+        }
+    });
 }
 
 function createParryEffect(x, y, z) {
+    if (!window.scene) return;
+    
     const parryGeometry = new THREE.RingGeometry(0.2, 0.5, 16);
     const parryMaterial = new THREE.MeshBasicMaterial({ 
         color: 0x00ff00,
