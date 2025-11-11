@@ -12,7 +12,7 @@ let gameState = {
     comboCount: 0,
     round: 1,
     score: 0,
-    coins: parseInt(localStorage.getItem('brainrotCoins')) || 0,
+    coins: parseInt(localStorage.getItem('brainrotCoins')) || 1000, // Start with 1000 coins for testing
     highScore: localStorage.getItem('brainrotHighScore') || 0,
     deviceType: 'desktop',
     gameMode: 'arcade',
@@ -105,10 +105,14 @@ function showScreen(screenId) {
     gameState.currentScreen = screenId;
     
     if (screenId === 'gameScreen') {
-        initThreeJS();
-        startGame();
+        setTimeout(() => {
+            initThreeJS();
+            startGame();
+        }, 100);
     } else if (screenId === 'practiceScreen') {
         startPracticeMode();
+    } else if (screenId === 'shopScreen') {
+        loadShopItems();
     }
     
     // Show/hide touch controls
@@ -196,11 +200,20 @@ function updatePracticeStats() {
 
 // Game Setup
 function startGame() {
+    if (gameState.selectedCharacter === null) {
+        console.error('No character selected');
+        return;
+    }
+    
     const playerChar = CHARACTERS[gameState.selectedCharacter];
     const difficulty = DIFFICULTY_SETTINGS[gameState.difficulty];
     
     // Pick CPU character (different from player)
-    const cpuIndex = (gameState.selectedCharacter + Math.floor(Math.random() * (CHARACTERS.length - 1)) + 1) % CHARACTERS.length;
+    let cpuIndex;
+    do {
+        cpuIndex = Math.floor(Math.random() * CHARACTERS.length);
+    } while (cpuIndex === gameState.selectedCharacter);
+    
     const cpuChar = CHARACTERS[cpuIndex];
     
     // Initialize CPU memory for this character if not exists
@@ -223,6 +236,7 @@ function startGame() {
         x: -5,
         z: 0,
         health: playerChar.hp,
+        maxHealth: playerChar.hp,
         facing: 1,
         state: 'idle',
         stateTimer: 0,
@@ -246,11 +260,17 @@ function startGame() {
         moveCounter: {}
     };
     
+    // Update HUD with character names
+    document.getElementById('p1Name').textContent = playerChar.name;
+    document.getElementById('p2Name').textContent = cpuChar.name;
+    document.getElementById('roundText').textContent = `ROUND ${gameState.round}`;
+    
     updateHealthBars();
     
     gameState.gameActive = true;
     gameState.roundTime = 99;
     gameState.comboCount = 0;
+    gameState.score = 0;
     
     // Start game loop
     animate();
@@ -420,6 +440,8 @@ function doPlayerAttack(type) {
         damage = (gameState.player.character.moves.special + Math.floor(Math.random() * 15)) * damageMultiplier;
     } else if (type === 'block') {
         // Block reduces incoming damage
+        gameState.player.state = 'block';
+        gameState.player.stateTimer = 30;
         return;
     }
     
@@ -574,7 +596,7 @@ function animate() {
     
     requestAnimationFrame(animate);
     
-    const delta = window.clock.getDelta();
+    const delta = window.clock ? window.clock.getDelta() : 0.016;
     
     update();
     render();
@@ -746,7 +768,7 @@ function render() {
 }
 
 function updateHealthBars() {
-    const p1Percent = gameState.player.health / gameState.player.character.hp;
+    const p1Percent = gameState.player.health / gameState.player.maxHealth;
     const p2Percent = gameState.cpu.health / gameState.cpu.maxHealth;
     
     document.getElementById('p1Health').style.width = `${p1Percent * 100}%`;
