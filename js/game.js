@@ -12,10 +12,13 @@ let gameState = {
     comboCount: 0,
     round: 1,
     score: 0,
+    coins: parseInt(localStorage.getItem('brainrotCoins')) || 0,
     highScore: localStorage.getItem('brainrotHighScore') || 0,
     deviceType: 'desktop',
     gameMode: 'arcade',
-    cpuLearning: {},
+    difficulty: 'medium',
+    cpuMemory: JSON.parse(localStorage.getItem('cpuMemory')) || {},
+    playerInventory: JSON.parse(localStorage.getItem('playerInventory')) || {},
     practiceStats: {
         comboCount: 0,
         damageDealt: 0,
@@ -23,12 +26,36 @@ let gameState = {
     }
 };
 
+// Difficulty Settings
+const DIFFICULTY_SETTINGS = {
+    easy: {
+        cpuHpMultiplier: 0.8,
+        parryChance: 0.2,
+        aggression: 0.3,
+        learningRate: 0.1
+    },
+    medium: {
+        cpuHpMultiplier: 1.0,
+        parryChance: 0.5,
+        aggression: 0.6,
+        learningRate: 0.3
+    },
+    hard: {
+        cpuHpMultiplier: 1.3,
+        parryChance: 0.8,
+        aggression: 0.9,
+        learningRate: 0.5
+    }
+};
+
 // Initialize Game
 function init() {
     document.getElementById('highScore').textContent = gameState.highScore;
+    document.getElementById('coinsAmount').textContent = gameState.coins;
     detectDevice();
     setupEventListeners();
     renderCharacterSelect();
+    loadShopItems();
 }
 
 // Device Detection
@@ -39,10 +66,6 @@ function detectDevice() {
     gameState.deviceType = isTablet ? 'tablet' : 'desktop';
     document.getElementById('deviceType').textContent = 
         gameState.deviceType === 'tablet' ? 'TABLET MODE' : 'DESKTOP MODE';
-    
-    // Show/hide versus mode based on device
-    const versusBtn = document.getElementById('versusBtn');
-    versusBtn.style.display = gameState.deviceType === 'tablet' ? 'block' : 'none';
 }
 
 // Simulate loading progress
@@ -150,6 +173,7 @@ function renderCharacterSelect() {
 function startBattle(mode = 'arcade') {
     if (gameState.selectedCharacter === null) return;
     gameState.gameMode = mode;
+    gameState.difficulty = document.getElementById('difficultySelect').value;
     showScreen('gameScreen');
 }
 
@@ -173,49 +197,53 @@ function updatePracticeStats() {
 // Game Setup
 function startGame() {
     const playerChar = CHARACTERS[gameState.selectedCharacter];
-    let cpuChar;
+    const difficulty = DIFFICULTY_SETTINGS[gameState.difficulty];
     
-    if (gameState.gameMode === 'versus') {
-        // For versus mode, use second player's selected character
-        cpuChar = CHARACTERS[(gameState.selectedCharacter + 1) % CHARACTERS.length];
-    } else {
-        // For arcade/practice, pick random CPU
-        const cpuIndex = (gameState.selectedCharacter + Math.floor(Math.random() * (CHARACTERS.length - 1)) + 1) % CHARACTERS.length;
-        cpuChar = CHARACTERS[cpuIndex];
-    }
+    // Pick CPU character (different from player)
+    const cpuIndex = (gameState.selectedCharacter + Math.floor(Math.random() * (CHARACTERS.length - 1)) + 1) % CHARACTERS.length;
+    const cpuChar = CHARACTERS[cpuIndex];
     
-    // Initialize CPU learning if not exists
-    if (!gameState.cpuLearning[gameState.selectedCharacter]) {
-        gameState.cpuLearning[gameState.selectedCharacter] = {
+    // Initialize CPU memory for this character if not exists
+    const memoryKey = `${gameState.selectedCharacter}_${gameState.difficulty}`;
+    if (!gameState.cpuMemory[memoryKey]) {
+        gameState.cpuMemory[memoryKey] = {
+            playerMoves: {},
+            comboPatterns: {},
             dodgeChance: 0.1,
             counterChance: 0.1,
-            comboPrediction: 0.1
+            fights: 0
         };
     }
+    
+    const cpuMemory = gameState.cpuMemory[memoryKey];
+    cpuMemory.fights++;
     
     gameState.player = {
         character: playerChar,
         x: -5,
-        y: 0,
         z: 0,
         health: playerChar.hp,
         facing: 1,
         state: 'idle',
         stateTimer: 0,
-        attackCooldown: 0
+        attackCooldown: 0,
+        items: gameState.playerInventory
     };
     
     gameState.cpu = {
         character: cpuChar,
         x: 5,
-        y: 0,
         z: 0,
-        health: cpuChar.hp,
+        health: Math.floor(cpuChar.hp * difficulty.cpuHpMultiplier),
+        maxHealth: Math.floor(cpuChar.hp * difficulty.cpuHpMultiplier),
         facing: -1,
         state: 'idle',
         stateTimer: 0,
         attackCooldown: 0,
-        learning: gameState.cpuLearning[gameState.selectedCharacter]
+        memory: cpuMemory,
+        difficulty: difficulty,
+        lastPlayerMove: null,
+        moveCounter: {}
     };
     
     updateHealthBars();
@@ -234,26 +262,22 @@ function setupEventListeners() {
     document.getElementById('forceTablet').addEventListener('click', () => {
         gameState.deviceType = 'tablet';
         document.getElementById('deviceType').textContent = 'TABLET MODE';
-        document.getElementById('versusBtn').style.display = 'block';
         simulateLoading();
     });
     
     document.getElementById('forceDesktop').addEventListener('click', () => {
         gameState.deviceType = 'desktop';
         document.getElementById('deviceType').textContent = 'DESKTOP MODE';
-        document.getElementById('versusBtn').style.display = 'none';
         simulateLoading();
     });
     
     // Menu buttons
     document.getElementById('arcadeBtn').addEventListener('click', () => showScreen('characterSelect'));
-    document.getElementById('versusBtn').addEventListener('click', () => {
-        if (gameState.deviceType === 'tablet') {
-            startBattle('versus');
-        }
-    });
     document.getElementById('practiceBtn').addEventListener('click', () => showScreen('practiceScreen'));
+    document.getElementById('shopBtn').addEventListener('click', () => showScreen('shopScreen'));
     document.getElementById('controlsBtn').addEventListener('click', () => showScreen('controlsScreen'));
+    document.getElementById('updatesBtn').addEventListener('click', () => showScreen('updatesScreen'));
+    document.getElementById('creditsBtn').addEventListener('click', () => showScreen('creditsScreen'));
     
     // Practice mode buttons
     document.getElementById('comboPracticeBtn').addEventListener('click', () => {
@@ -272,6 +296,9 @@ function setupEventListeners() {
     // Navigation buttons
     document.getElementById('backBtn').addEventListener('click', () => showScreen('mainMenu'));
     document.getElementById('controlsBackBtn').addEventListener('click', () => showScreen('mainMenu'));
+    document.getElementById('shopBackBtn').addEventListener('click', () => showScreen('mainMenu'));
+    document.getElementById('updatesBackBtn').addEventListener('click', () => showScreen('mainMenu'));
+    document.getElementById('creditsBackBtn').addEventListener('click', () => showScreen('mainMenu'));
     document.getElementById('exitBattleBtn').addEventListener('click', () => showScreen('characterSelect'));
     document.getElementById('confirmBtn').addEventListener('click', () => startBattle('arcade'));
     
@@ -281,12 +308,10 @@ function setupEventListeners() {
         gameState.keys[key] = true;
         
         // Add to combo sequence
-        if (['arrowleft', 'arrowright', 'arrowup', 'arrowdown', 'z', 'x', 'a', 's', ' ', 'c'].includes(key)) {
+        if (['arrowleft', 'arrowright', 'z', 'x', 'a', 's', ' ', 'c'].includes(key)) {
             const keyMap = {
                 'arrowleft': 'left',
                 'arrowright': 'right',
-                'arrowup': 'up',
-                'arrowdown': 'down',
                 'z': 'punch',
                 'x': 'punch',
                 'a': 'kick',
@@ -346,6 +371,29 @@ function doPlayerAttack(type) {
     
     gameState.player.attackCooldown = 20;
     
+    // Record player move for CPU memory
+    if (gameState.cpu && gameState.cpu.memory) {
+        gameState.cpu.lastPlayerMove = type;
+        if (!gameState.cpu.memory.playerMoves[type]) {
+            gameState.cpu.memory.playerMoves[type] = 0;
+        }
+        gameState.cpu.memory.playerMoves[type]++;
+    }
+    
+    // Check for CPU parry (50% chance based on difficulty)
+    if (gameState.cpu && Math.random() < gameState.cpu.difficulty.parryChance) {
+        // CPU successfully parries
+        createParryEffect(gameState.cpu.x, 1, 0);
+        applyDamageFlash('cpu', 0x00ff00); // Green flash for parry
+        
+        // Counter attack chance
+        if (Math.random() < 0.3) {
+            setTimeout(() => doCpuAttack('special'), 300);
+        }
+        
+        return;
+    }
+    
     // Attack animation
     if (window.playerModel) {
         // Lean forward for attack
@@ -355,14 +403,21 @@ function doPlayerAttack(type) {
         }, 100);
     }
     
-    // Calculate damage
+    // Calculate damage with item bonuses
     let damage = 0;
+    let damageMultiplier = 1;
+    
+    // Apply item effects
+    if (gameState.player.items && gameState.player.items.damageBoost) {
+        damageMultiplier += 0.2; // 20% damage increase
+    }
+    
     if (type === 'punch') {
-        damage = gameState.player.character.moves.punch + Math.floor(Math.random() * 10);
+        damage = (gameState.player.character.moves.punch + Math.floor(Math.random() * 10)) * damageMultiplier;
     } else if (type === 'kick') {
-        damage = gameState.player.character.moves.kick + Math.floor(Math.random() * 10);
+        damage = (gameState.player.character.moves.kick + Math.floor(Math.random() * 10)) * damageMultiplier;
     } else if (type === 'special') {
-        damage = gameState.player.character.moves.special + Math.floor(Math.random() * 15);
+        damage = (gameState.player.character.moves.special + Math.floor(Math.random() * 15)) * damageMultiplier;
     } else if (type === 'block') {
         // Block reduces incoming damage
         return;
@@ -400,6 +455,15 @@ function checkCombos() {
     if (!gameState.player) return;
     
     const character = gameState.player.character;
+    
+    // Record combo for CPU memory
+    if (gameState.cpu && gameState.cpu.memory && gameState.combo.length > 2) {
+        const comboKey = gameState.combo.slice(-3).join('-');
+        if (!gameState.cpu.memory.comboPatterns[comboKey]) {
+            gameState.cpu.memory.comboPatterns[comboKey] = 0;
+        }
+        gameState.cpu.memory.comboPatterns[comboKey]++;
+    }
     
     // Random brainrot combo for spamming
     if (gameState.combo.length >= 3 && Math.random() > 0.7) {
@@ -439,57 +503,64 @@ function executeCombo(combo) {
     display.textContent = `${combo.name} x${gameState.comboCount}`;
     display.classList.add('active');
     
-    // Apply damage to CPU
-    gameState.cpu.health = Math.max(0, gameState.cpu.health - combo.damage);
-    updateHealthBars();
-    
-    // Update practice stats
-    if (gameState.gameMode === 'practice') {
-        gameState.practiceStats.comboCount++;
-        gameState.practiceStats.damageDealt += combo.damage;
-        updatePracticeStats();
-    }
-    
-    // Add to score
-    gameState.score += combo.damage * gameState.comboCount;
-    
-    // Visual effects
-    if (window.playerModel) {
-        // Attack animation
-        window.playerModel.position.z = -0.8;
-        setTimeout(() => {
-            if (window.playerModel) window.playerModel.position.z = 0;
-        }, 150);
-    }
-    
-    // Blood effect at CPU position
-    createBloodEffect(gameState.cpu.x, 1, 0);
-    
-    // Damage flash on CPU
-    applyDamageFlash('cpu');
-    
-    // Screen shake for powerful combos
-    if (combo.damage > 100) {
-        const canvas = document.getElementById('gameCanvas');
-        const originalTransform = canvas.style.transform || '';
-        canvas.style.transform = 'translateX(-5px)';
-        setTimeout(() => {
-            canvas.style.transform = 'translateX(5px)';
+    // Apply damage to CPU (with parry check)
+    if (gameState.cpu && Math.random() < gameState.cpu.difficulty.parryChance) {
+        // CPU parries the combo
+        createParryEffect(gameState.cpu.x, 1, 0);
+        applyDamageFlash('cpu', 0x00ff00);
+        display.textContent = `${combo.name} PARRY!`;
+    } else {
+        // Combo hits
+        gameState.cpu.health = Math.max(0, gameState.cpu.health - combo.damage);
+        updateHealthBars();
+        
+        // Update practice stats
+        if (gameState.gameMode === 'practice') {
+            gameState.practiceStats.comboCount++;
+            gameState.practiceStats.damageDealt += combo.damage;
+            updatePracticeStats();
+        }
+        
+        // Add to score
+        gameState.score += combo.damage * gameState.comboCount;
+        
+        // Visual effects
+        if (window.playerModel) {
+            // Attack animation
+            window.playerModel.position.z = -0.8;
             setTimeout(() => {
-                canvas.style.transform = originalTransform;
+                if (window.playerModel) window.playerModel.position.z = 0;
+            }, 150);
+        }
+        
+        // Blood effect at CPU position
+        createBloodEffect(gameState.cpu.x, 1, 0);
+        
+        // Damage flash on CPU
+        applyDamageFlash('cpu');
+        
+        // Screen shake for powerful combos
+        if (combo.damage > 100) {
+            const canvas = document.getElementById('gameCanvas');
+            const originalTransform = canvas.style.transform || '';
+            canvas.style.transform = 'translateX(-5px)';
+            setTimeout(() => {
+                canvas.style.transform = 'translateX(5px)';
+                setTimeout(() => {
+                    canvas.style.transform = originalTransform;
+                }, 50);
             }, 50);
-        }, 50);
+        }
+        
+        // Secret 67 effect for high damage combos
+        if (combo.damage > 100 && Math.random() > 0.7) {
+            spawn67();
+        }
     }
     
-    // Secret 67 effect for high damage combos
-    if (combo.damage > 100 && Math.random() > 0.7) {
-        spawn67();
-    }
-    
-    // CPU learning - increase dodge chance
-    if (gameState.cpu.learning) {
-        gameState.cpu.learning.dodgeChance = Math.min(0.5, gameState.cpu.learning.dodgeChance + 0.05);
-        gameState.cpu.learning.counterChance = Math.min(0.4, gameState.cpu.learning.counterChance + 0.03);
+    // CPU learning - increase dodge chance against frequent combos
+    if (gameState.cpu.memory) {
+        gameState.cpu.memory.dodgeChance = Math.min(0.6, gameState.cpu.memory.dodgeChance + 0.02);
     }
     
     setTimeout(() => {
@@ -521,7 +592,7 @@ function update() {
     if (gameState.player.attackCooldown > 0) gameState.player.attackCooldown--;
     if (gameState.cpu.attackCooldown > 0) gameState.cpu.attackCooldown--;
     
-    // Player movement with up/down
+    // Player movement with forward/backward (z-axis)
     if (gameState.keys['arrowleft']) {
         gameState.player.x = Math.max(-8, gameState.player.x - 0.1);
         gameState.player.facing = -1;
@@ -538,59 +609,65 @@ function update() {
             window.playerModel.rotation.y = 0;
         }
     }
-    if (gameState.keys['arrowup']) {
-        gameState.player.y = Math.min(2, gameState.player.y + 0.1);
-        if (window.playerModel) {
-            window.playerModel.position.y = gameState.player.y;
-        }
-    }
-    if (gameState.keys['arrowdown']) {
-        gameState.player.y = Math.max(-1, gameState.player.y - 0.1);
-        if (window.playerModel) {
-            window.playerModel.position.y = gameState.player.y;
-        }
-    }
     
-    // CPU AI with learning
+    // CPU AI with memory and learning
     const distance = gameState.cpu.x - gameState.player.x;
-    const verticalDistance = gameState.cpu.y - gameState.player.y;
     
-    // CPU movement with vertical tracking
+    // CPU movement with memory-based positioning
     if (Math.abs(distance) > 2.5) {
         gameState.cpu.x += (distance > 0 ? -0.05 : 0.05);
     }
     
-    if (Math.abs(verticalDistance) > 0.5) {
-        gameState.cpu.y += (verticalDistance > 0 ? -0.03 : 0.03);
+    // Use memory to predict player movement
+    if (gameState.cpu.memory && gameState.cpu.memory.playerMoves) {
+        const mostUsedMove = Object.keys(gameState.cpu.memory.playerMoves).reduce((a, b) => 
+            gameState.cpu.memory.playerMoves[a] > gameState.cpu.memory.playerMoves[b] ? a : b
+        );
+        
+        // Adjust position based on player's most common move
+        if (mostUsedMove === 'punch' && distance < 2) {
+            gameState.cpu.x -= 0.1; // Move back from punch range
+        }
     }
     
     if (window.cpuModel) {
         window.cpuModel.position.x = gameState.cpu.x;
-        window.cpuModel.position.y = gameState.cpu.y;
         window.cpuModel.rotation.y = (distance > 0 ? Math.PI : 0);
     }
     
-    // Smarter CPU attacks with learning
-    if (Math.random() < 0.02 && gameState.cpu.attackCooldown <= 0 && Math.abs(distance) < 3) {
-        // Use learned behavior
-        const shouldDodge = Math.random() < gameState.cpu.learning.dodgeChance;
-        const shouldCounter = Math.random() < gameState.cpu.learning.counterChance;
+    // Smarter CPU attacks with memory and difficulty scaling
+    if (Math.random() < gameState.cpu.difficulty.aggression * 0.02 && 
+        gameState.cpu.attackCooldown <= 0 && 
+        Math.abs(distance) < 3) {
         
-        if (shouldDodge) {
-            // Dodge movement
-            gameState.cpu.x += (Math.random() > 0.5 ? 1 : -1) * 2;
-            gameState.cpu.y += (Math.random() > 0.5 ? 0.5 : -0.5);
-        } else if (shouldCounter && gameState.player.attackCooldown > 0) {
-            // Counter attack when player is vulnerable
-            doCpuAttack('special');
+        // Use memory to counter player patterns
+        let attackType;
+        if (gameState.cpu.lastPlayerMove && Math.random() < 0.4) {
+            // Counter the player's last move
+            attackType = getCounterMove(gameState.cpu.lastPlayerMove);
         } else {
-            // Normal attack
-            const attackTypes = ['punch', 'kick', 'special'];
-            const attackType = attackTypes[Math.floor(Math.random() * attackTypes.length)];
+            // Use learned behavior or random attack
+            const shouldDodge = Math.random() < gameState.cpu.memory.dodgeChance;
+            const shouldCounter = Math.random() < gameState.cpu.memory.counterChance;
+            
+            if (shouldDodge) {
+                // Dodge movement based on player patterns
+                gameState.cpu.x += (Math.random() > 0.5 ? 1 : -1) * 2;
+            } else if (shouldCounter && gameState.player.attackCooldown > 0) {
+                // Counter attack when player is vulnerable
+                attackType = 'special';
+            } else {
+                // Normal attack with pattern learning
+                const attackTypes = ['punch', 'kick', 'special'];
+                attackType = attackTypes[Math.floor(Math.random() * attackTypes.length)];
+            }
+        }
+        
+        if (attackType) {
             doCpuAttack(attackType);
         }
         
-        gameState.cpu.attackCooldown = 25;
+        gameState.cpu.attackCooldown = 25 / gameState.cpu.difficulty.aggression;
     }
     
     // Update state timers
@@ -609,6 +686,16 @@ function update() {
     }
 }
 
+function getCounterMove(playerMove) {
+    const counterMoves = {
+        'punch': 'kick',
+        'kick': 'special',
+        'special': 'punch',
+        'block': 'special'
+    };
+    return counterMoves[playerMove] || 'punch';
+}
+
 function doCpuAttack(type) {
     gameState.cpu.state = 'attack';
     gameState.cpu.stateTimer = 20;
@@ -621,16 +708,16 @@ function doCpuAttack(type) {
         }, 100);
     }
     
-    // CPU damage calculation (stronger in later rounds)
+    // CPU damage calculation with difficulty scaling
     let damage = 0;
-    const roundMultiplier = 1 + (gameState.round - 1) * 0.2;
+    const difficulty = gameState.cpu.difficulty;
     
     if (type === 'punch') {
-        damage = (gameState.cpu.character.moves.punch + Math.floor(Math.random() * 8)) * roundMultiplier;
+        damage = (gameState.cpu.character.moves.punch + Math.floor(Math.random() * 8)) * difficulty.aggression;
     } else if (type === 'kick') {
-        damage = (gameState.cpu.character.moves.kick + Math.floor(Math.random() * 8)) * roundMultiplier;
+        damage = (gameState.cpu.character.moves.kick + Math.floor(Math.random() * 8)) * difficulty.aggression;
     } else if (type === 'special') {
-        damage = (gameState.cpu.character.moves.special + Math.floor(Math.random() * 12)) * roundMultiplier;
+        damage = (gameState.cpu.character.moves.special + Math.floor(Math.random() * 12)) * difficulty.aggression;
     }
     
     // Apply damage to player
@@ -660,7 +747,7 @@ function render() {
 
 function updateHealthBars() {
     const p1Percent = gameState.player.health / gameState.player.character.hp;
-    const p2Percent = gameState.cpu.health / gameState.cpu.character.hp;
+    const p2Percent = gameState.cpu.health / gameState.cpu.maxHealth;
     
     document.getElementById('p1Health').style.width = `${p1Percent * 100}%`;
     document.getElementById('p2Health').style.width = `${p2Percent * 100}%`;
@@ -696,29 +783,36 @@ function endRound() {
     if (gameState.player.health <= 0) {
         message = "CPU WINS!";
         // CPU learns from victory
-        if (gameState.cpu.learning) {
-            gameState.cpu.learning.dodgeChance = Math.min(0.6, gameState.cpu.learning.dodgeChance + 0.1);
-            gameState.cpu.learning.counterChance = Math.min(0.5, gameState.cpu.learning.counterChance + 0.08);
+        if (gameState.cpu.memory) {
+            gameState.cpu.memory.dodgeChance = Math.min(0.6, gameState.cpu.memory.dodgeChance + 0.1);
+            gameState.cpu.memory.counterChance = Math.min(0.5, gameState.cpu.memory.counterChance + 0.08);
         }
     } else if (gameState.cpu.health <= 0) {
         message = "PLAYER WINS!";
         gameState.score += 1000;
+        gameState.coins += 50; // Award coins for victory
         
-        // Update high score
+        // Update high score and save coins
         if (gameState.score > gameState.highScore) {
             gameState.highScore = gameState.score;
             localStorage.setItem('brainrotHighScore', gameState.highScore);
             document.getElementById('highScore').textContent = gameState.highScore;
         }
         
+        localStorage.setItem('brainrotCoins', gameState.coins);
+        document.getElementById('coinsAmount').textContent = gameState.coins;
+        
         spawn67(); // Victory 67 effect
     }
+    
+    // Save CPU memory
+    localStorage.setItem('cpuMemory', JSON.stringify(gameState.cpuMemory));
     
     setTimeout(() => {
         if (gameState.gameMode === 'practice') {
             showScreen('practiceScreen');
         } else {
-            alert(`${message}\nScore: ${gameState.score}`);
+            alert(`${message}\nScore: ${gameState.score}\nCoins Earned: 50`);
             showScreen('characterSelect');
         }
     }, 1000);
@@ -742,7 +836,7 @@ function spawn67() {
 }
 
 // Damage flash effect
-function applyDamageFlash(character) {
+function applyDamageFlash(character, color = 0xff0000) {
     if (character === 'player' && window.playerModel) {
         // Store original colors
         if (!window.playerOriginalColors) {
@@ -754,10 +848,10 @@ function applyDamageFlash(character) {
             });
         }
         
-        // Flash red
+        // Flash color
         window.playerModel.children.forEach((child, index) => {
             if (child.material && window.playerOriginalColors[index]) {
-                child.material.color.set(0xff0000);
+                child.material.color.set(color);
             }
         });
         
@@ -782,10 +876,10 @@ function applyDamageFlash(character) {
             });
         }
         
-        // Flash red
+        // Flash color
         window.cpuModel.children.forEach((child, index) => {
             if (child.material && window.cpuOriginalColors[index]) {
-                child.material.color.set(0xff0000);
+                child.material.color.set(color);
             }
         });
         
@@ -800,6 +894,40 @@ function applyDamageFlash(character) {
             }
         }, 200);
     }
+}
+
+function createParryEffect(x, y, z) {
+    const parryGeometry = new THREE.RingGeometry(0.2, 0.5, 16);
+    const parryMaterial = new THREE.MeshBasicMaterial({ 
+        color: 0x00ff00,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.8
+    });
+    
+    const parry = new THREE.Mesh(parryGeometry, parryMaterial);
+    parry.position.set(x, y, z);
+    parry.rotation.x = Math.PI / 2;
+    window.scene.add(parry);
+    
+    // Animate parry effect
+    const startTime = Date.now();
+    const duration = 500;
+    
+    function animateParry() {
+        const elapsed = Date.now() - startTime;
+        const progress = elapsed / duration;
+        
+        if (progress < 1) {
+            parry.scale.set(1 + progress * 2, 1 + progress * 2, 1);
+            parry.material.opacity = 0.8 * (1 - progress);
+            requestAnimationFrame(animateParry);
+        } else {
+            window.scene.remove(parry);
+        }
+    }
+    
+    animateParry();
 }
 
 // Initialize game when loaded
