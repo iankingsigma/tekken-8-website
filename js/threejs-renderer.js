@@ -1,6 +1,8 @@
 // Three.js Initialization
 function initThreeJS() {
     try {
+        console.log('Initializing Three.js...');
+        
         // Scene
         window.scene = new THREE.Scene();
         window.scene.background = new THREE.Color(0x000000);
@@ -68,8 +70,14 @@ function initThreeJS() {
         border.position.y = -0.75;
         window.scene.add(border);
         
-        // Create humanoid fighters
-        createHumanoidFighters();
+        // Create humanoid fighters if game state is ready
+        if (window.gameState && window.gameState.player && window.gameState.cpu) {
+            createHumanoidFighters();
+        } else {
+            console.log('Game state not ready, will create fighters later');
+            // Create placeholder fighters
+            createPlaceholderFighters();
+        }
         
         // Initialize clock
         window.clock = new THREE.Clock();
@@ -80,21 +88,45 @@ function initThreeJS() {
     }
 }
 
+function createPlaceholderFighters() {
+    // Create temporary placeholder fighters
+    const playerColor = 0xff0033;
+    const cpuColor = 0x00ff00;
+    
+    window.playerModel = createHumanoidModel(playerColor, -5, 0);
+    window.scene.add(window.playerModel);
+    
+    window.cpuModel = createHumanoidModel(cpuColor, 5, 0);
+    window.cpuModel.rotation.y = Math.PI;
+    window.scene.add(window.cpuModel);
+    
+    console.log('Placeholder fighters created');
+}
+
 function createHumanoidFighters() {
-    if (!gameState.player || !gameState.cpu) {
+    if (!window.gameState || !window.gameState.player || !window.gameState.cpu) {
         console.error('Game state not properly initialized');
+        createPlaceholderFighters();
         return;
     }
     
-    const playerChar = gameState.player.character;
-    const cpuChar = gameState.cpu.character;
+    const playerChar = window.gameState.player.character;
+    const cpuChar = window.gameState.cpu.character;
+    
+    // Remove existing fighters if any
+    if (window.playerModel) {
+        window.scene.remove(window.playerModel);
+    }
+    if (window.cpuModel) {
+        window.scene.remove(window.cpuModel);
+    }
     
     // Create player character
-    window.playerModel = createHumanoidModel(playerChar.color, gameState.player.x, 0);
+    window.playerModel = createHumanoidModel(playerChar.color, window.gameState.player.x, 0);
     window.scene.add(window.playerModel);
     
     // Create CPU character
-    window.cpuModel = createHumanoidModel(cpuChar.color, gameState.cpu.x, 0);
+    window.cpuModel = createHumanoidModel(cpuChar.color, window.gameState.cpu.x, 0);
     window.cpuModel.rotation.y = Math.PI; // Face player
     window.scene.add(window.cpuModel);
     
@@ -230,3 +262,45 @@ function applyDamageFlash(character, color = 0xff0000) {
         }
     });
 }
+
+function createParryEffect(x, y, z) {
+    if (!window.scene) return;
+    
+    const parryGeometry = new THREE.RingGeometry(0.2, 0.5, 16);
+    const parryMaterial = new THREE.MeshBasicMaterial({ 
+        color: 0x00ff00,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.8
+    });
+    
+    const parry = new THREE.Mesh(parryGeometry, parryMaterial);
+    parry.position.set(x, y, z);
+    parry.rotation.x = Math.PI / 2;
+    window.scene.add(parry);
+    
+    // Animate parry effect
+    const startTime = Date.now();
+    const duration = 500;
+    
+    function animateParry() {
+        const elapsed = Date.now() - startTime;
+        const progress = elapsed / duration;
+        
+        if (progress < 1) {
+            parry.scale.set(1 + progress * 2, 1 + progress * 2, 1);
+            parry.material.opacity = 0.8 * (1 - progress);
+            requestAnimationFrame(animateParry);
+        } else {
+            window.scene.remove(parry);
+        }
+    }
+    
+    animateParry();
+}
+
+// Make functions globally available
+window.createHumanoidFighters = createHumanoidFighters;
+window.createBloodEffect = createBloodEffect;
+window.applyDamageFlash = applyDamageFlash;
+window.createParryEffect = createParryEffect;
