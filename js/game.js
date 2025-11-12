@@ -25,7 +25,11 @@ let gameState = {
         startTime: 0
     },
     parryCooldownActive: false,
-    parryCooldownEnd: 0
+    parryCooldownEnd: 0,
+    bossUnlocked: localStorage.getItem('boss67Unlocked') === 'true',
+    bossDefeated: localStorage.getItem('boss67Defeated') === 'true',
+    isBossFight: false,
+    bossSpecialAttackCooldown: 0
 };
 
 // Difficulty Settings
@@ -53,6 +57,13 @@ const DIFFICULTY_SETTINGS = {
         parryChance: 1.0,
         aggression: 1.0,
         learningRate: 0.8
+    },
+    sixtyseven: {
+        cpuHpMultiplier: 2.5,
+        parryChance: 0.5,
+        aggression: 1.2,
+        learningRate: 0.9,
+        isBoss: true
     }
 };
 
@@ -65,8 +76,21 @@ function init() {
     setupEventListeners();
     renderCharacterSelect();
     
+    // Check if boss should be unlocked
+    checkBossUnlock();
+    
     if (typeof loadShopItems === 'function') {
         setTimeout(loadShopItems, 100);
+    }
+}
+
+// Check if boss should be unlocked
+function checkBossUnlock() {
+    const insaneCompleted = localStorage.getItem('insaneCompletedWith67');
+    if (insaneCompleted === 'true' && !gameState.bossUnlocked) {
+        gameState.bossUnlocked = true;
+        localStorage.setItem('boss67Unlocked', 'true');
+        console.log('67 BOSS UNLOCKED!');
     }
 }
 
@@ -139,6 +163,8 @@ function showScreen(screenId) {
                 loadShopItems();
             }
         }, 100);
+    } else if (screenId === 'characterSelect') {
+        renderCharacterSelect();
     }
     
     const touchControls = document.getElementById('touchControls');
@@ -151,9 +177,22 @@ function showScreen(screenId) {
 // Character Selection
 function renderCharacterSelect() {
     const grid = document.getElementById('characterGrid');
+    const difficultySelect = document.getElementById('difficultySelect');
+    
     if (!grid) {
         console.error('Character grid not found');
         return;
+    }
+    
+    // Add 67 difficulty if boss is unlocked
+    if (gameState.bossUnlocked && difficultySelect) {
+        const sixtySevenOption = difficultySelect.querySelector('option[value="sixtyseven"]');
+        if (!sixtySevenOption) {
+            const option = document.createElement('option');
+            option.value = 'sixtyseven';
+            option.textContent = '67 BOSS';
+            difficultySelect.appendChild(option);
+        }
     }
     
     grid.innerHTML = '';
@@ -208,8 +247,18 @@ function startBattle(mode = 'arcade') {
         alert('Please select a character first!');
         return;
     }
+    
     gameState.gameMode = mode;
     gameState.difficulty = document.getElementById('difficultySelect').value;
+    
+    // Check if this is a boss fight
+    gameState.isBossFight = (gameState.difficulty === 'sixtyseven' && 
+                            CHARACTERS[gameState.selectedCharacter].id === 67);
+    
+    if (gameState.isBossFight) {
+        console.log('STARTING 67 BOSS FIGHT!');
+    }
+    
     showScreen('gameScreen');
 }
 
@@ -248,12 +297,22 @@ function startGame() {
     const playerChar = CHARACTERS[gameState.selectedCharacter];
     const difficulty = DIFFICULTY_SETTINGS[gameState.difficulty];
     
-    let cpuIndex;
-    do {
-        cpuIndex = Math.floor(Math.random() * CHARACTERS.length);
-    } while (cpuIndex === gameState.selectedCharacter && CHARACTERS.length > 1);
+    let cpuChar;
+    let isBossFight = false;
     
-    const cpuChar = CHARACTERS[cpuIndex];
+    if (gameState.isBossFight) {
+        // Use the boss character
+        cpuChar = BOSS_67;
+        isBossFight = true;
+        console.log('BOSS FIGHT INITIATED!');
+    } else {
+        // Regular CPU character
+        let cpuIndex;
+        do {
+            cpuIndex = Math.floor(Math.random() * CHARACTERS.length);
+        } while (cpuIndex === gameState.selectedCharacter && CHARACTERS.length > 1);
+        cpuChar = CHARACTERS[cpuIndex];
+    }
     
     const memoryKey = `${gameState.selectedCharacter}_${gameState.difficulty}`;
     if (!gameState.cpuMemory[memoryKey]) {
@@ -272,6 +331,7 @@ function startGame() {
     // Reset parry cooldown for new game
     gameState.parryCooldownActive = false;
     gameState.parryCooldownEnd = 0;
+    gameState.bossSpecialAttackCooldown = 0;
     
     // Re-enable parry buttons
     const parryButtons = document.querySelectorAll('[data-action="parry"]');
@@ -309,12 +369,22 @@ function startGame() {
         attackCooldown: 0,
         memory: cpuMemory,
         difficulty: difficulty,
-        lastPlayerMove: null
+        lastPlayerMove: null,
+        isBoss: isBossFight
     };
     
     document.getElementById('p1Name').textContent = playerChar.name;
     document.getElementById('p2Name').textContent = cpuChar.name;
-    document.getElementById('roundText').textContent = `ROUND ${gameState.round}`;
+    
+    if (isBossFight) {
+        document.getElementById('p2Name').textContent = "67 BOSS";
+        document.getElementById('p2Name').style.color = "#ff0000";
+        document.getElementById('roundText').textContent = "FINAL BOSS";
+    } else {
+        document.getElementById('p2Name').style.color = "";
+        document.getElementById('roundText').textContent = `ROUND ${gameState.round}`;
+    }
+    
     document.getElementById('roundTimer').textContent = gameState.roundTime;
     
     updateHealthBars();
@@ -567,11 +637,17 @@ function doPlayerAttack(type) {
         return;
     }
     
-    if (gameState.cpu && Math.random() < gameState.cpu.difficulty.parryChance) {
+    // BOSS SPECIFIC: 50% parry chance
+    let parryChance = gameState.cpu.difficulty.parryChance;
+    if (gameState.cpu.isBoss) {
+        parryChance = 0.5; // 50% parry chance for boss
+    }
+    
+    if (gameState.cpu && Math.random() < parryChance) {
         createParryEffect(gameState.cpu.x, 1, 0);
         applyDamageFlash('cpu', 0x00ff00);
         
-        if (Math.random() < 0.3 || gameState.difficulty === 'insane') {
+        if (Math.random() < 0.3 || gameState.difficulty === 'insane' || gameState.cpu.isBoss) {
             setTimeout(() => doCpuAttack('special'), 300);
         }
         
@@ -674,7 +750,13 @@ function executeCombo(combo) {
         display.classList.add('active');
     }
     
-    if (gameState.cpu && Math.random() < gameState.cpu.difficulty.parryChance) {
+    // BOSS SPECIFIC: 50% parry chance
+    let parryChance = gameState.cpu.difficulty.parryChance;
+    if (gameState.cpu.isBoss) {
+        parryChance = 0.5;
+    }
+    
+    if (gameState.cpu && Math.random() < parryChance) {
         createParryEffect(gameState.cpu.x, 1, 0);
         applyDamageFlash('cpu', 0x00ff00);
         if (display) display.textContent = `${combo.name} PARRY!`;
@@ -754,6 +836,7 @@ function update() {
     if (gameState.player.attackCooldown > 0) gameState.player.attackCooldown--;
     if (gameState.cpu.attackCooldown > 0) gameState.cpu.attackCooldown--;
     if (gameState.player.parryCooldown > 0) gameState.player.parryCooldown--;
+    if (gameState.bossSpecialAttackCooldown > 0) gameState.bossSpecialAttackCooldown--;
     
     if (gameState.player.parryCooldown <= 0) {
         if (gameState.keys['arrowleft']) {
@@ -776,24 +859,30 @@ function update() {
     
     const distance = gameState.cpu.x - gameState.player.x;
     
-    if (Math.abs(distance) > 2.5) {
-        gameState.cpu.x += (distance > 0 ? -0.05 : 0.05);
-    }
-    
-    if (window.cpuModel) {
-        window.cpuModel.position.x = gameState.cpu.x;
-        window.cpuModel.rotation.y = (distance > 0 ? Math.PI : 0);
-    }
-    
-    if (Math.random() < gameState.cpu.difficulty.aggression * 0.02 && 
-        gameState.cpu.attackCooldown <= 0 && 
-        Math.abs(distance) < 3) {
+    // BOSS AI
+    if (gameState.cpu.isBoss) {
+        updateBossAI();
+    } else {
+        // Regular CPU AI
+        if (Math.abs(distance) > 2.5) {
+            gameState.cpu.x += (distance > 0 ? -0.05 : 0.05);
+        }
         
-        const attackTypes = ['punch', 'kick', 'special'];
-        const attackType = attackTypes[Math.floor(Math.random() * attackTypes.length)];
-        doCpuAttack(attackType);
+        if (window.cpuModel) {
+            window.cpuModel.position.x = gameState.cpu.x;
+            window.cpuModel.rotation.y = (distance > 0 ? Math.PI : 0);
+        }
         
-        gameState.cpu.attackCooldown = 25 / gameState.cpu.difficulty.aggression;
+        if (Math.random() < gameState.cpu.difficulty.aggression * 0.02 && 
+            gameState.cpu.attackCooldown <= 0 && 
+            Math.abs(distance) < 3) {
+            
+            const attackTypes = ['punch', 'kick', 'special'];
+            const attackType = attackTypes[Math.floor(Math.random() * attackTypes.length)];
+            doCpuAttack(attackType);
+            
+            gameState.cpu.attackCooldown = 25 / gameState.cpu.difficulty.aggression;
+        }
     }
     
     if (gameState.player.stateTimer > 0) gameState.player.stateTimer--;
@@ -808,6 +897,141 @@ function update() {
     if (gameState.player.health <= 0 || gameState.cpu.health <= 0 || gameState.roundTime <= 0) {
         endRound();
     }
+}
+
+// Boss AI
+function updateBossAI() {
+    const distance = gameState.cpu.x - gameState.player.x;
+    
+    // Move towards player
+    if (Math.abs(distance) > 2.5) {
+        gameState.cpu.x += (distance > 0 ? -0.08 : 0.08); // Boss moves faster
+    }
+    
+    if (window.cpuModel) {
+        window.cpuModel.position.x = gameState.cpu.x;
+        window.cpuModel.rotation.y = (distance > 0 ? Math.PI : 0);
+    }
+    
+    // Boss attack logic
+    if (gameState.cpu.attackCooldown <= 0 && Math.abs(distance) < 4) {
+        let attackType;
+        
+        // Special attacks
+        if (gameState.bossSpecialAttackCooldown <= 0) {
+            if (Math.random() < 0.15) {
+                // Stomp attack - 15% chance
+                doBossStompAttack();
+                gameState.bossSpecialAttackCooldown = 120; // 2 second cooldown
+                return;
+            } else if (Math.random() < 0.3) {
+                // Speed dash attack
+                doBossDashAttack();
+                gameState.bossSpecialAttackCooldown = 90; // 1.5 second cooldown
+                return;
+            }
+        }
+        
+        // Regular attacks
+        const attackTypes = ['punch', 'kick', 'special'];
+        attackType = attackTypes[Math.floor(Math.random() * attackTypes.length)];
+        doCpuAttack(attackType);
+        
+        gameState.cpu.attackCooldown = 20 / gameState.cpu.difficulty.aggression;
+    }
+}
+
+// Boss Special Attacks
+function doBossStompAttack() {
+    console.log("BOSS STOMP ATTACK!");
+    
+    // Visual effect - boss jumps up
+    if (window.cpuModel) {
+        window.cpuModel.position.y = 3;
+        setTimeout(() => {
+            if (window.cpuModel) {
+                window.cpuModel.position.y = 0;
+                // Create shockwave effect
+                createShockwaveEffect(gameState.cpu.x);
+            }
+        }, 500);
+    }
+    
+    const display = document.getElementById('comboDisplay');
+    if (display) {
+        display.textContent = "67 BOSS: MEGA STOMP!";
+        display.classList.add('active');
+        setTimeout(() => {
+            display.classList.remove('active');
+        }, 2000);
+    }
+    
+    // Check if player is in range
+    const distance = Math.abs(gameState.player.x - gameState.cpu.x);
+    if (distance < 3) {
+        // 90% damage
+        const damage = gameState.player.maxHealth * 0.90;
+        gameState.player.health = Math.max(0, gameState.player.health - damage);
+        
+        // Boss heals 1%
+        const healAmount = gameState.cpu.maxHealth * 0.01;
+        gameState.cpu.health = Math.min(gameState.cpu.maxHealth, gameState.cpu.health + healAmount);
+        
+        updateHealthBars();
+        createBloodEffect(gameState.player.x, 1, 0);
+        applyDamageFlash('player');
+        
+        console.log("STOMP HIT! 90% damage");
+    }
+}
+
+function doBossDashAttack() {
+    console.log("BOSS DASH ATTACK!");
+    
+    // Visual effect - boss dashes forward
+    const dashDistance = 4;
+    const originalX = gameState.cpu.x;
+    gameState.cpu.x = gameState.player.x + (gameState.cpu.facing * 1.5);
+    
+    if (window.cpuModel) {
+        // Create dash trail
+        createDashEffect(originalX, gameState.cpu.x);
+    }
+    
+    const display = document.getElementById('comboDisplay');
+    if (display) {
+        display.textContent = "67 BOSS: SPEED DASH!";
+        display.classList.add('active');
+        setTimeout(() => {
+            display.classList.remove('active');
+        }, 1500);
+    }
+    
+    // Check if player is hit during dash
+    const distance = Math.abs(gameState.player.x - gameState.cpu.x);
+    if (distance < 2) {
+        // 20% damage
+        const damage = gameState.player.maxHealth * 0.20;
+        gameState.player.health = Math.max(0, gameState.player.health - damage);
+        
+        // Boss heals 1%
+        const healAmount = gameState.cpu.maxHealth * 0.01;
+        gameState.cpu.health = Math.min(gameState.cpu.maxHealth, gameState.cpu.health + healAmount);
+        
+        updateHealthBars();
+        createBloodEffect(gameState.player.x, 1, 0);
+        applyDamageFlash('player');
+        
+        console.log("DASH HIT! 20% damage");
+    }
+    
+    // Return to original position after dash
+    setTimeout(() => {
+        gameState.cpu.x = originalX;
+        if (window.cpuModel) {
+            window.cpuModel.position.x = originalX;
+        }
+    }, 300);
 }
 
 function doCpuAttack(type) {
@@ -830,6 +1054,12 @@ function doCpuAttack(type) {
         damage = (gameState.cpu.character.moves.kick + Math.floor(Math.random() * 8)) * difficulty.aggression;
     } else if (type === 'special') {
         damage = (gameState.cpu.character.moves.special + Math.floor(Math.random() * 12)) * difficulty.aggression;
+    }
+    
+    // Boss healing passive
+    if (gameState.cpu.isBoss) {
+        const healAmount = gameState.cpu.maxHealth * 0.01;
+        gameState.cpu.health = Math.min(gameState.cpu.maxHealth, gameState.cpu.health + healAmount);
     }
     
     gameState.player.health = Math.max(0, gameState.player.health - damage);
@@ -892,12 +1122,29 @@ function endRound() {
     gameState.gameActive = false;
     
     let message = "TIME OVER!";
+    let isBossDefeated = false;
+    
     if (gameState.player.health <= 0) {
         message = "CPU WINS!";
     } else if (gameState.cpu.health <= 0) {
         message = "PLAYER WINS!";
         gameState.score += 1000;
         gameState.coins += 50;
+        
+        // Check if this was an insane mode win with character 67
+        if (gameState.difficulty === 'insane' && CHARACTERS[gameState.selectedCharacter].id === 67) {
+            localStorage.setItem('insaneCompletedWith67', 'true');
+            checkBossUnlock();
+        }
+        
+        // Check if this was a boss defeat
+        if (gameState.isBossFight) {
+            isBossDefeated = true;
+            gameState.bossDefeated = true;
+            localStorage.setItem('boss67Defeated', 'true');
+            message = "67 BOSS DEFEATED!";
+            gameState.coins += 500; // Bonus coins for boss
+        }
         
         if (gameState.score > gameState.highScore) {
             gameState.highScore = gameState.score;
@@ -916,13 +1163,63 @@ function endRound() {
     localStorage.setItem('cpuMemory', JSON.stringify(gameState.cpuMemory));
     
     setTimeout(() => {
-        if (gameState.gameMode === 'practice') {
+        if (isBossDefeated) {
+            showBossDefeatedDialogue();
+        } else if (gameState.gameMode === 'practice') {
             showScreen('practiceScreen');
         } else {
-            alert(`${message}\nScore: ${gameState.score}\nCoins Earned: 50`);
+            alert(`${message}\nScore: ${gameState.score}\nCoins Earned: ${isBossDefeated ? 550 : 50}`);
             showScreen('characterSelect');
         }
     }, 1000);
+}
+
+function showBossDefeatedDialogue() {
+    // Create dialogue overlay
+    const dialogue = document.createElement('div');
+    dialogue.style.position = 'fixed';
+    dialogue.style.top = '0';
+    dialogue.style.left = '0';
+    dialogue.style.width = '100%';
+    dialogue.style.height = '100%';
+    dialogue.style.backgroundColor = 'rgba(0,0,0,0.9)';
+    dialogue.style.display = 'flex';
+    dialogue.style.flexDirection = 'column';
+    dialogue.style.justifyContent = 'center';
+    dialogue.style.alignItems = 'center';
+    dialogue.style.zIndex = '1000';
+    dialogue.style.color = '#ffcc00';
+    dialogue.style.fontSize = '2rem';
+    dialogue.style.textAlign = 'center';
+    dialogue.style.padding = '2rem';
+    
+    dialogue.innerHTML = `
+        <div style="margin-bottom: 2rem; font-size: 3rem; color: #ff0000; text-shadow: 0 0 20px #ff0000;">67 BOSS DEFEATED!</div>
+        <div style="margin-bottom: 3rem; font-size: 1.5rem; line-height: 1.6;">
+            "What just happened...?"<br>
+            The true power of 67 has been unleashed...<br>
+            But at what cost?
+        </div>
+        <div style="margin-bottom: 2rem; font-size: 1.2rem; color: #00ff00;">
+            Reward: 500 COINS + 50 Bonus!
+        </div>
+        <button id="continueBtn" style="
+            font-size: 1.5rem; 
+            padding: 1rem 2rem; 
+            background: #ff0033; 
+            color: white; 
+            border: 2px solid #ffcc00; 
+            cursor: pointer;
+            border-radius: 10px;
+        ">CONTINUE</button>
+    `;
+    
+    document.body.appendChild(dialogue);
+    
+    document.getElementById('continueBtn').addEventListener('click', () => {
+        document.body.removeChild(dialogue);
+        showScreen('characterSelect');
+    });
 }
 
 function spawn67() {
@@ -1000,6 +1297,74 @@ function createParryEffect(x, y, z) {
     }
     
     animateParry();
+}
+
+// New boss effect functions
+function createShockwaveEffect(x) {
+    if (!window.scene) return;
+    
+    const shockwaveGeometry = new THREE.RingGeometry(0.5, 3, 32);
+    const shockwaveMaterial = new THREE.MeshBasicMaterial({ 
+        color: 0xff0000,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.7
+    });
+    
+    const shockwave = new THREE.Mesh(shockwaveGeometry, shockwaveMaterial);
+    shockwave.position.set(x, 0.1, 0);
+    shockwave.rotation.x = Math.PI / 2;
+    window.scene.add(shockwave);
+    
+    const startTime = Date.now();
+    const duration = 1000;
+    
+    function animateShockwave() {
+        const elapsed = Date.now() - startTime;
+        const progress = elapsed / duration;
+        
+        if (progress < 1) {
+            shockwave.scale.set(1 + progress * 3, 1 + progress * 3, 1);
+            shockwave.material.opacity = 0.7 * (1 - progress);
+            requestAnimationFrame(animateShockwave);
+        } else {
+            window.scene.remove(shockwave);
+        }
+    }
+    
+    animateShockwave();
+}
+
+function createDashEffect(fromX, toX) {
+    if (!window.scene) return;
+    
+    const dashLineGeometry = new THREE.BoxGeometry(Math.abs(toX - fromX), 0.1, 0.1);
+    const dashLineMaterial = new THREE.MeshBasicMaterial({ 
+        color: 0xff0066,
+        transparent: true,
+        opacity: 0.8
+    });
+    
+    const dashLine = new THREE.Mesh(dashLineGeometry, dashLineMaterial);
+    dashLine.position.set((fromX + toX) / 2, 1, 0);
+    window.scene.add(dashLine);
+    
+    const startTime = Date.now();
+    const duration = 300;
+    
+    function animateDash() {
+        const elapsed = Date.now() - startTime;
+        const progress = elapsed / duration;
+        
+        if (progress < 1) {
+            dashLine.material.opacity = 0.8 * (1 - progress);
+            requestAnimationFrame(animateDash);
+        } else {
+            window.scene.remove(dashLine);
+        }
+    }
+    
+    animateDash();
 }
 
 // Initialize game when loaded
