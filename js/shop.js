@@ -1,4 +1,4 @@
-// Shop System
+// Shop System - FIXED VERSION
 const SHOP_ITEMS = [
     {
         id: 'damageBoost',
@@ -39,14 +39,26 @@ const SHOP_ITEMS = [
 ];
 
 function loadShopItems() {
+    console.log('Loading shop items...');
     const shopItems = document.getElementById('shopItems');
     if (!shopItems) {
         console.error('Shop items container not found');
         return;
     }
     
+    // Clear the container first
     shopItems.innerHTML = '';
     
+    // Check if gameState is available
+    if (!window.gameState) {
+        console.error('gameState not available');
+        return;
+    }
+    
+    console.log('Game state coins:', gameState.coins);
+    console.log('Player inventory:', gameState.playerInventory);
+    
+    // Create shop items
     SHOP_ITEMS.forEach(item => {
         const isOwned = gameState.playerInventory[item.id];
         const canAfford = gameState.coins >= item.price;
@@ -77,6 +89,7 @@ function loadShopItems() {
     const coinsDisplay = document.getElementById('coinsAmount');
     if (coinsDisplay) {
         coinsDisplay.textContent = gameState.coins;
+        console.log('Updated coins display to:', gameState.coins);
     }
 }
 
@@ -112,22 +125,28 @@ function buyItem(itemId) {
     }
 }
 
-// Make sure shop loads when screen is shown
+// Initialize shop when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize shop when shop screen is active
+    console.log('DOM loaded, initializing shop if needed...');
     if (document.getElementById('shopScreen') && document.getElementById('shopScreen').classList.contains('active')) {
+        console.log('Shop screen is active, loading items...');
         loadShopItems();
     }
 });
 
-// Also load shop when navigating to shop screen
-const originalShowScreen = showScreen;
-showScreen = function(screenId) {
+// Override showScreen to load shop items when shop screen is shown
+const originalShowScreen = window.showScreen;
+window.showScreen = function(screenId) {
     originalShowScreen(screenId);
     
     if (screenId === 'shopScreen') {
+        console.log('Shop screen shown, loading items...');
         setTimeout(() => {
             loadShopItems();
         }, 100);
     }
 };
+
+// Make functions globally available
+window.loadShopItems = loadShopItems;
+window.buyItem = buyItem;
