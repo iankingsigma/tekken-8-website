@@ -45,6 +45,12 @@ const DIFFICULTY_SETTINGS = {
         parryChance: 0.8,
         aggression: 0.9,
         learningRate: 0.5
+    },
+    insane: {
+        cpuHpMultiplier: 1.5,
+        parryChance: 1.0, // 100% parry chance
+        aggression: 1.0,
+        learningRate: 0.8
     }
 };
 
@@ -255,7 +261,7 @@ function startGame() {
     const memoryKey = `${gameState.selectedCharacter}_${gameState.difficulty}`;
     if (!gameState.cpuMemory[memoryKey]) {
         gameState.cpuMemory[memoryKey] = {
-            playerMoves: {punch: 1, kick: 1, special: 1, block: 1},
+            playerMoves: {punch: 1, kick: 1, special: 1, parry: 1},
             comboPatterns: {},
             dodgeChance: 0.1,
             counterChance: 0.1,
@@ -276,6 +282,7 @@ function startGame() {
         state: 'idle',
         stateTimer: 0,
         attackCooldown: 0,
+        parryCooldown: 0, // NEW: Add parry cooldown
         items: gameState.playerInventory
     };
     
@@ -365,7 +372,7 @@ function setupEventListeners() {
                 'x': 'punch',
                 'a': 'kick',
                 's': 'kick',
-                ' ': 'block',
+                ' ': 'parry', // Changed from block to parry
                 'c': 'special'
             };
             
@@ -389,7 +396,7 @@ function setupEventListeners() {
             } else if (key === 'a' || key === 's') {
                 doPlayerAttack('kick');
             } else if (key === ' ') {
-                doPlayerAttack('block');
+                doPlayerAttack('parry');
             } else if (key === 'c') {
                 doPlayerAttack('special');
             }
@@ -460,8 +467,13 @@ function handleButtonClick(btnId) {
 function doPlayerAttack(type) {
     if (!gameState.gameActive || gameState.player.attackCooldown > 0) return;
     
+    // Check if player is in parry cooldown (cannot move)
+    if (gameState.player.parryCooldown > 0 && type !== 'parry') {
+        return;
+    }
+    
     const distance = Math.abs(gameState.player.x - gameState.cpu.x);
-    if (distance > 3) return; // Too far to attack
+    if (distance > 3 && type !== 'parry') return; // Too far to attack (except parry)
     
     gameState.player.attackCooldown = 20;
     
@@ -474,14 +486,50 @@ function doPlayerAttack(type) {
         gameState.cpu.memory.playerMoves[type]++;
     }
     
-    // Check for CPU parry (50% chance based on difficulty)
+    // NEW PARRY SYSTEM
+    if (type === 'parry') {
+        // Parry mechanics - heal 10% and damage 20%, but can't move for 1.5 seconds
+        const healAmount = gameState.player.maxHealth * 0.1;
+        const damageAmount = gameState.cpu.maxHealth * 0.2;
+        
+        // Heal player
+        gameState.player.health = Math.min(gameState.player.maxHealth, gameState.player.health + healAmount);
+        
+        // Damage CPU (bypasses parry)
+        gameState.cpu.health = Math.max(0, gameState.cpu.health - damageAmount);
+        
+        // Set parry cooldown (1.5 seconds = 90 frames at 60fps)
+        gameState.player.parryCooldown = 90;
+        
+        // Visual effects
+        createParryEffect(gameState.player.x, 1, 0);
+        applyDamageFlash('player', 0x00ff00); // Green flash for successful parry
+        applyDamageFlash('cpu'); // Red flash for damage
+        
+        // Update health bars
+        updateHealthBars();
+        
+        // Show parry success message
+        const display = document.getElementById('comboDisplay');
+        if (display) {
+            display.textContent = "PERFECT PARRY!";
+            display.classList.add('active');
+            setTimeout(() => {
+                display.classList.remove('active');
+            }, 1000);
+        }
+        
+        return;
+    }
+    
+    // Check for CPU parry (based on difficulty)
     if (gameState.cpu && Math.random() < gameState.cpu.difficulty.parryChance) {
         // CPU successfully parries
         createParryEffect(gameState.cpu.x, 1, 0);
         applyDamageFlash('cpu', 0x00ff00); // Green flash for parry
         
-        // Counter attack chance
-        if (Math.random() < 0.3) {
+        // Counter attack chance (except in insane mode where they always counter)
+        if (Math.random() < 0.3 || gameState.difficulty === 'insane') {
             setTimeout(() => doCpuAttack('special'), 300);
         }
         
@@ -512,11 +560,6 @@ function doPlayerAttack(type) {
         damage = (gameState.player.character.moves.kick + Math.floor(Math.random() * 10)) * damageMultiplier;
     } else if (type === 'special') {
         damage = (gameState.player.character.moves.special + Math.floor(Math.random() * 15)) * damageMultiplier;
-    } else if (type === 'block') {
-        // Block reduces incoming damage
-        gameState.player.state = 'block';
-        gameState.player.stateTimer = 30;
-        return;
     }
     
     // Apply damage to CPU
@@ -688,33 +731,36 @@ function animate() {
     }
 }
 
-// Update Game State - COMPLETELY FIXED VERSION
+// Update Game State
 function update() {
     if (!gameState.player || !gameState.cpu) return;
     
     // Update cooldowns
     if (gameState.player.attackCooldown > 0) gameState.player.attackCooldown--;
     if (gameState.cpu.attackCooldown > 0) gameState.cpu.attackCooldown--;
+    if (gameState.player.parryCooldown > 0) gameState.player.parryCooldown--; // NEW: Update parry cooldown
     
-    // Player movement with forward/backward (z-axis)
-    if (gameState.keys['arrowleft']) {
-        gameState.player.x = Math.max(-8, gameState.player.x - 0.1);
-        gameState.player.facing = -1;
-        if (window.playerModel) {
-            window.playerModel.position.x = gameState.player.x;
-            window.playerModel.rotation.y = Math.PI;
+    // Player movement - DISABLED during parry cooldown
+    if (gameState.player.parryCooldown <= 0) {
+        if (gameState.keys['arrowleft']) {
+            gameState.player.x = Math.max(-8, gameState.player.x - 0.1);
+            gameState.player.facing = -1;
+            if (window.playerModel) {
+                window.playerModel.position.x = gameState.player.x;
+                window.playerModel.rotation.y = Math.PI;
+            }
+        }
+        if (gameState.keys['arrowright']) {
+            gameState.player.x = Math.min(8, gameState.player.x + 0.1);
+            gameState.player.facing = 1;
+            if (window.playerModel) {
+                window.playerModel.position.x = gameState.player.x;
+                window.playerModel.rotation.y = 0;
+            }
         }
     }
-    if (gameState.keys['arrowright']) {
-        gameState.player.x = Math.min(8, gameState.player.x + 0.1);
-        gameState.player.facing = 1;
-        if (window.playerModel) {
-            window.playerModel.position.x = gameState.player.x;
-            window.playerModel.rotation.y = 0;
-        }
-    }
     
-    // CPU AI with memory and learning - SIMPLIFIED TO AVOID ERRORS
+    // CPU AI with memory and learning
     const distance = gameState.cpu.x - gameState.player.x;
     
     // Basic CPU movement
