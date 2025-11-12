@@ -76,11 +76,11 @@ const CHARACTERS = [
     {
         id: 501,
         name: "Tung tung tung sahur",
-        style: "aahil",
+        style: "tung tung tugnn",
         hp: 999,
         color: "#4fc3f7",
         icon: "🥁",
-        description: "Tung tung tung sahur (aahil) brings the dawn.",
+        description: "Tung tung tung sahur brings the dawn.",
         moves: {
             punch: 30,
             kick: 25,
@@ -97,7 +97,7 @@ const CHARACTERS = [
         hp: 888,
         color: "#81c784",
         icon: "💼",
-        description: "Ziad keeps hustling. Job job job sahur!",
+        description: "keeps hustling. Job job job sahur!",
         moves: {
             punch: 20,
             kick: 35,
