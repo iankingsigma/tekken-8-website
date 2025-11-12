@@ -23,61 +23,105 @@ const CHARACTERS = [
     {
         id: 41,
         name: "41",
-        style: "Thunder God Style",
-        hp: 1400,
-        color: "#ff0033",
+        style: "Defense",
+        hp: 1500,
+        color: "#c80018",
         icon: "41",
-        description: "A powerful striker with lightning-fast attacks and overwhelming power. Each strike carries thunderous force.",
+        description: "A strong, heavy puncher with solid defense.",
         moves: {
-            punch: 45,
-            kick: 30,
-            special: 75
+            punch: 55,
+            kick: 35,
+            special: 70
         },
         combos: [
-            { input: ["down", "down", "kick"], name: "LOW SWEEP", damage: 110 },
-            { input: ["left", "left", "kick"], name: "BACK KICK", damage: 95 },
-            { input: ["kick", "kick"], name: "SPIN KICK", damage: 85 },
-            { input: ["down", "punch", "kick"], name: "THUNDER STRIKE", damage: 150 }
+            { input: ["kick", "punch"], name: "GUARD BREAKER", damage: 110 },
+            { input: ["down", "kick", "punch"], name: "EARTH SHATTER", damage: 135 }
         ]
     },
     {
         id: 21,
         name: "21",
-        style: "Wind Style",
-        hp: 1000,
-        color: "#00ccff",
+        style: "Balanced",
+        hp: 1100,
+        color: "#58a11d",
         icon: "21",
-        description: "Swift and agile fighter with incredible speed. Uses wind-based techniques to overwhelm opponents.",
+        description: "Swift and fast, excels at quick combos and dodges.",
         moves: {
-            punch: 35,
-            kick: 45,
-            special: 90
+            punch: 44,
+            kick: 41,
+            special: 66
         },
         combos: [
-            { input: ["right", "down", "punch"], name: "WIND SLASH", damage: 130 },
-            { input: ["punch", "kick"], name: "QUICK STRIKE", damage: 80 },
-            { input: ["down", "up", "kick"], name: "TORNADO", damage: 140 },
-            { input: ["kick", "punch", "kick"], name: "CYCLONE", damage: 160 }
+            { input: ["left", "right", "kick"], name: "FLASH COMBO", damage: 99 }
         ]
     },
     {
         id: 201,
         name: "201",
-        style: "Earth Style",
-        hp: 1600,
-        color: "#9933ff",
+        style: "Tank",
+        hp: 1390,
+        color: "#841dae",
         icon: "201",
-        description: "A defensive powerhouse with incredible endurance. Slow but devastating when connecting attacks.",
+        description: "Tank-like endurance. Slower but can take a beating.",
         moves: {
-            punch: 50,
-            kick: 40,
-            special: 70
+            punch: 14,
+            kick: 18,
+            special: 26
         },
         combos: [
-            { input: ["down", "punch"], name: "EARTH SMASH", damage: 150 },
-            { input: ["left", "right", "punch"], name: "CHARGE PUNCH", damage: 125 },
-            { input: ["punch", "punch", "kick"], name: "TITAN COMBO", damage: 160 },
-            { input: ["down", "down", "punch", "kick"], name: "MOUNTAIN CRUSHER", damage: 180 }
+            { input: ["down", "kick", "kick"], name: "HEAVY SLAM", damage: 80 }
+        ]
+    },
+    // Special Brainrotter Tab
+    {
+        id: 501,
+        name: "Tung tung tung sahur",
+        style: "aahil",
+        hp: 999,
+        color: "#4fc3f7",
+        icon: "🥁",
+        description: "Tung tung tung sahur (aahil) brings the dawn.",
+        moves: {
+            punch: 30,
+            kick: 25,
+            special: 99
+        },
+        combos: [
+            { input: ["left", "right", "special"], name: "Sahur Smash", damage: 111 }
+        ]
+    },
+    {
+        id: 502,
+        name: "JOB ",
+        style: "job job job sahur",
+        hp: 888,
+        color: "#81c784",
+        icon: "💼",
+        description: "Ziad keeps hustling. Job job job sahur!",
+        moves: {
+            punch: 20,
+            kick: 35,
+            special: 88
+        },
+        combos: [
+            { input: ["kick", "kick", "special"], name: "Job Blast", damage: 99 }
+        ]
+    },
+    {
+        id: 503,
+        name: "TATATA SAHURR",
+        style: "ta ta ta sahur",
+        hp: 1111,
+        color: "#f06292",
+        icon: "🎶",
+        description: "Ian's ta ta ta sahur wakes up the squad.",
+        moves: {
+            punch: 45,
+            kick: 15,
+            special: 101
+        },
+        combos: [
+            { input: ["punch", "special", "special"], name: "Ta Ta Combo", damage: 130 }
         ]
     }
 ];
