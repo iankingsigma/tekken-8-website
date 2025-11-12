@@ -1,4 +1,4 @@
-// Touch Controls for Tablet - UPDATED WITH DISABLED PARRY BUTTON
+// Touch Controls for Tablet - FIXED COOLDOWN VERSION
 class TouchControls {
     constructor() {
         this.movementButtons = document.querySelectorAll('.movement-btn');
@@ -66,11 +66,6 @@ class TouchControls {
     
     setupActionButtons() {
         this.actionButtons.forEach(button => {
-            // Don't set up parry button if it's disabled
-            if (button.dataset.action === 'parry' && button.disabled) {
-                return;
-            }
-            
             // Touch events
             button.addEventListener('touchstart', (e) => {
                 e.preventDefault();
