@@ -74,7 +74,10 @@ function loadShopItems() {
     });
     
     // Update coins display
-    document.getElementById('coinsAmount').textContent = gameState.coins;
+    const coinsDisplay = document.getElementById('coinsAmount');
+    if (coinsDisplay) {
+        coinsDisplay.textContent = gameState.coins;
+    }
 }
 
 function buyItem(itemId) {
@@ -90,7 +93,6 @@ function buyItem(itemId) {
         if (item.type === 'permanent') {
             gameState.playerInventory[itemId] = true;
         } else {
-            // For temporary items, track usage
             if (!gameState.playerInventory[itemId]) {
                 gameState.playerInventory[itemId] = 0;
             }
@@ -110,7 +112,10 @@ function buyItem(itemId) {
     }
 }
 
-// Initialize shop when script loads
-if (document.getElementById('shopScreen') && document.getElementById('shopScreen').classList.contains('active')) {
-    loadShopItems();
-}
+// Make sure shop loads when screen is shown
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize shop when shop screen is active
+    if (document.getElementById('shopScreen') && document.getElementById('shopScreen').classList.contains('active')) {
+        loadShopItems();
+    }
+});
