@@ -23,7 +23,9 @@ let gameState = {
         comboCount: 0,
         damageDealt: 0,
         startTime: 0
-    }
+    },
+    parryCooldownActive: false,
+    parryCooldownEnd: 0
 };
 
 // Difficulty Settings
@@ -48,7 +50,7 @@ const DIFFICULTY_SETTINGS = {
     },
     insane: {
         cpuHpMultiplier: 1.5,
-        parryChance: 1.0, // 100% parry chance
+        parryChance: 1.0,
         aggression: 1.0,
         learningRate: 0.8
     }
@@ -63,7 +65,6 @@ function init() {
     setupEventListeners();
     renderCharacterSelect();
     
-    // Initialize shop when game loads
     if (typeof loadShopItems === 'function') {
         setTimeout(loadShopItems, 100);
     }
@@ -140,7 +141,6 @@ function showScreen(screenId) {
         }, 100);
     }
     
-    // Show/hide touch controls
     const touchControls = document.getElementById('touchControls');
     if (touchControls) {
         touchControls.classList.toggle('active', 
@@ -191,7 +191,6 @@ function renderCharacterSelect() {
             gameState.selectedCharacter = index;
             document.getElementById('confirmBtn').disabled = false;
             
-            // Update preview
             document.getElementById('previewName').textContent = character.name;
             document.getElementById('previewStyle').textContent = character.style;
             document.getElementById('previewDesc').textContent = character.description;
@@ -249,7 +248,6 @@ function startGame() {
     const playerChar = CHARACTERS[gameState.selectedCharacter];
     const difficulty = DIFFICULTY_SETTINGS[gameState.difficulty];
     
-    // Pick CPU character (different from player)
     let cpuIndex;
     do {
         cpuIndex = Math.floor(Math.random() * CHARACTERS.length);
@@ -257,7 +255,6 @@ function startGame() {
     
     const cpuChar = CHARACTERS[cpuIndex];
     
-    // Initialize CPU memory for this character if not exists
     const memoryKey = `${gameState.selectedCharacter}_${gameState.difficulty}`;
     if (!gameState.cpuMemory[memoryKey]) {
         gameState.cpuMemory[memoryKey] = {
@@ -271,6 +268,19 @@ function startGame() {
     
     const cpuMemory = gameState.cpuMemory[memoryKey];
     cpuMemory.fights++;
+    
+    // Reset parry cooldown for new game
+    gameState.parryCooldownActive = false;
+    gameState.parryCooldownEnd = 0;
+    
+    // Re-enable parry buttons
+    const parryButtons = document.querySelectorAll('[data-action="parry"]');
+    parryButtons.forEach(btn => {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        btn.style.background = 'rgba(100, 255, 100, 0.7)';
+        btn.textContent = 'PARRY';
+    });
     
     gameState.player = {
         character: playerChar,
@@ -302,7 +312,6 @@ function startGame() {
         lastPlayerMove: null
     };
     
-    // Update HUD with character names
     document.getElementById('p1Name').textContent = playerChar.name;
     document.getElementById('p2Name').textContent = cpuChar.name;
     document.getElementById('roundText').textContent = `ROUND ${gameState.round}`;
@@ -317,7 +326,6 @@ function startGame() {
     
     console.log('Game started:', playerChar.name, 'vs', cpuChar.name);
     
-    // Start game loop
     animate();
 }
 
@@ -325,7 +333,6 @@ function startGame() {
 function setupEventListeners() {
     console.log('Setting up event listeners...');
     
-    // Device detection buttons
     const forceTablet = document.getElementById('forceTablet');
     const forceDesktop = document.getElementById('forceDesktop');
     
@@ -341,7 +348,6 @@ function setupEventListeners() {
         simulateLoading();
     });
     
-    // Menu buttons
     const buttons = [
         'arcadeBtn', 'practiceBtn', 'shopBtn', 'controlsBtn', 'updatesBtn', 'creditsBtn',
         'comboPracticeBtn', 'freePracticeBtn', 'dummySettingsBtn', 'practiceBackBtn',
@@ -359,12 +365,10 @@ function setupEventListeners() {
         }
     });
     
-    // Game controls
     document.addEventListener('keydown', (e) => {
         const key = e.key.toLowerCase();
         gameState.keys[key] = true;
         
-        // Add to combo sequence
         if (['arrowleft', 'arrowright', 'z', 'x', 'a', 's', ' ', 'c'].includes(key)) {
             const keyMap = {
                 'arrowleft': 'left',
@@ -390,7 +394,6 @@ function setupEventListeners() {
             }
         }
         
-        // Player attacks
         if (gameState.gameActive && gameState.player.attackCooldown <= 0) {
             if (key === 'z' || key === 'x') {
                 doPlayerAttack('punch');
@@ -408,7 +411,6 @@ function setupEventListeners() {
         gameState.keys[e.key.toLowerCase()] = false;
     });
 
-    // Handle window resize
     window.addEventListener('resize', () => {
         if (window.camera && window.renderer) {
             const canvas = document.getElementById('gameCanvas');
@@ -468,7 +470,6 @@ function handleButtonClick(btnId) {
 function doPlayerAttack(type) {
     if (!gameState.gameActive || gameState.player.attackCooldown > 0) return;
     
-    // Check if player is in parry cooldown (cannot move)
     if (gameState.player.parryCooldown > 0 && type !== 'parry') {
         return;
     }
@@ -478,7 +479,6 @@ function doPlayerAttack(type) {
     
     gameState.player.attackCooldown = 20;
     
-    // Record player move for CPU memory
     if (gameState.cpu && gameState.cpu.memory) {
         gameState.cpu.lastPlayerMove = type;
         if (!gameState.cpu.memory.playerMoves[type]) {
@@ -487,13 +487,13 @@ function doPlayerAttack(type) {
         gameState.cpu.memory.playerMoves[type]++;
     }
     
-    // NERFED PARRY SYSTEM - 10 SECOND COOLDOWN, NO HEAL, ONLY 2% DAMAGE
+    // PARRY SYSTEM WITH HEALING + DAMAGE + COOLDOWN
     if (type === 'parry') {
-        // Check if parry is available
-        if (!gameState.player.parryAvailable) {
+        if (gameState.parryCooldownActive) {
             const display = document.getElementById('comboDisplay');
             if (display) {
-                display.textContent = "PARRY ON COOLDOWN!";
+                const timeLeft = Math.ceil((gameState.parryCooldownEnd - Date.now()) / 1000);
+                display.textContent = `PARRY COOLDOWN: ${timeLeft}s`;
                 display.classList.add('active');
                 setTimeout(() => {
                     display.classList.remove('active');
@@ -502,37 +502,38 @@ function doPlayerAttack(type) {
             return;
         }
         
-        // NERFED: Only 2% damage, NO healing
-        const damageAmount = gameState.cpu.maxHealth * 0.02;
+        const healAmount = gameState.player.maxHealth * 0.10;
+        const damageAmount = gameState.cpu.maxHealth * 0.20;
         
-        // Damage CPU (bypasses parry)
+        gameState.player.health = Math.min(gameState.player.maxHealth, gameState.player.health + healAmount);
         gameState.cpu.health = Math.max(0, gameState.cpu.health - damageAmount);
         
-        // Set parry cooldown (1.5 seconds = 90 frames at 60fps)
         gameState.player.parryCooldown = 90;
+        gameState.parryCooldownActive = true;
+        gameState.parryCooldownEnd = Date.now() + 10000;
         
-        // Set parry availability cooldown (10 seconds)
-        gameState.player.parryAvailable = false;
-        
-        // Disable parry button visually
         const parryButtons = document.querySelectorAll('[data-action="parry"]');
         parryButtons.forEach(btn => {
             btn.disabled = true;
             btn.style.opacity = '0.5';
             btn.style.background = 'rgba(100, 100, 100, 0.7)';
+            btn.textContent = 'COOLDOWN';
         });
         
-        // Start cooldown timer
-        setTimeout(() => {
-            if (gameState.player) {
-                gameState.player.parryAvailable = true;
-                // Re-enable parry button
+        const cooldownInterval = setInterval(() => {
+            const timeLeft = Math.ceil((gameState.parryCooldownEnd - Date.now()) / 1000);
+            
+            if (timeLeft <= 0) {
+                clearInterval(cooldownInterval);
+                gameState.parryCooldownActive = false;
+                
                 parryButtons.forEach(btn => {
                     btn.disabled = false;
                     btn.style.opacity = '1';
                     btn.style.background = 'rgba(100, 255, 100, 0.7)';
+                    btn.textContent = 'PARRY';
                 });
-                // Show parry ready message
+                
                 const display = document.getElementById('comboDisplay');
                 if (display) {
                     display.textContent = "PARRY READY!";
@@ -541,37 +542,35 @@ function doPlayerAttack(type) {
                         display.classList.remove('active');
                     }, 1000);
                 }
+            } else {
+                parryButtons.forEach(btn => {
+                    btn.textContent = timeLeft + 's';
+                });
             }
-        }, 10000);
+        }, 1000);
         
-        // Visual effects
         createParryEffect(gameState.player.x, 1, 0);
         applyDamageFlash('player', 0x00ff00);
         applyDamageFlash('cpu');
         
-        // Update health bars
         updateHealthBars();
         
-        // Show nerfed parry message
         const display = document.getElementById('comboDisplay');
         if (display) {
-            display.textContent = "PARRY! (2% DMG)";
+            display.textContent = "PERFECT PARRY! +10% HP";
             display.classList.add('active');
             setTimeout(() => {
                 display.classList.remove('active');
-            }, 1000);
+            }, 1500);
         }
         
         return;
     }
     
-    // Check for CPU parry (based on difficulty)
     if (gameState.cpu && Math.random() < gameState.cpu.difficulty.parryChance) {
-        // CPU successfully parries
         createParryEffect(gameState.cpu.x, 1, 0);
         applyDamageFlash('cpu', 0x00ff00);
         
-        // Counter attack chance (except in insane mode where they always counter)
         if (Math.random() < 0.3 || gameState.difficulty === 'insane') {
             setTimeout(() => doCpuAttack('special'), 300);
         }
@@ -579,7 +578,6 @@ function doPlayerAttack(type) {
         return;
     }
     
-    // Normal attack logic
     if (window.playerModel) {
         window.playerModel.position.z = -0.5;
         setTimeout(() => {
@@ -587,7 +585,6 @@ function doPlayerAttack(type) {
         }, 100);
     }
     
-    // Calculate damage with item bonuses
     let damage = 0;
     let damageMultiplier = 1;
     
@@ -603,21 +600,17 @@ function doPlayerAttack(type) {
         damage = (gameState.player.character.moves.special + Math.floor(Math.random() * 15)) * damageMultiplier;
     }
     
-    // Apply damage to CPU
     gameState.cpu.health = Math.max(0, gameState.cpu.health - damage);
     updateHealthBars();
     
-    // Update practice stats
     if (gameState.gameMode === 'practice') {
         gameState.practiceStats.damageDealt += damage;
         updatePracticeStats();
     }
     
-    // Visual effects
     createBloodEffect(gameState.cpu.x, 1, 0);
     applyDamageFlash('cpu');
     
-    // Knockback
     if (window.cpuModel) {
         const knockback = 0.3;
         window.cpuModel.position.x += knockback;
@@ -626,7 +619,6 @@ function doPlayerAttack(type) {
         }, 100);
     }
     
-    // Add to score
     gameState.score += damage;
 }
 
@@ -636,7 +628,6 @@ function checkCombos() {
     
     const character = gameState.player.character;
     
-    // Record combo for CPU memory
     if (gameState.cpu && gameState.cpu.memory && gameState.combo.length > 2) {
         const comboKey = gameState.combo.slice(-3).join('-');
         if (!gameState.cpu.memory.comboPatterns[comboKey]) {
@@ -645,7 +636,6 @@ function checkCombos() {
         gameState.cpu.memory.comboPatterns[comboKey]++;
     }
     
-    // Random brainrot combo for spamming
     if (gameState.combo.length >= 3 && Math.random() > 0.7) {
         executeRandomCombo();
         gameState.combo = [];
@@ -684,7 +674,6 @@ function executeCombo(combo) {
         display.classList.add('active');
     }
     
-    // Apply damage to CPU (with parry check)
     if (gameState.cpu && Math.random() < gameState.cpu.difficulty.parryChance) {
         createParryEffect(gameState.cpu.x, 1, 0);
         applyDamageFlash('cpu', 0x00ff00);
@@ -762,12 +751,10 @@ function animate() {
 function update() {
     if (!gameState.player || !gameState.cpu) return;
     
-    // Update cooldowns
     if (gameState.player.attackCooldown > 0) gameState.player.attackCooldown--;
     if (gameState.cpu.attackCooldown > 0) gameState.cpu.attackCooldown--;
     if (gameState.player.parryCooldown > 0) gameState.player.parryCooldown--;
     
-    // Player movement - DISABLED during parry cooldown
     if (gameState.player.parryCooldown <= 0) {
         if (gameState.keys['arrowleft']) {
             gameState.player.x = Math.max(-8, gameState.player.x - 0.1);
@@ -787,21 +774,17 @@ function update() {
         }
     }
     
-    // CPU AI
     const distance = gameState.cpu.x - gameState.player.x;
     
-    // Basic CPU movement
     if (Math.abs(distance) > 2.5) {
         gameState.cpu.x += (distance > 0 ? -0.05 : 0.05);
     }
     
-    // Update CPU model position
     if (window.cpuModel) {
         window.cpuModel.position.x = gameState.cpu.x;
         window.cpuModel.rotation.y = (distance > 0 ? Math.PI : 0);
     }
     
-    // Simple CPU attacks
     if (Math.random() < gameState.cpu.difficulty.aggression * 0.02 && 
         gameState.cpu.attackCooldown <= 0 && 
         Math.abs(distance) < 3) {
@@ -813,18 +796,15 @@ function update() {
         gameState.cpu.attackCooldown = 25 / gameState.cpu.difficulty.aggression;
     }
     
-    // Update state timers
     if (gameState.player.stateTimer > 0) gameState.player.stateTimer--;
     if (gameState.cpu.stateTimer > 0) gameState.cpu.stateTimer--;
     
-    // Round timer
     if (gameState.roundTime > 0 && Math.random() < 0.01) {
         gameState.roundTime--;
         const timerElement = document.getElementById('roundTimer');
         if (timerElement) timerElement.textContent = gameState.roundTime;
     }
     
-    // Check win conditions
     if (gameState.player.health <= 0 || gameState.cpu.health <= 0 || gameState.roundTime <= 0) {
         endRound();
     }
@@ -834,7 +814,6 @@ function doCpuAttack(type) {
     gameState.cpu.state = 'attack';
     gameState.cpu.stateTimer = 20;
     
-    // CPU attack animation
     if (window.cpuModel) {
         window.cpuModel.position.z = -0.5;
         setTimeout(() => {
@@ -842,7 +821,6 @@ function doCpuAttack(type) {
         }, 100);
     }
     
-    // CPU damage calculation with difficulty scaling
     let damage = 0;
     const difficulty = gameState.cpu.difficulty;
     
@@ -854,15 +832,12 @@ function doCpuAttack(type) {
         damage = (gameState.cpu.character.moves.special + Math.floor(Math.random() * 12)) * difficulty.aggression;
     }
     
-    // Apply damage to player
     gameState.player.health = Math.max(0, gameState.player.health - damage);
     updateHealthBars();
     
-    // Visual feedback
     applyDamageFlash('player');
     createBloodEffect(gameState.player.x, 1, 0);
     
-    // Knockback
     if (window.playerModel) {
         const knockback = 0.3;
         window.playerModel.position.x -= knockback;
@@ -896,7 +871,6 @@ function updateHealthBars() {
     p1HealthText.textContent = `${Math.round(p1Percent * 100)}%`;
     p2HealthText.textContent = `${Math.round(p2Percent * 100)}%`;
     
-    // Change health bar color based on health
     if (p1Percent < 0.3) {
         p1Health.style.background = 'linear-gradient(90deg, #ff0000 0%, #cc0000 100%)';
     } else if (p1Percent < 0.6) {
