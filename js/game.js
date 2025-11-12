@@ -29,7 +29,9 @@ let gameState = {
     bossUnlocked: localStorage.getItem('boss67Unlocked') === 'true',
     bossDefeated: localStorage.getItem('boss67Defeated') === 'true',
     isBossFight: false,
-    bossSpecialAttackCooldown: 0
+    bossSpecialAttackCooldown: 0,
+    bossStunTimer: 0,
+    isBossStunned: false
 };
 
 // Difficulty Settings
@@ -60,7 +62,7 @@ const DIFFICULTY_SETTINGS = {
     },
     sixtyseven: {
         cpuHpMultiplier: 2.5,
-        parryChance: 0.5,
+        parryChance: 0.0, // REMOVED PARRYING
         aggression: 1.2,
         learningRate: 0.9,
         isBoss: true
@@ -235,6 +237,19 @@ function renderCharacterSelect() {
             document.getElementById('previewDesc').textContent = character.description;
             document.getElementById('previewModel').textContent = character.icon;
             document.getElementById('previewModel').style.borderColor = character.color;
+            
+            // Show boss unlock info
+            const bossUnlockInfo = document.getElementById('bossUnlockInfo');
+            const bossUnlockedInfo = document.getElementById('bossUnlockedInfo');
+            if (bossUnlockInfo && bossUnlockedInfo) {
+                if (gameState.bossUnlocked) {
+                    bossUnlockInfo.style.display = 'none';
+                    bossUnlockedInfo.style.display = 'block';
+                } else {
+                    bossUnlockInfo.style.display = 'block';
+                    bossUnlockedInfo.style.display = 'none';
+                }
+            }
         });
         
         grid.appendChild(card);
@@ -332,6 +347,8 @@ function startGame() {
     gameState.parryCooldownActive = false;
     gameState.parryCooldownEnd = 0;
     gameState.bossSpecialAttackCooldown = 0;
+    gameState.bossStunTimer = 0;
+    gameState.isBossStunned = false;
     
     // Re-enable parry buttons
     const parryButtons = document.querySelectorAll('[data-action="parry"]');
@@ -637,10 +654,10 @@ function doPlayerAttack(type) {
         return;
     }
     
-    // BOSS SPECIFIC: 50% parry chance
+    // BOSS SPECIFIC: 0% parry chance (REMOVED PARRYING)
     let parryChance = gameState.cpu.difficulty.parryChance;
     if (gameState.cpu.isBoss) {
-        parryChance = 0.5; // 50% parry chance for boss
+        parryChance = 0.0; // 0% parry chance for boss (NERFED)
     }
     
     if (gameState.cpu && Math.random() < parryChance) {
@@ -750,10 +767,10 @@ function executeCombo(combo) {
         display.classList.add('active');
     }
     
-    // BOSS SPECIFIC: 50% parry chance
+    // BOSS SPECIFIC: 0% parry chance (REMOVED PARRYING)
     let parryChance = gameState.cpu.difficulty.parryChance;
     if (gameState.cpu.isBoss) {
-        parryChance = 0.5;
+        parryChance = 0.0; // NERFED
     }
     
     if (gameState.cpu && Math.random() < parryChance) {
@@ -838,6 +855,34 @@ function update() {
     if (gameState.player.parryCooldown > 0) gameState.player.parryCooldown--;
     if (gameState.bossSpecialAttackCooldown > 0) gameState.bossSpecialAttackCooldown--;
     
+    // Update boss stun timer
+    if (gameState.cpu.isBoss) {
+        gameState.bossStunTimer += 1;
+        
+        // Stun boss every 5 seconds for 2 seconds
+        if (gameState.bossStunTimer >= 300) { // 5 seconds at 60fps
+            gameState.isBossStunned = true;
+            gameState.bossStunTimer = 0;
+            
+            const display = document.getElementById('comboDisplay');
+            if (display) {
+                display.textContent = "67 BOSS STUNNED!";
+                display.classList.add('active');
+                setTimeout(() => {
+                    display.classList.remove('active');
+                }, 1000);
+            }
+            
+            // Create stun effect
+            createStunEffect(gameState.cpu.x, 2, 0);
+            
+            // Unstun after 2 seconds
+            setTimeout(() => {
+                gameState.isBossStunned = false;
+            }, 2000);
+        }
+    }
+    
     if (gameState.player.parryCooldown <= 0) {
         if (gameState.keys['arrowleft']) {
             gameState.player.x = Math.max(-8, gameState.player.x - 0.1);
@@ -859,10 +904,10 @@ function update() {
     
     const distance = gameState.cpu.x - gameState.player.x;
     
-    // BOSS AI
-    if (gameState.cpu.isBoss) {
+    // BOSS AI - Skip if stunned
+    if (gameState.cpu.isBoss && !gameState.isBossStunned) {
         updateBossAI();
-    } else {
+    } else if (!gameState.cpu.isBoss) {
         // Regular CPU AI
         if (Math.abs(distance) > 2.5) {
             gameState.cpu.x += (distance > 0 ? -0.05 : 0.05);
@@ -969,19 +1014,17 @@ function doBossStompAttack() {
     // Check if player is in range
     const distance = Math.abs(gameState.player.x - gameState.cpu.x);
     if (distance < 3) {
-        // 90% damage
-        const damage = gameState.player.maxHealth * 0.90;
+        // 30% damage (NERFED from 90%)
+        const damage = gameState.player.maxHealth * 0.30;
         gameState.player.health = Math.max(0, gameState.player.health - damage);
         
-        // Boss heals 1%
-        const healAmount = gameState.cpu.maxHealth * 0.01;
-        gameState.cpu.health = Math.min(gameState.cpu.maxHealth, gameState.cpu.health + healAmount);
+        // REMOVED HEALING
         
         updateHealthBars();
         createBloodEffect(gameState.player.x, 1, 0);
         applyDamageFlash('player');
         
-        console.log("STOMP HIT! 90% damage");
+        console.log("STOMP HIT! 30% damage");
     }
 }
 
@@ -1014,9 +1057,7 @@ function doBossDashAttack() {
         const damage = gameState.player.maxHealth * 0.20;
         gameState.player.health = Math.max(0, gameState.player.health - damage);
         
-        // Boss heals 1%
-        const healAmount = gameState.cpu.maxHealth * 0.01;
-        gameState.cpu.health = Math.min(gameState.cpu.maxHealth, gameState.cpu.health + healAmount);
+        // REMOVED HEALING
         
         updateHealthBars();
         createBloodEffect(gameState.player.x, 1, 0);
@@ -1056,11 +1097,7 @@ function doCpuAttack(type) {
         damage = (gameState.cpu.character.moves.special + Math.floor(Math.random() * 12)) * difficulty.aggression;
     }
     
-    // Boss healing passive
-    if (gameState.cpu.isBoss) {
-        const healAmount = gameState.cpu.maxHealth * 0.01;
-        gameState.cpu.health = Math.min(gameState.cpu.maxHealth, gameState.cpu.health + healAmount);
-    }
+    // REMOVED BOSS HEALING PASSIVE
     
     gameState.player.health = Math.max(0, gameState.player.health - damage);
     updateHealthBars();
@@ -1365,6 +1402,41 @@ function createDashEffect(fromX, toX) {
     }
     
     animateDash();
+}
+
+function createStunEffect(x, y, z) {
+    if (!window.scene) return;
+    
+    const stunGeometry = new THREE.SphereGeometry(1, 16, 16);
+    const stunMaterial = new THREE.MeshBasicMaterial({ 
+        color: 0xffff00,
+        transparent: true,
+        opacity: 0.5,
+        wireframe: true
+    });
+    
+    const stun = new THREE.Mesh(stunGeometry, stunMaterial);
+    stun.position.set(x, y, z);
+    window.scene.add(stun);
+    
+    const startTime = Date.now();
+    const duration = 2000;
+    
+    function animateStun() {
+        const elapsed = Date.now() - startTime;
+        const progress = elapsed / duration;
+        
+        if (progress < 1) {
+            stun.scale.set(1 + Math.sin(progress * 10) * 0.2, 1 + Math.sin(progress * 10) * 0.2, 1 + Math.sin(progress * 10) * 0.2);
+            stun.rotation.y += 0.1;
+            stun.material.opacity = 0.5 * (1 - progress);
+            requestAnimationFrame(animateStun);
+        } else {
+            window.scene.remove(stun);
+        }
+    }
+    
+    animateStun();
 }
 
 // Initialize game when loaded
