@@ -64,6 +64,7 @@
                         <option value="medium" selected>MEDIUM</option>
                         <option value="hard">HARD</option>
                         <option value="insane">INSANE</option>
+                        <!-- 67 BOSS option will be added dynamically when unlocked -->
                     </select>
                 </div>
             </div>
@@ -76,6 +77,12 @@
                     <div class="char-name" id="previewName">SELECT BRAINROTTER</div>
                     <div class="char-style" id="previewStyle">-</div>
                     <div class="char-desc" id="previewDesc">Choose your brainrot warrior</div>
+                    <div class="boss-unlock" id="bossUnlockInfo" style="display: none; color: #ff0000; margin-top: 1rem; font-size: 0.9rem;">
+                        🔒 Defeat Insane mode with 67 to unlock 67 BOSS!
+                    </div>
+                    <div class="boss-unlocked" id="bossUnlockedInfo" style="display: none; color: #00ff00; margin-top: 1rem; font-size: 0.9rem;">
+                        ✅ 67 BOSS UNLOCKED! Select 67 character and 67 BOSS difficulty to fight!
+                    </div>
                 </div>
             </div>
             
@@ -160,6 +167,22 @@
                         <div class="control-item">
                             <div class="control-key">PARRY</div>
                             <div class="control-action">Parry (+10% HP, 20% Damage, 10s Cooldown)</div>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <div class="control-title">SECRET BOSS</div>
+                        <div class="control-item">
+                            <div class="control-key">67 BOSS</div>
+                            <div class="control-action">Defeat Insane mode with 67 to unlock</div>
+                        </div>
+                        <div class="control-item">
+                            <div class="control-key">SPECIAL ATTACKS</div>
+                            <div class="control-action">Speed Dash (20% dmg) & Stomp (90% dmg)</div>
+                        </div>
+                        <div class="control-item">
+                            <div class="control-key">BOSS MECHANICS</div>
+                            <div class="control-action">50% parry chance, 1% heal on hit</div>
                         </div>
                     </div>
                 </div>
@@ -338,16 +361,23 @@
                     <div class="credit-name">SPECIAL THANKS</div>
                     <div class="credit-role">The Brainrot Community</div>
                 </div>
+                <div class="credit-item" id="secretBossCredit" style="display: none;">
+                    <div class="credit-name">SECRET DISCOVERY</div>
+                    <div class="credit-role">67 Boss - The Ultimate Challenge</div>
+                </div>
             </div>
             <div class="credits-footer">
                 <p>Thank you for playing Brainrot Fighters!</p>
+                <p id="bossDefeatedMessage" style="display: none; color: #ff0000; margin-top: 1rem;">
+                    You have uncovered the secret of 67... The true brainrot begins now.
+                </p>
             </div>
             <button class="nav-btn" id="creditsBackBtn">BACK TO MENU</button>
         </div>
     </div>
 
-    <script src="js/game.js"></script>
     <script src="js/characters.js"></script>
+    <script src="js/game.js"></script>
     <script src="js/threejs-renderer.js"></script>
     <script src="js/ui.js"></script>
     <script src="js/touch-controls.js"></script>
