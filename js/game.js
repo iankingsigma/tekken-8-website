@@ -61,7 +61,7 @@ const DIFFICULTY_SETTINGS = {
         learningRate: 0.8
     },
     sixtyseven: {
-        cpuHpMultiplier: 2.5,
+        cpuHpMultiplier: 0.67, // 67% HP (NERFED)
         parryChance: 0.0, // REMOVED PARRYING
         aggression: 1.2,
         learningRate: 0.9,
@@ -359,12 +359,15 @@ function startGame() {
         btn.textContent = 'PARRY';
     });
     
+    // Player gets 677% HP in boss fight
+    const playerHpMultiplier = isBossFight ? 6.77 : 1;
+    
     gameState.player = {
         character: playerChar,
         x: -5,
         z: 0,
-        health: playerChar.hp,
-        maxHealth: playerChar.hp,
+        health: Math.floor(playerChar.hp * playerHpMultiplier),
+        maxHealth: Math.floor(playerChar.hp * playerHpMultiplier),
         facing: 1,
         state: 'idle',
         stateTimer: 0,
@@ -397,6 +400,16 @@ function startGame() {
         document.getElementById('p2Name').textContent = "67 BOSS";
         document.getElementById('p2Name').style.color = "#ff0000";
         document.getElementById('roundText').textContent = "FINAL BOSS";
+        
+        // Show player HP multiplier
+        const display = document.getElementById('comboDisplay');
+        if (display) {
+            display.textContent = "677% HP BOOST!";
+            display.classList.add('active');
+            setTimeout(() => {
+                display.classList.remove('active');
+            }, 3000);
+        }
     } else {
         document.getElementById('p2Name').style.color = "";
         document.getElementById('roundText').textContent = `ROUND ${gameState.round}`;
@@ -859,7 +872,7 @@ function update() {
     if (gameState.cpu.isBoss) {
         gameState.bossStunTimer += 1;
         
-        // Stun boss every 5 seconds for 2 seconds
+        // Stun boss every 5 seconds for 0.5 seconds
         if (gameState.bossStunTimer >= 300) { // 5 seconds at 60fps
             gameState.isBossStunned = true;
             gameState.bossStunTimer = 0;
@@ -870,16 +883,16 @@ function update() {
                 display.classList.add('active');
                 setTimeout(() => {
                     display.classList.remove('active');
-                }, 1000);
+                }, 500);
             }
             
             // Create stun effect
             createStunEffect(gameState.cpu.x, 2, 0);
             
-            // Unstun after 2 seconds
+            // Unstun after 0.5 seconds
             setTimeout(() => {
                 gameState.isBossStunned = false;
-            }, 2000);
+            }, 500);
         }
     }
     
@@ -1014,8 +1027,8 @@ function doBossStompAttack() {
     // Check if player is in range
     const distance = Math.abs(gameState.player.x - gameState.cpu.x);
     if (distance < 3) {
-        // 30% damage (NERFED from 90%)
-        const damage = gameState.player.maxHealth * 0.30;
+        // 97% damage (BUFFED from 30%)
+        const damage = gameState.player.maxHealth * 0.97;
         gameState.player.health = Math.max(0, gameState.player.health - damage);
         
         // REMOVED HEALING
@@ -1024,7 +1037,7 @@ function doBossStompAttack() {
         createBloodEffect(gameState.player.x, 1, 0);
         applyDamageFlash('player');
         
-        console.log("STOMP HIT! 30% damage");
+        console.log("STOMP HIT! 97% damage");
     }
 }
 
@@ -1053,8 +1066,8 @@ function doBossDashAttack() {
     // Check if player is hit during dash
     const distance = Math.abs(gameState.player.x - gameState.cpu.x);
     if (distance < 2) {
-        // 20% damage
-        const damage = gameState.player.maxHealth * 0.20;
+        // 67% damage (BUFFED from 20%)
+        const damage = gameState.player.maxHealth * 0.67;
         gameState.player.health = Math.max(0, gameState.player.health - damage);
         
         // REMOVED HEALING
@@ -1063,7 +1076,7 @@ function doBossDashAttack() {
         createBloodEffect(gameState.player.x, 1, 0);
         applyDamageFlash('player');
         
-        console.log("DASH HIT! 20% damage");
+        console.log("DASH HIT! 67% damage");
     }
     
     // Return to original position after dash
@@ -1420,7 +1433,7 @@ function createStunEffect(x, y, z) {
     window.scene.add(stun);
     
     const startTime = Date.now();
-    const duration = 2000;
+    const duration = 500; // 0.5 seconds
     
     function animateStun() {
         const elapsed = Date.now() - startTime;
