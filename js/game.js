@@ -31,7 +31,8 @@ let gameState = {
     isBossFight: false,
     bossSpecialAttackCooldown: 0,
     bossStunTimer: 0,
-    isBossStunned: false
+    isBossStunned: false,
+    playerBaseHp: 0 // Track base HP for damage calculations
 };
 
 // Difficulty Settings
@@ -361,20 +362,27 @@ function startGame() {
     
     // Player gets 677% HP in boss fight
     const playerHpMultiplier = isBossFight ? 6.77 : 1;
+    const baseHp = playerChar.hp;
+    const boostedHp = Math.floor(baseHp * playerHpMultiplier);
+    
+    // Store base HP for damage calculations
+    gameState.playerBaseHp = baseHp;
     
     gameState.player = {
         character: playerChar,
         x: -5,
         z: 0,
-        health: Math.floor(playerChar.hp * playerHpMultiplier),
-        maxHealth: Math.floor(playerChar.hp * playerHpMultiplier),
+        health: boostedHp,
+        maxHealth: boostedHp,
+        baseHealth: baseHp, // Store base HP for reference
         facing: 1,
         state: 'idle',
         stateTimer: 0,
         attackCooldown: 0,
         parryCooldown: 0,
         parryAvailable: true,
-        items: gameState.playerInventory
+        items: gameState.playerInventory,
+        isBossFight: isBossFight
     };
     
     gameState.cpu = {
@@ -404,15 +412,24 @@ function startGame() {
         // Show player HP multiplier
         const display = document.getElementById('comboDisplay');
         if (display) {
-            display.textContent = "677% HP BOOST!";
+            display.textContent = "677% HP BOOST ACTIVATED!";
+            display.style.fontSize = "2rem";
+            display.style.color = "#00ff00";
             display.classList.add('active');
             setTimeout(() => {
-                display.classList.remove('active');
+                display.textContent = "BRAINROT COMBO!";
+                display.style.fontSize = "";
+                display.style.color = "";
             }, 3000);
         }
+        
+        // Update player name to show HP boost
+        document.getElementById('p1Name').textContent = playerChar.name + " (677%)";
+        document.getElementById('p1Name').style.color = "#00ff00";
     } else {
         document.getElementById('p2Name').style.color = "";
         document.getElementById('roundText').textContent = `ROUND ${gameState.round}`;
+        document.getElementById('p1Name').style.color = "";
     }
     
     document.getElementById('roundTimer').textContent = gameState.roundTime;
@@ -425,6 +442,9 @@ function startGame() {
     gameState.score = 0;
     
     console.log('Game started:', playerChar.name, 'vs', cpuChar.name);
+    if (isBossFight) {
+        console.log('Player HP:', boostedHp, '(677% of base', baseHp + ')');
+    }
     
     animate();
 }
@@ -999,7 +1019,7 @@ function updateBossAI() {
     }
 }
 
-// Boss Special Attacks
+// Boss Special Attacks - FIXED DAMAGE CALCULATION
 function doBossStompAttack() {
     console.log("BOSS STOMP ATTACK!");
     
@@ -1027,17 +1047,16 @@ function doBossStompAttack() {
     // Check if player is in range
     const distance = Math.abs(gameState.player.x - gameState.cpu.x);
     if (distance < 3) {
-        // 97% damage (BUFFED from 30%)
-        const damage = gameState.player.maxHealth * 0.97;
+        // FIXED: 97% damage of BASE HP, not current HP
+        const baseHp = gameState.playerBaseHp;
+        const damage = baseHp * 0.97;
         gameState.player.health = Math.max(0, gameState.player.health - damage);
-        
-        // REMOVED HEALING
         
         updateHealthBars();
         createBloodEffect(gameState.player.x, 1, 0);
         applyDamageFlash('player');
         
-        console.log("STOMP HIT! 97% damage");
+        console.log("STOMP HIT! 97% of BASE HP damage:", damage, "Base HP:", baseHp);
     }
 }
 
@@ -1066,17 +1085,16 @@ function doBossDashAttack() {
     // Check if player is hit during dash
     const distance = Math.abs(gameState.player.x - gameState.cpu.x);
     if (distance < 2) {
-        // 67% damage (BUFFED from 20%)
-        const damage = gameState.player.maxHealth * 0.67;
+        // FIXED: 67% damage of BASE HP, not current HP
+        const baseHp = gameState.playerBaseHp;
+        const damage = baseHp * 0.67;
         gameState.player.health = Math.max(0, gameState.player.health - damage);
-        
-        // REMOVED HEALING
         
         updateHealthBars();
         createBloodEffect(gameState.player.x, 1, 0);
         applyDamageFlash('player');
         
-        console.log("DASH HIT! 67% damage");
+        console.log("DASH HIT! 67% of BASE HP damage:", damage, "Base HP:", baseHp);
     }
     
     // Return to original position after dash
@@ -1148,7 +1166,12 @@ function updateHealthBars() {
     p1Health.style.width = `${p1Percent * 100}%`;
     p2Health.style.width = `${p2Percent * 100}%`;
     
-    p1HealthText.textContent = `${Math.round(p1Percent * 100)}%`;
+    // Show actual HP numbers instead of percentages for boss fight
+    if (gameState.isBossFight) {
+        p1HealthText.textContent = `${gameState.player.health}/${gameState.player.maxHealth}`;
+    } else {
+        p1HealthText.textContent = `${Math.round(p1Percent * 100)}%`;
+    }
     p2HealthText.textContent = `${Math.round(p2Percent * 100)}%`;
     
     if (p1Percent < 0.3) {
@@ -1194,6 +1217,12 @@ function endRound() {
             localStorage.setItem('boss67Defeated', 'true');
             message = "67 BOSS DEFEATED!";
             gameState.coins += 500; // Bonus coins for boss
+            
+            // Show secret credits
+            const secretCredit = document.getElementById('secretBossCredit');
+            const bossMessage = document.getElementById('bossDefeatedMessage');
+            if (secretCredit) secretCredit.style.display = 'block';
+            if (bossMessage) bossMessage.style.display = 'block';
         }
         
         if (gameState.score > gameState.highScore) {
