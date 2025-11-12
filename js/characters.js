@@ -92,7 +92,7 @@ const CHARACTERS = [
     },
     {
         id: 502,
-        name: "JOB ",
+        name: "JOB job job sahur ",
         style: "job job job sahur",
         hp: 888,
         color: "#81c784",
