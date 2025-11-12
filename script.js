@@ -1,4 +1,4 @@
-// --- Pixel Tekken (Playable!) by ian kishk ---
+// --- Pixel Tekken (Playable!) by ian kishk, ziad and aahil ---
 
 const CHARACTERS = [
   {
