@@ -1,4 +1,4 @@
-// Touch Controls for Tablet - UPDATED WITH LEFT/RIGHT BUTTONS
+// Touch Controls for Tablet - UPDATED WITH DISABLED PARRY BUTTON
 class TouchControls {
     constructor() {
         this.movementButtons = document.querySelectorAll('.movement-btn');
@@ -60,38 +60,47 @@ class TouchControls {
     }
     
     updateGameInput() {
-        // Simulate keyboard input based on touch controls
         gameState.keys['arrowleft'] = this.activeDirections.left;
         gameState.keys['arrowright'] = this.activeDirections.right;
     }
     
     setupActionButtons() {
         this.actionButtons.forEach(button => {
+            // Don't set up parry button if it's disabled
+            if (button.dataset.action === 'parry' && button.disabled) {
+                return;
+            }
+            
             // Touch events
             button.addEventListener('touchstart', (e) => {
                 e.preventDefault();
+                if (button.disabled) return;
                 this.handleAction(button.dataset.action, true);
                 button.classList.add('active');
             });
             
             button.addEventListener('touchend', (e) => {
                 e.preventDefault();
+                if (button.disabled) return;
                 this.handleAction(button.dataset.action, false);
                 button.classList.remove('active');
             });
             
             // Mouse events for testing
             button.addEventListener('mousedown', (e) => {
+                if (button.disabled) return;
                 this.handleAction(button.dataset.action, true);
                 button.classList.add('active');
             });
             
             button.addEventListener('mouseup', (e) => {
+                if (button.disabled) return;
                 this.handleAction(button.dataset.action, false);
                 button.classList.remove('active');
             });
             
             button.addEventListener('mouseleave', (e) => {
+                if (button.disabled) return;
                 this.handleAction(button.dataset.action, false);
                 button.classList.remove('active');
             });
@@ -103,7 +112,7 @@ class TouchControls {
             'punch': ['z', 'x'],
             'kick': ['a', 's'],
             'special': ['c'],
-            'parry': [' '] // Changed from block to parry
+            'parry': [' ']
         };
         
         if (keyMap[action]) {
@@ -127,7 +136,6 @@ class TouchControls {
     }
 }
 
-// Initialize touch controls when in tablet mode
 let touchControls = null;
 
 function initTouchControls() {
@@ -136,7 +144,6 @@ function initTouchControls() {
     }
 }
 
-// Update the showScreen function to initialize touch controls
 const originalShowScreen = showScreen;
 showScreen = function(screenId) {
     originalShowScreen(screenId);
