@@ -63,6 +63,7 @@
                         <option value="easy">EASY</option>
                         <option value="medium" selected>MEDIUM</option>
                         <option value="hard">HARD</option>
+                        <option value="insane">INSANE</option>
                     </select>
                 </div>
             </div>
@@ -116,7 +117,7 @@
                         </div>
                         <div class="control-item">
                             <div class="control-key">SPACE</div>
-                            <div class="control-action">Block</div>
+                            <div class="control-action">Parry (Heals 10%, Damages 20%)</div>
                         </div>
                         <div class="control-item">
                             <div class="control-key">C</div>
@@ -141,7 +142,7 @@
                     <div class="control-group">
                         <div class="control-title">TABLET CONTROLS</div>
                         <div class="control-item">
-                            <div class="control-key">JOYSTICK</div>
+                            <div class="control-key">← → BUTTONS</div>
                             <div class="control-action">Move Character</div>
                         </div>
                         <div class="control-item">
@@ -157,8 +158,8 @@
                             <div class="control-action">Special Attack</div>
                         </div>
                         <div class="control-item">
-                            <div class="control-key">BLOCK</div>
-                            <div class="control-action">Block Attacks</div>
+                            <div class="control-key">PARRY</div>
+                            <div class="control-action">Parry (Heals 10%, Damages 20%)</div>
                         </div>
                     </div>
                 </div>
@@ -196,11 +197,12 @@
             </div>
         </div>
         
-        <!-- Touch Controls for Tablet -->
+        <!-- Touch Controls for Tablet - UPDATED -->
         <div id="touchControls" class="touch-controls">
             <div class="touch-left">
-                <div class="joystick-area" id="joystickArea">
-                    <div class="joystick" id="joystick"></div>
+                <div class="movement-buttons">
+                    <button class="touch-btn movement-btn left" data-direction="left">←</button>
+                    <button class="touch-btn movement-btn right" data-direction="right">→</button>
                 </div>
             </div>
             <div class="touch-right">
@@ -208,7 +210,7 @@
                     <button class="touch-btn punch" data-action="punch">PUNCH</button>
                     <button class="touch-btn kick" data-action="kick">KICK</button>
                     <button class="touch-btn special" data-action="special">COMBO</button>
-                    <button class="touch-btn block" data-action="block">BLOCK</button>
+                    <button class="touch-btn parry" data-action="parry">PARRY</button>
                 </div>
             </div>
         </div>
@@ -256,6 +258,17 @@
         <div class="updates-content">
             <h1 class="main-title">UPDATE LOG</h1>
             <div class="updates-scroll">
+                <div class="update-version">
+                    <h3>v3.2.0 - PARRY UPDATE</h3>
+                    <ul>
+                        <li>Added Insane Mode - CPU parries 100% of attacks</li>
+                        <li>Replaced Block with Parry system</li>
+                        <li>Parry heals 10% and damages 20% but immobilizes for 1.5s</li>
+                        <li>Fixed tablet controls - replaced joystick with buttons</li>
+                        <li>Fixed shop display issues</li>
+                        <li>All action buttons now work in tablet mode</li>
+                    </ul>
+                </div>
                 <div class="update-version">
                     <h3>v3.1.0 - BRAINROT UPDATE</h3>
                     <ul>
