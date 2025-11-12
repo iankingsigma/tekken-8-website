@@ -70,14 +70,8 @@ function initThreeJS() {
         border.position.y = -0.75;
         window.scene.add(border);
         
-        // Create humanoid fighters if game state is ready
-        if (window.gameState && window.gameState.player && window.gameState.cpu) {
-            createHumanoidFighters();
-        } else {
-            console.log('Game state not ready, will create fighters later');
-            // Create placeholder fighters
-            createPlaceholderFighters();
-        }
+        // Create fighters
+        createHumanoidFighters();
         
         // Initialize clock
         window.clock = new THREE.Clock();
@@ -86,21 +80,6 @@ function initThreeJS() {
     } catch (error) {
         console.error('Error initializing Three.js:', error);
     }
-}
-
-function createPlaceholderFighters() {
-    // Create temporary placeholder fighters
-    const playerColor = 0xff0033;
-    const cpuColor = 0x00ff00;
-    
-    window.playerModel = createHumanoidModel(playerColor, -5, 0);
-    window.scene.add(window.playerModel);
-    
-    window.cpuModel = createHumanoidModel(cpuColor, 5, 0);
-    window.cpuModel.rotation.y = Math.PI;
-    window.scene.add(window.cpuModel);
-    
-    console.log('Placeholder fighters created');
 }
 
 function createHumanoidFighters() {
@@ -125,12 +104,136 @@ function createHumanoidFighters() {
     window.playerModel = createHumanoidModel(playerChar.color, window.gameState.player.x, 0);
     window.scene.add(window.playerModel);
     
-    // Create CPU character
-    window.cpuModel = createHumanoidModel(cpuChar.color, window.gameState.cpu.x, 0);
+    // Create CPU character - special model for boss
+    if (window.gameState.cpu.isBoss) {
+        window.cpuModel = createBoss67Model(window.gameState.cpu.x, 0);
+    } else {
+        window.cpuModel = createHumanoidModel(cpuChar.color, window.gameState.cpu.x, 0);
+    }
     window.cpuModel.rotation.y = Math.PI; // Face player
     window.scene.add(window.cpuModel);
     
     console.log('Fighters created:', playerChar.name, 'vs', cpuChar.name);
+}
+
+function createPlaceholderFighters() {
+    // Create temporary placeholder fighters
+    const playerColor = 0xff0033;
+    const cpuColor = 0x00ff00;
+    
+    window.playerModel = createHumanoidModel(playerColor, -5, 0);
+    window.scene.add(window.playerModel);
+    
+    window.cpuModel = createHumanoidModel(cpuColor, 5, 0);
+    window.cpuModel.rotation.y = Math.PI;
+    window.scene.add(window.cpuModel);
+    
+    console.log('Placeholder fighters created');
+}
+
+function createBoss67Model(x, z) {
+    const group = new THREE.Group();
+    group.position.set(x, 0, z);
+    
+    // Boss has a more intimidating appearance
+    const mainColor = new THREE.Color(0xff0000); // Red color for boss
+    const glowColor = new THREE.Color(0xff6600);
+    const detailColor = new THREE.Color(0xffff00);
+    
+    // Larger body
+    const bodyGeometry = new THREE.CylinderGeometry(0.7, 0.8, 1.5, 8);
+    const bodyMaterial = new THREE.MeshPhongMaterial({ 
+        color: mainColor,
+        emissive: glowColor,
+        emissiveIntensity: 0.3
+    });
+    const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+    body.position.y = 0.9;
+    body.castShadow = true;
+    group.add(body);
+    
+    // Larger head
+    const headGeometry = new THREE.SphereGeometry(0.6, 16, 16);
+    const headMaterial = new THREE.MeshPhongMaterial({ 
+        color: mainColor,
+        emissive: glowColor,
+        emissiveIntensity: 0.2
+    });
+    const head = new THREE.Mesh(headGeometry, headMaterial);
+    head.position.y = 1.9;
+    head.castShadow = true;
+    group.add(head);
+    
+    // Glowing eyes
+    const eyeGeometry = new THREE.SphereGeometry(0.15, 8, 8);
+    const eyeMaterial = new THREE.MeshBasicMaterial({ 
+        color: 0x00ff00,
+        emissive: 0x00ff00,
+        emissiveIntensity: 0.8
+    });
+    
+    const leftEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+    leftEye.position.set(-0.2, 1.95, 0.5);
+    group.add(leftEye);
+    
+    const rightEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+    rightEye.position.set(0.2, 1.95, 0.5);
+    group.add(rightEye);
+    
+    // Arms
+    const armGeometry = new THREE.CylinderGeometry(0.2, 0.2, 1.2, 8);
+    const armMaterial = new THREE.MeshPhongMaterial({ color: mainColor });
+    
+    const leftArm = new THREE.Mesh(armGeometry, armMaterial);
+    leftArm.position.set(-0.9, 0.9, 0);
+    leftArm.rotation.z = Math.PI / 6;
+    leftArm.castShadow = true;
+    group.add(leftArm);
+    
+    const rightArm = new THREE.Mesh(armGeometry, armMaterial);
+    rightArm.position.set(0.9, 0.9, 0);
+    rightArm.rotation.z = -Math.PI / 6;
+    rightArm.castShadow = true;
+    group.add(rightArm);
+    
+    // Legs
+    const legGeometry = new THREE.CylinderGeometry(0.25, 0.25, 1.4, 8);
+    const legMaterial = new THREE.MeshPhongMaterial({ color: detailColor });
+    
+    const leftLeg = new THREE.Mesh(legGeometry, legMaterial);
+    leftLeg.position.set(-0.3, -0.9, 0);
+    leftLeg.castShadow = true;
+    group.add(leftLeg);
+    
+    const rightLeg = new THREE.Mesh(legGeometry, legMaterial);
+    rightLeg.position.set(0.3, -0.9, 0);
+    rightLeg.castShadow = true;
+    group.add(rightLeg);
+    
+    // Boss aura effect
+    const auraGeometry = new THREE.SphereGeometry(1.2, 16, 16);
+    const auraMaterial = new THREE.MeshBasicMaterial({
+        color: 0xff0000,
+        transparent: true,
+        opacity: 0.2,
+        side: THREE.DoubleSide
+    });
+    const aura = new THREE.Mesh(auraGeometry, auraMaterial);
+    aura.position.y = 0.8;
+    group.add(aura);
+    
+    // Animate the aura
+    function animateAura() {
+        if (aura) {
+            aura.scale.x = 1 + Math.sin(Date.now() * 0.005) * 0.1;
+            aura.scale.y = 1 + Math.cos(Date.now() * 0.005) * 0.1;
+            aura.scale.z = 1 + Math.sin(Date.now() * 0.005) * 0.1;
+            requestAnimationFrame(animateAura);
+        }
+    }
+    animateAura();
+    
+    return group;
 }
 
 function createHumanoidModel(color, x, z) {
