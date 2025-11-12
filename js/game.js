@@ -282,7 +282,8 @@ function startGame() {
         state: 'idle',
         stateTimer: 0,
         attackCooldown: 0,
-        parryCooldown: 0, // NEW: Add parry cooldown
+        parryCooldown: 0,
+        parryAvailable: true,
         items: gameState.playerInventory
     };
     
@@ -372,7 +373,7 @@ function setupEventListeners() {
                 'x': 'punch',
                 'a': 'kick',
                 's': 'kick',
-                ' ': 'parry', // Changed from block to parry
+                ' ': 'parry',
                 'c': 'special'
             };
             
@@ -473,7 +474,7 @@ function doPlayerAttack(type) {
     }
     
     const distance = Math.abs(gameState.player.x - gameState.cpu.x);
-    if (distance > 3 && type !== 'parry') return; // Too far to attack (except parry)
+    if (distance > 3 && type !== 'parry') return;
     
     gameState.player.attackCooldown = 20;
     
@@ -486,14 +487,23 @@ function doPlayerAttack(type) {
         gameState.cpu.memory.playerMoves[type]++;
     }
     
-    // NEW PARRY SYSTEM
+    // NERFED PARRY SYSTEM - 10 SECOND COOLDOWN, NO HEAL, ONLY 2% DAMAGE
     if (type === 'parry') {
-        // Parry mechanics - heal 10% and damage 20%, but can't move for 1.5 seconds
-        const healAmount = gameState.player.maxHealth * 0.1;
-        const damageAmount = gameState.cpu.maxHealth * 0.2;
+        // Check if parry is available
+        if (!gameState.player.parryAvailable) {
+            const display = document.getElementById('comboDisplay');
+            if (display) {
+                display.textContent = "PARRY ON COOLDOWN!";
+                display.classList.add('active');
+                setTimeout(() => {
+                    display.classList.remove('active');
+                }, 1000);
+            }
+            return;
+        }
         
-        // Heal player
-        gameState.player.health = Math.min(gameState.player.maxHealth, gameState.player.health + healAmount);
+        // NERFED: Only 2% damage, NO healing
+        const damageAmount = gameState.cpu.maxHealth * 0.02;
         
         // Damage CPU (bypasses parry)
         gameState.cpu.health = Math.max(0, gameState.cpu.health - damageAmount);
@@ -501,18 +511,51 @@ function doPlayerAttack(type) {
         // Set parry cooldown (1.5 seconds = 90 frames at 60fps)
         gameState.player.parryCooldown = 90;
         
+        // Set parry availability cooldown (10 seconds)
+        gameState.player.parryAvailable = false;
+        
+        // Disable parry button visually
+        const parryButtons = document.querySelectorAll('[data-action="parry"]');
+        parryButtons.forEach(btn => {
+            btn.disabled = true;
+            btn.style.opacity = '0.5';
+            btn.style.background = 'rgba(100, 100, 100, 0.7)';
+        });
+        
+        // Start cooldown timer
+        setTimeout(() => {
+            if (gameState.player) {
+                gameState.player.parryAvailable = true;
+                // Re-enable parry button
+                parryButtons.forEach(btn => {
+                    btn.disabled = false;
+                    btn.style.opacity = '1';
+                    btn.style.background = 'rgba(100, 255, 100, 0.7)';
+                });
+                // Show parry ready message
+                const display = document.getElementById('comboDisplay');
+                if (display) {
+                    display.textContent = "PARRY READY!";
+                    display.classList.add('active');
+                    setTimeout(() => {
+                        display.classList.remove('active');
+                    }, 1000);
+                }
+            }
+        }, 10000);
+        
         // Visual effects
         createParryEffect(gameState.player.x, 1, 0);
-        applyDamageFlash('player', 0x00ff00); // Green flash for successful parry
-        applyDamageFlash('cpu'); // Red flash for damage
+        applyDamageFlash('player', 0x00ff00);
+        applyDamageFlash('cpu');
         
         // Update health bars
         updateHealthBars();
         
-        // Show parry success message
+        // Show nerfed parry message
         const display = document.getElementById('comboDisplay');
         if (display) {
-            display.textContent = "PERFECT PARRY!";
+            display.textContent = "PARRY! (2% DMG)";
             display.classList.add('active');
             setTimeout(() => {
                 display.classList.remove('active');
@@ -526,7 +569,7 @@ function doPlayerAttack(type) {
     if (gameState.cpu && Math.random() < gameState.cpu.difficulty.parryChance) {
         // CPU successfully parries
         createParryEffect(gameState.cpu.x, 1, 0);
-        applyDamageFlash('cpu', 0x00ff00); // Green flash for parry
+        applyDamageFlash('cpu', 0x00ff00);
         
         // Counter attack chance (except in insane mode where they always counter)
         if (Math.random() < 0.3 || gameState.difficulty === 'insane') {
@@ -536,9 +579,8 @@ function doPlayerAttack(type) {
         return;
     }
     
-    // Attack animation
+    // Normal attack logic
     if (window.playerModel) {
-        // Lean forward for attack
         window.playerModel.position.z = -0.5;
         setTimeout(() => {
             if (window.playerModel) window.playerModel.position.z = 0;
@@ -549,9 +591,8 @@ function doPlayerAttack(type) {
     let damage = 0;
     let damageMultiplier = 1;
     
-    // Apply item effects
     if (gameState.player.items && gameState.player.items.damageBoost) {
-        damageMultiplier += 0.2; // 20% damage increase
+        damageMultiplier += 0.2;
     }
     
     if (type === 'punch') {
@@ -616,7 +657,6 @@ function checkCombos() {
         
         const recentInput = gameState.combo.slice(-combo.input.length);
         if (JSON.stringify(recentInput) === JSON.stringify(combo.input)) {
-            // Combo successful!
             executeCombo(combo);
             gameState.combo = [];
             break;
@@ -646,41 +686,31 @@ function executeCombo(combo) {
     
     // Apply damage to CPU (with parry check)
     if (gameState.cpu && Math.random() < gameState.cpu.difficulty.parryChance) {
-        // CPU parries the combo
         createParryEffect(gameState.cpu.x, 1, 0);
         applyDamageFlash('cpu', 0x00ff00);
         if (display) display.textContent = `${combo.name} PARRY!`;
     } else {
-        // Combo hits
         gameState.cpu.health = Math.max(0, gameState.cpu.health - combo.damage);
         updateHealthBars();
         
-        // Update practice stats
         if (gameState.gameMode === 'practice') {
             gameState.practiceStats.comboCount++;
             gameState.practiceStats.damageDealt += combo.damage;
             updatePracticeStats();
         }
         
-        // Add to score
         gameState.score += combo.damage * gameState.comboCount;
         
-        // Visual effects
         if (window.playerModel) {
-            // Attack animation
             window.playerModel.position.z = -0.8;
             setTimeout(() => {
                 if (window.playerModel) window.playerModel.position.z = 0;
             }, 150);
         }
         
-        // Blood effect at CPU position
         createBloodEffect(gameState.cpu.x, 1, 0);
-        
-        // Damage flash on CPU
         applyDamageFlash('cpu');
         
-        // Screen shake for powerful combos
         if (combo.damage > 100) {
             const canvas = document.getElementById('gameCanvas');
             if (canvas) {
@@ -695,13 +725,11 @@ function executeCombo(combo) {
             }
         }
         
-        // Secret 67 effect for high damage combos
         if (combo.damage > 100 && Math.random() > 0.7) {
             spawn67();
         }
     }
     
-    // CPU learning - increase dodge chance against frequent combos
     if (gameState.cpu.memory) {
         gameState.cpu.memory.dodgeChance = Math.min(0.6, gameState.cpu.memory.dodgeChance + 0.02);
     }
@@ -723,7 +751,6 @@ function animate() {
         update();
         render();
         
-        // Update Three.js animations
         if (window.mixerPlayer) window.mixerPlayer.update(delta);
         if (window.mixerCpu) window.mixerCpu.update(delta);
     } catch (error) {
@@ -738,7 +765,7 @@ function update() {
     // Update cooldowns
     if (gameState.player.attackCooldown > 0) gameState.player.attackCooldown--;
     if (gameState.cpu.attackCooldown > 0) gameState.cpu.attackCooldown--;
-    if (gameState.player.parryCooldown > 0) gameState.player.parryCooldown--; // NEW: Update parry cooldown
+    if (gameState.player.parryCooldown > 0) gameState.player.parryCooldown--;
     
     // Player movement - DISABLED during parry cooldown
     if (gameState.player.parryCooldown <= 0) {
@@ -760,7 +787,7 @@ function update() {
         }
     }
     
-    // CPU AI with memory and learning
+    // CPU AI
     const distance = gameState.cpu.x - gameState.player.x;
     
     // Basic CPU movement
@@ -896,9 +923,8 @@ function endRound() {
     } else if (gameState.cpu.health <= 0) {
         message = "PLAYER WINS!";
         gameState.score += 1000;
-        gameState.coins += 50; // Award coins for victory
+        gameState.coins += 50;
         
-        // Update high score and save coins
         if (gameState.score > gameState.highScore) {
             gameState.highScore = gameState.score;
             localStorage.setItem('brainrotHighScore', gameState.highScore);
@@ -910,10 +936,9 @@ function endRound() {
         const coinsElement = document.getElementById('coinsAmount');
         if (coinsElement) coinsElement.textContent = gameState.coins;
         
-        spawn67(); // Victory 67 effect
+        spawn67();
     }
     
-    // Save CPU memory
     localStorage.setItem('cpuMemory', JSON.stringify(gameState.cpuMemory));
     
     setTimeout(() => {
@@ -954,7 +979,6 @@ function applyDamageFlash(character, color = 0xff0000) {
     
     if (!model) return;
     
-    // Flash the model
     model.children.forEach(child => {
         if (child.material) {
             const originalColor = child.material.color.clone();
@@ -985,7 +1009,6 @@ function createParryEffect(x, y, z) {
     parry.rotation.x = Math.PI / 2;
     window.scene.add(parry);
     
-    // Animate parry effect
     const startTime = Date.now();
     const duration = 500;
     
