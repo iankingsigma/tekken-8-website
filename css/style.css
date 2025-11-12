@@ -1025,3 +1025,89 @@ body {
     .touch-btn, .movement-btn { width: 60px; height: 60px; font-size: 0.7rem; }
     .movement-btn { font-size: 1.2rem; }
 }
+/* Disabled button styles */
+.touch-btn:disabled {
+    opacity: 0.5 !important;
+    background: rgba(100, 100, 100, 0.7) !important;
+    cursor: not-allowed !important;
+}
+
+.touch-btn:disabled:active {
+    transform: scale(1) !important;
+}
+
+/* Cooldown animation for parry button */
+.parry-cooldown {
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    width: 100%;
+    height: 5px;
+    background: #ff0033;
+    transform-origin: left;
+    animation: parryCooldown 10s linear;
+}
+
+@keyframes parryCooldown {
+    from { transform: scaleX(1); }
+    to { transform: scaleX(0); }
+}
+
+/* Shop item styles */
+.shop-item {
+    background: rgba(255, 0, 51, 0.1);
+    border: 2px solid #ff0033;
+    border-radius: 10px;
+    padding: 1.5rem;
+    text-align: center;
+    transition: all 0.2s;
+}
+
+.shop-item:hover {
+    border-color: #ffcc00;
+    transform: translateY(-2px);
+}
+
+.item-name {
+    font-size: 1.3rem;
+    color: #ffcc00;
+    margin-bottom: 0.5rem;
+}
+
+.item-desc {
+    color: #aaa;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.item-price {
+    font-size: 1.2rem;
+    color: #ffcc00;
+    margin-bottom: 1rem;
+    font-weight: bold;
+}
+
+.buy-btn {
+    background: rgba(255, 204, 0, 0.3);
+    border: 2px solid #ffcc00;
+    color: white;
+    padding: 0.5rem 1.5rem;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.2s;
+    width: 100%;
+    font-size: 1rem;
+    font-weight: bold;
+}
+
+.buy-btn:hover:not(:disabled) {
+    background: rgba(255, 204, 0, 0.7);
+    transform: scale(1.05);
+}
+
+.buy-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: scale(1);
+}
