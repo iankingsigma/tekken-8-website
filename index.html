@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Brainrot Fighters - Online Multiplayer</title>
     <link rel="stylesheet" href="css/style.css">
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/gsap.min.js"></script>
-    <script type="module" src="js/firebase.js"></script>
-    <script type="module" src="js/online.js"></script>
 </head>
 <body>
     <!-- Device Detection -->
@@ -457,6 +457,8 @@
         </div>
     </div>
 
+    <!-- Scripts at the BOTTOM -->
+    <script src="js/online.js"></script>
     <script src="js/characters.js"></script>
     <script src="js/game.js"></script>
     <script src="js/threejs-renderer.js"></script>
