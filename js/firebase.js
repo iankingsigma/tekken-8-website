@@ -1,8 +1,6 @@
-// Import Firebase App and Firestore
 import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, collection, addDoc, doc, setDoc, getDoc, updateDoc, onSnapshot, query, where, orderBy, limit, serverTimestamp, deleteDoc } from "firebase/firestore";
 
-// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyC_oGcKpg_AQLngNmAWFV18vH4yY0t09Dc",
   authDomain: "brainrot-fighters-servers.firebaseapp.com",
@@ -16,3 +14,8 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
+
+export { 
+    collection, addDoc, doc, setDoc, getDoc, updateDoc, onSnapshot, 
+    query, where, orderBy, limit, serverTimestamp, deleteDoc 
+};
