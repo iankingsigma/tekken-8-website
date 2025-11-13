@@ -32,7 +32,8 @@ let gameState = {
     bossSpecialAttackCooldown: 0,
     bossStunTimer: 0,
     isBossStunned: false,
-    playerBaseHp: 0 // Track base HP for damage calculations
+    playerBaseHp: 0, // Track base HP for damage calculations
+    lastHealTime: 0 // Track last passive heal time
 };
 
 // Difficulty Settings
@@ -66,7 +67,8 @@ const DIFFICULTY_SETTINGS = {
         parryChance: 0.5, // 50% parry chance (BUFFED)
         aggression: 1.2,
         learningRate: 0.9,
-        isBoss: true
+        isBoss: true,
+        parryCooldown: 2 // 2 second parry cooldown for player
     }
 };
 
@@ -350,6 +352,7 @@ function startGame() {
     gameState.bossSpecialAttackCooldown = 0;
     gameState.bossStunTimer = 0;
     gameState.isBossStunned = false;
+    gameState.lastHealTime = Date.now();
     
     // Re-enable parry buttons
     const parryButtons = document.querySelectorAll('[data-action="parry"]');
@@ -632,9 +635,12 @@ function doPlayerAttack(type) {
         gameState.player.health = Math.min(gameState.player.maxHealth, gameState.player.health + healAmount);
         gameState.cpu.health = Math.max(0, gameState.cpu.health - damageAmount);
         
+        // Set parry cooldown based on difficulty (2 seconds for 67 boss, 10 seconds for others)
+        const cooldownTime = gameState.difficulty === 'sixtyseven' ? 2000 : 10000;
+        
         gameState.player.parryCooldown = 90;
         gameState.parryCooldownActive = true;
-        gameState.parryCooldownEnd = Date.now() + 10000;
+        gameState.parryCooldownEnd = Date.now() + cooldownTime;
         
         const parryButtons = document.querySelectorAll('[data-action="parry"]');
         parryButtons.forEach(btn => {
@@ -920,6 +926,15 @@ function update() {
         }
     }
     
+    // PASSIVE PLAYER HEALING - 1% per second
+    const currentTime = Date.now();
+    if (currentTime - gameState.lastHealTime > 1000) { // Every second
+        gameState.lastHealTime = currentTime;
+        const healAmount = gameState.player.maxHealth * 0.01; // 1% of max health
+        gameState.player.health = Math.min(gameState.player.maxHealth, gameState.player.health + healAmount);
+        updateHealthBars();
+    }
+    
     if (gameState.player.parryCooldown <= 0) {
         if (gameState.keys['arrowleft']) {
             gameState.player.x = Math.max(-8, gameState.player.x - 0.1);
@@ -1023,7 +1038,7 @@ function updateBossAI() {
     }
 }
 
-// Boss Special Attacks - ALL ATTACKS DO 167 DAMAGE
+// Boss Special Attacks - INCREASED DAMAGE
 function doBossStompAttack() {
     console.log("BOSS STOMP ATTACK!");
     
@@ -1051,18 +1066,15 @@ function doBossStompAttack() {
     // Check if player is in range
     const distance = Math.abs(gameState.player.x - gameState.cpu.x);
     if (distance < 3) {
-        // ALL BOSS ATTACKS DO 167 DAMAGE
-        const damage = 167;
+        // INCREASED BOSS DAMAGE - 267 damage instead of 167
+        const damage = 267;
         gameState.player.health = Math.max(0, gameState.player.health - damage);
-        
-        // BOSS HEALS 1 HP ON HIT
-        gameState.cpu.health = Math.min(gameState.cpu.maxHealth, gameState.cpu.health + 1);
         
         updateHealthBars();
         createBloodEffect(gameState.player.x, 1, 0);
         applyDamageFlash('player');
         
-        console.log("STOMP HIT! 167 damage + 1 HP heal");
+        console.log("STOMP HIT! 267 damage");
     }
 }
 
@@ -1091,18 +1103,15 @@ function doBossDashAttack() {
     // Check if player is hit during dash
     const distance = Math.abs(gameState.player.x - gameState.cpu.x);
     if (distance < 2) {
-        // ALL BOSS ATTACKS DO 167 DAMAGE
-        const damage = 167;
+        // INCREASED BOSS DAMAGE - 267 damage instead of 167
+        const damage = 267;
         gameState.player.health = Math.max(0, gameState.player.health - damage);
-        
-        // BOSS HEALS 1 HP ON HIT
-        gameState.cpu.health = Math.min(gameState.cpu.maxHealth, gameState.cpu.health + 1);
         
         updateHealthBars();
         createBloodEffect(gameState.player.x, 1, 0);
         applyDamageFlash('player');
         
-        console.log("DASH HIT! 167 damage + 1 HP heal");
+        console.log("DASH HIT! 267 damage");
     }
     
     // Return to original position after dash
@@ -1129,8 +1138,8 @@ function doCpuAttack(type) {
     const difficulty = gameState.cpu.difficulty;
     
     if (gameState.cpu.isBoss) {
-        // BOSS: ALL ATTACKS DO 167 DAMAGE
-        damage = 167;
+        // BOSS: INCREASED DAMAGE - 267 instead of 167
+        damage = 267;
     } else {
         // Regular CPU damage calculation
         if (type === 'punch') {
@@ -1143,11 +1152,6 @@ function doCpuAttack(type) {
     }
     
     gameState.player.health = Math.max(0, gameState.player.health - damage);
-    
-    // BOSS HEALS 1 HP ON HIT
-    if (gameState.cpu.isBoss) {
-        gameState.cpu.health = Math.min(gameState.cpu.maxHealth, gameState.cpu.health + 1);
-    }
     
     updateHealthBars();
     
