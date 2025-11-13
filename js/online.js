@@ -1,4 +1,21 @@
-import { db, collection, addDoc, doc, setDoc, getDoc, updateDoc, onSnapshot, query, where, orderBy, limit, serverTimestamp, deleteDoc } from './firebase.js';
+// Firebase configuration
+const firebaseConfig = {
+    apiKey: "AIzaSyC_oGcKpg_AQLngNmAWFV18vH4yY0t09Dc",
+    authDomain: "brainrot-fighters-servers.firebaseapp.com",
+    databaseURL: "https://brainrot-fighters-servers-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "brainrot-fighters-servers",
+    storageBucket: "brainrot-fighters-servers.appspot.com",
+    messagingSenderId: "889390120088",
+    appId: "1:889390120088:web:9d72aff815d75fe868e4ed",
+    measurementId: "G-QWJ18BM9HZ"
+};
+
+// Initialize Firebase
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
+
+const db = firebase.firestore();
 
 class OnlineManager {
     constructor() {
@@ -29,12 +46,12 @@ class OnlineManager {
                 guestCharacter: null,
                 guestReady: false,
                 status: 'waiting',
-                createdAt: serverTimestamp(),
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                 players: [this.playerId]
             };
 
-            const roomRef = doc(collection(db, 'rooms'), roomCode);
-            await setDoc(roomRef, roomData);
+            const roomRef = db.collection('rooms').doc(roomCode);
+            await roomRef.set(roomData);
             
             this.currentRoom = roomCode;
             this.isHost = true;
@@ -61,10 +78,10 @@ class OnlineManager {
 
     async joinRoom(roomCode, characterId) {
         try {
-            const roomRef = doc(db, 'rooms', roomCode);
-            const roomSnap = await getDoc(roomRef);
+            const roomRef = db.collection('rooms').doc(roomCode);
+            const roomSnap = await roomRef.get();
             
-            if (!roomSnap.exists()) {
+            if (!roomSnap.exists) {
                 throw new Error('Room not found');
             }
             
@@ -78,11 +95,11 @@ class OnlineManager {
                 throw new Error('Room is full');
             }
             
-            await updateDoc(roomRef, {
+            await roomRef.update({
                 guest: this.playerId,
                 guestCharacter: characterId,
                 guestReady: false,
-                players: [...(roomData.players || []), this.playerId]
+                players: firebase.firestore.FieldValue.arrayUnion(this.playerId)
             });
             
             this.currentRoom = roomCode;
@@ -103,20 +120,20 @@ class OnlineManager {
         if (!this.currentRoom) return;
         
         try {
-            const roomRef = doc(db, 'rooms', this.currentRoom);
-            const roomSnap = await getDoc(roomRef);
+            const roomRef = db.collection('rooms').doc(this.currentRoom);
+            const roomSnap = await roomRef.get();
             
-            if (roomSnap.exists()) {
+            if (roomSnap.exists) {
                 const roomData = roomSnap.data();
                 
                 if (this.isHost) {
-                    await deleteDoc(roomRef);
+                    await roomRef.delete();
                 } else {
-                    await updateDoc(roomRef, {
+                    await roomRef.update({
                         guest: null,
                         guestCharacter: null,
                         guestReady: false,
-                        players: roomData.players.filter(p => p !== this.playerId)
+                        players: firebase.firestore.FieldValue.arrayRemove(this.playerId)
                     });
                 }
             }
@@ -131,10 +148,10 @@ class OnlineManager {
         if (!this.currentRoom) return;
         
         try {
-            const roomRef = doc(db, 'rooms', this.currentRoom);
+            const roomRef = db.collection('rooms').doc(this.currentRoom);
             const field = this.isHost ? 'hostReady' : 'guestReady';
             
-            await updateDoc(roomRef, {
+            await roomRef.update({
                 [field]: ready
             });
         } catch (error) {
@@ -146,8 +163,8 @@ class OnlineManager {
         if (!this.currentRoom || !this.isHost) return;
         
         try {
-            const roomRef = doc(db, 'rooms', this.currentRoom);
-            await updateDoc(roomRef, {
+            const roomRef = db.collection('rooms').doc(this.currentRoom);
+            await roomRef.update({
                 status: 'playing',
                 gameState: {
                     round: 1,
@@ -167,8 +184,8 @@ class OnlineManager {
         if (!this.currentRoom) return;
         
         try {
-            const roomRef = doc(db, 'rooms', this.currentRoom);
-            await updateDoc(roomRef, {
+            const roomRef = db.collection('rooms').doc(this.currentRoom);
+            await roomRef.update({
                 gameState: gameState
             });
         } catch (error) {
@@ -180,10 +197,10 @@ class OnlineManager {
         if (!this.currentRoom) return;
         
         try {
-            await addDoc(collection(db, 'rooms', this.currentRoom, 'chat'), {
+            await db.collection('rooms').doc(this.currentRoom).collection('chat').add({
                 playerId: this.playerId,
                 message: message,
-                timestamp: serverTimestamp()
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
             });
         } catch (error) {
             console.error('Error sending chat message:', error);
@@ -194,11 +211,11 @@ class OnlineManager {
         try {
             const playerName = localStorage.getItem('playerName') || `Player${this.playerId.substr(-4)}`;
             
-            await addDoc(collection(db, 'leaderboard'), {
+            await db.collection('leaderboard').add({
                 playerId: this.playerId,
                 playerName: playerName,
                 score: score,
-                timestamp: serverTimestamp()
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
             });
         } catch (error) {
             console.error('Error submitting score:', error);
@@ -208,9 +225,9 @@ class OnlineManager {
     listenToRoomChanges() {
         if (!this.currentRoom) return;
         
-        const roomRef = doc(db, 'rooms', this.currentRoom);
-        this.roomListener = onSnapshot(roomRef, (snapshot) => {
-            if (!snapshot.exists()) {
+        const roomRef = db.collection('rooms').doc(this.currentRoom);
+        this.roomListener = roomRef.onSnapshot((snapshot) => {
+            if (!snapshot.exists) {
                 this.handleRoomClosed();
                 return;
             }
@@ -223,9 +240,9 @@ class OnlineManager {
     listenToGameState() {
         if (!this.currentRoom) return;
         
-        const gameRef = doc(db, 'rooms', this.currentRoom);
-        this.gameListener = onSnapshot(gameRef, (snapshot) => {
-            if (!snapshot.exists()) return;
+        const gameRef = db.collection('rooms').doc(this.currentRoom);
+        this.gameListener = gameRef.onSnapshot((snapshot) => {
+            if (!snapshot.exists) return;
             
             const roomData = snapshot.data();
             if (roomData.gameState && !this.isHost) {
@@ -237,10 +254,11 @@ class OnlineManager {
     listenToChat() {
         if (!this.currentRoom) return;
         
-        const chatRef = collection(db, 'rooms', this.currentRoom, 'chat');
-        const chatQuery = query(chatRef, orderBy('timestamp', 'desc'), limit(20));
+        const chatRef = db.collection('rooms').doc(this.currentRoom).collection('chat')
+            .orderBy('timestamp', 'desc')
+            .limit(20);
         
-        this.chatListener = onSnapshot(chatQuery, (snapshot) => {
+        this.chatListener = chatRef.onSnapshot((snapshot) => {
             const messages = [];
             snapshot.forEach(doc => {
                 messages.push(doc.data());
@@ -251,10 +269,11 @@ class OnlineManager {
     }
 
     listenToLeaderboard() {
-        const leaderboardRef = collection(db, 'leaderboard');
-        const leaderboardQuery = query(leaderboardRef, orderBy('score', 'desc'), limit(10));
+        const leaderboardRef = db.collection('leaderboard')
+            .orderBy('score', 'desc')
+            .limit(10);
         
-        this.leaderboardListener = onSnapshot(leaderboardQuery, (snapshot) => {
+        this.leaderboardListener = leaderboardRef.onSnapshot((snapshot) => {
             const leaderboard = [];
             snapshot.forEach(doc => {
                 leaderboard.push(doc.data());
@@ -318,11 +337,10 @@ class OnlineManager {
 
     async getAvailableRooms() {
         try {
-            const roomsRef = collection(db, 'rooms');
-            const roomsQuery = query(roomsRef, where('status', '==', 'waiting'));
+            const roomsRef = db.collection('rooms').where('status', '==', 'waiting');
             
             return new Promise((resolve) => {
-                const unsubscribe = onSnapshot(roomsQuery, (snapshot) => {
+                const unsubscribe = roomsRef.onSnapshot((snapshot) => {
                     const rooms = [];
                     snapshot.forEach(doc => {
                         const roomData = doc.data();
@@ -342,5 +360,23 @@ class OnlineManager {
     }
 }
 
+// Initialize online manager when Firebase is ready
+function initOnlineManager() {
+    if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
+        window.onlineManager = new OnlineManager();
+        console.log('Online Manager initialized successfully');
+    } else {
+        console.error('Firebase not loaded yet');
+        // Retry after a short delay
+        setTimeout(initOnlineManager, 1000);
+    }
+}
+
+// Initialize when page loads
+window.addEventListener('load', function() {
+    // Wait a bit for Firebase to load
+    setTimeout(initOnlineManager, 500);
+});
+
+// Also export for module systems if needed
 window.OnlineManager = OnlineManager;
-window.onlineManager = new OnlineManager();
