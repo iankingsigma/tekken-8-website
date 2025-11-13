@@ -1,15 +1,4 @@
-// Firebase configuration
-const firebaseConfig = {
-    apiKey: "AIzaSyC_oGcKpg_AQLngNmAWFV18vH4yY0t09Dc",
-    authDomain: "brainrot-fighters-servers.firebaseapp.com",
-    databaseURL: "https://brainrot-fighters-servers-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "brainrot-fighters-servers",
-    storageBucket: "brainrot-fighters-servers.appspot.com",
-    messagingSenderId: "889390120088",
-    appId: "1:889390120088:web:9d72aff815d75fe868e4ed",
-    measurementId: "G-QWJ18BM9HZ"
-};
-
+// Simple Firebase v9 CDN approach
 class OnlineManager {
     constructor() {
         this.playerId = this.generatePlayerId();
@@ -19,46 +8,55 @@ class OnlineManager {
         this.leaderboardListener = null;
         this.chatListener = null;
         this.isHost = false;
+        this.db = null;
         
         console.log('Online Manager initialized. Player ID:', this.playerId);
-        this.initFirebase();
+        this.loadFirebase();
     }
 
-    async initFirebase() {
-        try {
-            // Dynamically import Firebase modules
-            const { initializeApp } = await import('https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js');
-            const { getFirestore, collection, doc, setDoc, getDoc, updateDoc, onSnapshot, query, where, orderBy, limit, serverTimestamp, deleteDoc, addDoc } = await import('https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js');
-            
-            this.firebase = { 
-                initializeApp, 
-                getFirestore, 
-                collection, 
-                doc, 
-                setDoc, 
-                getDoc, 
-                updateDoc, 
-                onSnapshot, 
-                query, 
-                where, 
-                orderBy, 
-                limit, 
-                serverTimestamp, 
-                deleteDoc, 
-                addDoc 
-            };
-            
-            this.app = initializeApp(firebaseConfig);
-            this.db = getFirestore(this.app);
-            
-            console.log('Firebase initialized successfully');
-            
-            // Initialize listeners if we're in a room
-            if (this.currentRoom) {
-                this.listenToRoomChanges();
-                this.listenToGameState();
+    async loadFirebase() {
+        return new Promise((resolve, reject) => {
+            // Check if Firebase is already loaded
+            if (window.firebase && window.firebase.firestore) {
+                this.initFirebase();
+                resolve();
+                return;
             }
-            
+
+            // Load Firebase v9 CDN
+            const script = document.createElement('script');
+            script.src = 'https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js';
+            script.onload = () => {
+                const script2 = document.createElement('script');
+                script2.src = 'https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js';
+                script2.onload = () => {
+                    this.initFirebase();
+                    resolve();
+                };
+                script2.onerror = reject;
+                document.head.appendChild(script2);
+            };
+            script.onerror = reject;
+            document.head.appendChild(script);
+        });
+    }
+
+    initFirebase() {
+        try {
+            const firebaseConfig = {
+                apiKey: "AIzaSyC_oGcKpg_AQLngNmAWFV18vH4yY0t09Dc",
+                authDomain: "brainrot-fighters-servers.firebaseapp.com",
+                databaseURL: "https://brainrot-fighters-servers-default-rtdb.asia-southeast1.firebasedatabase.app",
+                projectId: "brainrot-fighters-servers",
+                storageBucket: "brainrot-fighters-servers.appspot.com",
+                messagingSenderId: "889390120088",
+                appId: "1:889390120088:web:9d72aff815d75fe868e4ed",
+                measurementId: "G-QWJ18BM9HZ"
+            };
+
+            firebase.initializeApp(firebaseConfig);
+            this.db = firebase.firestore();
+            console.log('Firebase initialized successfully');
         } catch (error) {
             console.error('Error initializing Firebase:', error);
         }
@@ -71,7 +69,7 @@ class OnlineManager {
     async createRoom(characterId) {
         try {
             if (!this.db) {
-                await this.initFirebase();
+                await this.loadFirebase();
             }
             
             const roomCode = this.generateRoomCode();
@@ -84,12 +82,11 @@ class OnlineManager {
                 guestCharacter: null,
                 guestReady: false,
                 status: 'waiting',
-                createdAt: this.firebase.serverTimestamp(),
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                 players: [this.playerId]
             };
 
-            const roomRef = this.firebase.doc(this.firebase.collection(this.db, 'rooms'), roomCode);
-            await this.firebase.setDoc(roomRef, roomData);
+            await this.db.collection('rooms').doc(roomCode).set(roomData);
             
             this.currentRoom = roomCode;
             this.isHost = true;
@@ -117,13 +114,13 @@ class OnlineManager {
     async joinRoom(roomCode, characterId) {
         try {
             if (!this.db) {
-                await this.initFirebase();
+                await this.loadFirebase();
             }
             
-            const roomRef = this.firebase.doc(this.db, 'rooms', roomCode);
-            const roomSnap = await this.firebase.getDoc(roomRef);
+            const roomRef = this.db.collection('rooms').doc(roomCode);
+            const roomSnap = await roomRef.get();
             
-            if (!roomSnap.exists()) {
+            if (!roomSnap.exists) {
                 throw new Error('Room not found');
             }
             
@@ -137,11 +134,11 @@ class OnlineManager {
                 throw new Error('Room is full');
             }
             
-            await this.firebase.updateDoc(roomRef, {
+            await roomRef.update({
                 guest: this.playerId,
                 guestCharacter: characterId,
                 guestReady: false,
-                players: [...(roomData.players || []), this.playerId]
+                players: firebase.firestore.FieldValue.arrayUnion(this.playerId)
             });
             
             this.currentRoom = roomCode;
@@ -162,20 +159,20 @@ class OnlineManager {
         if (!this.currentRoom || !this.db) return;
         
         try {
-            const roomRef = this.firebase.doc(this.db, 'rooms', this.currentRoom);
-            const roomSnap = await this.firebase.getDoc(roomRef);
+            const roomRef = this.db.collection('rooms').doc(this.currentRoom);
+            const roomSnap = await roomRef.get();
             
-            if (roomSnap.exists()) {
+            if (roomSnap.exists) {
                 const roomData = roomSnap.data();
                 
                 if (this.isHost) {
-                    await this.firebase.deleteDoc(roomRef);
+                    await roomRef.delete();
                 } else {
-                    await this.firebase.updateDoc(roomRef, {
+                    await roomRef.update({
                         guest: null,
                         guestCharacter: null,
                         guestReady: false,
-                        players: roomData.players.filter(p => p !== this.playerId)
+                        players: firebase.firestore.FieldValue.arrayRemove(this.playerId)
                     });
                 }
             }
@@ -190,10 +187,10 @@ class OnlineManager {
         if (!this.currentRoom || !this.db) return;
         
         try {
-            const roomRef = this.firebase.doc(this.db, 'rooms', this.currentRoom);
+            const roomRef = this.db.collection('rooms').doc(this.currentRoom);
             const field = this.isHost ? 'hostReady' : 'guestReady';
             
-            await this.firebase.updateDoc(roomRef, {
+            await roomRef.update({
                 [field]: ready
             });
         } catch (error) {
@@ -205,8 +202,8 @@ class OnlineManager {
         if (!this.currentRoom || !this.isHost || !this.db) return;
         
         try {
-            const roomRef = this.firebase.doc(this.db, 'rooms', this.currentRoom);
-            await this.firebase.updateDoc(roomRef, {
+            const roomRef = this.db.collection('rooms').doc(this.currentRoom);
+            await roomRef.update({
                 status: 'playing',
                 gameState: {
                     round: 1,
@@ -226,8 +223,8 @@ class OnlineManager {
         if (!this.currentRoom || !this.db) return;
         
         try {
-            const roomRef = this.firebase.doc(this.db, 'rooms', this.currentRoom);
-            await this.firebase.updateDoc(roomRef, {
+            const roomRef = this.db.collection('rooms').doc(this.currentRoom);
+            await roomRef.update({
                 gameState: gameState
             });
         } catch (error) {
@@ -239,10 +236,10 @@ class OnlineManager {
         if (!this.currentRoom || !this.db) return;
         
         try {
-            await this.firebase.addDoc(this.firebase.collection(this.db, 'rooms', this.currentRoom, 'chat'), {
+            await this.db.collection('rooms').doc(this.currentRoom).collection('chat').add({
                 playerId: this.playerId,
                 message: message,
-                timestamp: this.firebase.serverTimestamp()
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
             });
         } catch (error) {
             console.error('Error sending chat message:', error);
@@ -255,11 +252,11 @@ class OnlineManager {
         try {
             const playerName = localStorage.getItem('playerName') || `Player${this.playerId.substr(-4)}`;
             
-            await this.firebase.addDoc(this.firebase.collection(this.db, 'leaderboard'), {
+            await this.db.collection('leaderboard').add({
                 playerId: this.playerId,
                 playerName: playerName,
                 score: score,
-                timestamp: this.firebase.serverTimestamp()
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
             });
         } catch (error) {
             console.error('Error submitting score:', error);
@@ -269,9 +266,9 @@ class OnlineManager {
     listenToRoomChanges() {
         if (!this.currentRoom || !this.db) return;
         
-        const roomRef = this.firebase.doc(this.db, 'rooms', this.currentRoom);
-        this.roomListener = this.firebase.onSnapshot(roomRef, (snapshot) => {
-            if (!snapshot.exists()) {
+        const roomRef = this.db.collection('rooms').doc(this.currentRoom);
+        this.roomListener = roomRef.onSnapshot((snapshot) => {
+            if (!snapshot.exists) {
                 this.handleRoomClosed();
                 return;
             }
@@ -284,9 +281,9 @@ class OnlineManager {
     listenToGameState() {
         if (!this.currentRoom || !this.db) return;
         
-        const gameRef = this.firebase.doc(this.db, 'rooms', this.currentRoom);
-        this.gameListener = this.firebase.onSnapshot(gameRef, (snapshot) => {
-            if (!snapshot.exists()) return;
+        const gameRef = this.db.collection('rooms').doc(this.currentRoom);
+        this.gameListener = gameRef.onSnapshot((snapshot) => {
+            if (!snapshot.exists) return;
             
             const roomData = snapshot.data();
             if (roomData.gameState && !this.isHost) {
@@ -298,10 +295,11 @@ class OnlineManager {
     listenToChat() {
         if (!this.currentRoom || !this.db) return;
         
-        const chatRef = this.firebase.collection(this.db, 'rooms', this.currentRoom, 'chat');
-        const chatQuery = this.firebase.query(chatRef, this.firebase.orderBy('timestamp', 'desc'), this.firebase.limit(20));
+        const chatRef = this.db.collection('rooms').doc(this.currentRoom).collection('chat')
+            .orderBy('timestamp', 'desc')
+            .limit(20);
         
-        this.chatListener = this.firebase.onSnapshot(chatQuery, (snapshot) => {
+        this.chatListener = chatRef.onSnapshot((snapshot) => {
             const messages = [];
             snapshot.forEach(doc => {
                 messages.push(doc.data());
@@ -314,10 +312,11 @@ class OnlineManager {
     listenToLeaderboard() {
         if (!this.db) return;
         
-        const leaderboardRef = this.firebase.collection(this.db, 'leaderboard');
-        const leaderboardQuery = this.firebase.query(leaderboardRef, this.firebase.orderBy('score', 'desc'), this.firebase.limit(10));
+        const leaderboardRef = this.db.collection('leaderboard')
+            .orderBy('score', 'desc')
+            .limit(10);
         
-        this.leaderboardListener = this.firebase.onSnapshot(leaderboardQuery, (snapshot) => {
+        this.leaderboardListener = leaderboardRef.onSnapshot((snapshot) => {
             const leaderboard = [];
             snapshot.forEach(doc => {
                 leaderboard.push(doc.data());
@@ -381,15 +380,14 @@ class OnlineManager {
 
     async getAvailableRooms() {
         if (!this.db) {
-            await this.initFirebase();
+            await this.loadFirebase();
         }
         
         try {
-            const roomsRef = this.firebase.collection(this.db, 'rooms');
-            const roomsQuery = this.firebase.query(roomsRef, this.firebase.where('status', '==', 'waiting'));
+            const roomsRef = this.db.collection('rooms').where('status', '==', 'waiting');
             
             return new Promise((resolve) => {
-                const unsubscribe = this.firebase.onSnapshot(roomsQuery, (snapshot) => {
+                const unsubscribe = roomsRef.onSnapshot((snapshot) => {
                     const rooms = [];
                     snapshot.forEach(doc => {
                         const roomData = doc.data();
@@ -409,8 +407,27 @@ class OnlineManager {
     }
 }
 
-// Initialize online manager immediately
-window.onlineManager = new OnlineManager();
+// Initialize online manager with error handling
+try {
+    window.onlineManager = new OnlineManager();
+    console.log('Online Manager created successfully');
+} catch (error) {
+    console.error('Failed to create Online Manager:', error);
+    // Fallback: create a dummy onlineManager that shows error messages
+    window.onlineManager = {
+        createRoom: async () => { 
+            alert('Online features temporarily unavailable. Please try again later.'); 
+            throw new Error('Online features disabled');
+        },
+        joinRoom: async () => { 
+            alert('Online features temporarily unavailable. Please try again later.'); 
+            throw new Error('Online features disabled');
+        },
+        sendChatMessage: async () => { 
+            alert('Chat unavailable'); 
+        },
+        // Add other methods as needed
+    };
+}
 
-// Also export for debugging
 window.OnlineManager = OnlineManager;
