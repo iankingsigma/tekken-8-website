@@ -10,7 +10,6 @@ let gameState = {
     gameActive: false,
     roundTime: 99,
     comboCount: 0,
-    round: 1,
     score: 0,
     coins: parseInt(localStorage.getItem('brainrotCoins')) || 1000,
     highScore: localStorage.getItem('brainrotHighScore') || 0,
@@ -68,6 +67,9 @@ const DIFFICULTY_SETTINGS = {
         isBoss: true
     }
 };
+
+// Boss Music
+let bossMusic = document.getElementById('bossMusic');
 
 // Initialize Game
 function init() {
@@ -148,6 +150,12 @@ function showScreen(screenId) {
     } else {
         console.error('Screen not found:', screenId);
         return;
+    }
+    
+    // Stop boss music when leaving game screen
+    if (screenId !== 'gameScreen' && bossMusic) {
+        bossMusic.pause();
+        bossMusic.currentTime = 0;
     }
     
     if (screenId === 'gameScreen') {
@@ -320,6 +328,15 @@ function startGame() {
         cpuChar = BOSS_67;
         isBossFight = true;
         console.log('BOSS FIGHT INITIATED!');
+        
+        // Play boss music
+        if (bossMusic) {
+            bossMusic.currentTime = 0;
+            bossMusic.volume = 0.7;
+            bossMusic.play().catch(e => {
+                console.log("Boss music play failed:", e);
+            });
+        }
     } else {
         // Regular CPU character
         let cpuIndex;
@@ -884,7 +901,7 @@ function update() {
     }
     
     if (gameState.player.parryCooldown <= 0) {
-        if (gameState.keys['arrowleft']) {
+        if (gameState.keys["arrowleft"]) {
             gameState.player.x = Math.max(-8, gameState.player.x - 0.1);
             gameState.player.facing = -1;
             if (window.playerModel) {
@@ -892,7 +909,7 @@ function update() {
                 window.playerModel.rotation.y = Math.PI;
             }
         }
-        if (gameState.keys['arrowright']) {
+        if (gameState.keys["arrowright"]) {
             gameState.player.x = Math.min(8, gameState.player.x + 0.1);
             gameState.player.facing = 1;
             if (window.playerModel) {
@@ -1157,6 +1174,12 @@ function updateHealthBars() {
 
 function endRound() {
     gameState.gameActive = false;
+    
+    // Stop boss music when round ends
+    if (bossMusic && !bossMusic.paused) {
+        bossMusic.pause();
+        bossMusic.currentTime = 0;
+    }
     
     let message = "TIME OVER!";
     let isBossDefeated = false;
