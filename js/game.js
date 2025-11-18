@@ -36,8 +36,22 @@ let gameState = {
     playerHiddenHealTimer: 0,
     playerFakeHP: 100, // Visual HP that player sees
     playerRealHP: 100, // Actual HP used for calculations
-    survivalPhase: 0
+    survivalPhase: 0,
+    cutsceneActive: false,
+    cutsceneTimer: 0,
+    currentCutsceneText: "",
+    cutsceneTextIndex: 0
 };
+
+// Cutscene text for 67 Boss
+const BOSS_CUTSCENE_TEXTS = [
+    "THE LEGEND OF 67...",
+    "A FORCE BEYOND COMPREHENSION...",
+    "IT CORRUPTS EVERYTHING IT TOUCHES...",
+    "YOU CANNOT DEFEAT IT...",
+    "YOU CAN ONLY SURVIVE...",
+    "BEGIN!"
+];
 
 // Difficulty Settings
 const DIFFICULTY_SETTINGS = {
@@ -391,6 +405,9 @@ function startGame() {
         cpuChar = BOSS_67;
         isBossFight = true;
         console.log('BOSS SURVIVAL MODE INITIATED!');
+        
+        // Start cutscene for boss fight
+        startBossCutscene();
     } else {
         // Regular CPU character
         let cpuIndex;
@@ -475,16 +492,6 @@ function startGame() {
         document.getElementById('p2Name').textContent = "67 BOSS";
         document.getElementById('p2Name').style.color = "#ff0000";
         document.getElementById('roundText').textContent = "SURVIVAL MODE";
-        
-        // Show survival mode instructions
-        const display = document.getElementById('comboDisplay');
-        if (display) {
-            display.textContent = "SURVIVE! Boss defeats itself every 5s";
-            display.classList.add('active');
-            setTimeout(() => {
-                display.classList.remove('active');
-            }, 3000);
-        }
     } else {
         document.getElementById('p2Name').style.color = "";
         document.getElementById('roundText').textContent = `ROUND ${gameState.round}`;
@@ -501,7 +508,172 @@ function startGame() {
     
     console.log('Game started:', playerChar.name, 'vs', cpuChar.name);
     
+    // Only start animation if not in cutscene
+    if (!gameState.cutsceneActive) {
+        animate();
+    }
+}
+
+// Start Boss Cutscene
+function startBossCutscene() {
+    gameState.cutsceneActive = true;
+    gameState.cutsceneTimer = 0;
+    gameState.cutsceneTextIndex = 0;
+    gameState.currentCutsceneText = "";
+    
+    // Hide game elements during cutscene
+    document.getElementById('gameCanvas').style.opacity = '0.3';
+    document.querySelector('.hud').style.opacity = '0.3';
+    document.getElementById('touchControls').style.opacity = '0.3';
+    
+    // Create cutscene overlay
+    let cutsceneOverlay = document.getElementById('cutsceneOverlay');
+    if (!cutsceneOverlay) {
+        cutsceneOverlay = document.createElement('div');
+        cutsceneOverlay.id = 'cutsceneOverlay';
+        cutsceneOverlay.style.position = 'absolute';
+        cutsceneOverlay.style.top = '0';
+        cutsceneOverlay.style.left = '0';
+        cutsceneOverlay.style.width = '100%';
+        cutsceneOverlay.style.height = '100%';
+        cutsceneOverlay.style.backgroundColor = 'rgba(0,0,0,0.8)';
+        cutsceneOverlay.style.display = 'flex';
+        cutsceneOverlay.style.flexDirection = 'column';
+        cutsceneOverlay.style.justifyContent = 'center';
+        cutsceneOverlay.style.alignItems = 'center';
+        cutsceneOverlay.style.zIndex = '50';
+        cutsceneOverlay.style.color = '#ffcc00';
+        cutsceneOverlay.style.fontSize = '3rem';
+        cutsceneOverlay.style.textAlign = 'center';
+        cutsceneOverlay.style.padding = '2rem';
+        
+        const cutsceneText = document.createElement('div');
+        cutsceneText.id = 'cutsceneText';
+        cutsceneText.style.fontSize = '3rem';
+        cutsceneText.style.textShadow = '0 0 10px #ff0033';
+        cutsceneText.style.letterSpacing = '3px';
+        cutsceneText.style.lineHeight = '1.5';
+        cutsceneText.style.maxWidth = '80%';
+        
+        cutsceneOverlay.appendChild(cutsceneText);
+        document.getElementById('gameScreen').appendChild(cutsceneOverlay);
+    }
+    
+    // Start cutscene animation
+    animateCutscene();
+}
+
+// Animate Cutscene
+function animateCutscene() {
+    if (!gameState.cutsceneActive) return;
+    
+    gameState.cutsceneTimer++;
+    
+    // Update cutscene text based on timer
+    const cutsceneText = document.getElementById('cutsceneText');
+    
+    if (gameState.cutsceneTimer < 150) { // 5 seconds for first text
+        if (gameState.cutsceneTextIndex === 0) {
+            gameState.currentCutsceneText = BOSS_CUTSCENE_TEXTS[0];
+            cutsceneText.textContent = gameState.currentCutsceneText;
+            cutsceneText.style.opacity = Math.min(1, gameState.cutsceneTimer / 50).toString();
+        }
+    } else if (gameState.cutsceneTimer < 300) { // 10 seconds
+        if (gameState.cutsceneTextIndex === 0) {
+            cutsceneText.style.opacity = Math.max(0, 1 - (gameState.cutsceneTimer - 150) / 50).toString();
+            if (gameState.cutsceneTimer === 200) {
+                gameState.cutsceneTextIndex = 1;
+                gameState.currentCutsceneText = BOSS_CUTSCENE_TEXTS[1];
+                cutsceneText.textContent = gameState.currentCutsceneText;
+                cutsceneText.style.opacity = '0';
+            }
+        } else if (gameState.cutsceneTextIndex === 1) {
+            cutsceneText.style.opacity = Math.min(1, (gameState.cutsceneTimer - 200) / 50).toString();
+        }
+    } else if (gameState.cutsceneTimer < 450) { // 15 seconds
+        if (gameState.cutsceneTextIndex === 1) {
+            cutsceneText.style.opacity = Math.max(0, 1 - (gameState.cutsceneTimer - 300) / 50).toString();
+            if (gameState.cutsceneTimer === 350) {
+                gameState.cutsceneTextIndex = 2;
+                gameState.currentCutsceneText = BOSS_CUTSCENE_TEXTS[2];
+                cutsceneText.textContent = gameState.currentCutsceneText;
+                cutsceneText.style.opacity = '0';
+            }
+        } else if (gameState.cutsceneTextIndex === 2) {
+            cutsceneText.style.opacity = Math.min(1, (gameState.cutsceneTimer - 350) / 50).toString();
+        }
+    } else if (gameState.cutsceneTimer < 600) { // 20 seconds
+        if (gameState.cutsceneTextIndex === 2) {
+            cutsceneText.style.opacity = Math.max(0, 1 - (gameState.cutsceneTimer - 450) / 50).toString();
+            if (gameState.cutsceneTimer === 500) {
+                gameState.cutsceneTextIndex = 3;
+                gameState.currentCutsceneText = BOSS_CUTSCENE_TEXTS[3];
+                cutsceneText.textContent = gameState.currentCutsceneText;
+                cutsceneText.style.opacity = '0';
+            }
+        } else if (gameState.cutsceneTextIndex === 3) {
+            cutsceneText.style.opacity = Math.min(1, (gameState.cutsceneTimer - 500) / 50).toString();
+        }
+    } else if (gameState.cutsceneTimer < 750) { // 25 seconds
+        if (gameState.cutsceneTextIndex === 3) {
+            cutsceneText.style.opacity = Math.max(0, 1 - (gameState.cutsceneTimer - 600) / 50).toString();
+            if (gameState.cutsceneTimer === 650) {
+                gameState.cutsceneTextIndex = 4;
+                gameState.currentCutsceneText = BOSS_CUTSCENE_TEXTS[4];
+                cutsceneText.textContent = gameState.currentCutsceneText;
+                cutsceneText.style.opacity = '0';
+            }
+        } else if (gameState.cutsceneTextIndex === 4) {
+            cutsceneText.style.opacity = Math.min(1, (gameState.cutsceneTimer - 650) / 50).toString();
+        }
+    } else {
+        // End cutscene
+        if (gameState.cutsceneTextIndex === 4) {
+            cutsceneText.style.opacity = Math.max(0, 1 - (gameState.cutsceneTimer - 750) / 50).toString();
+            if (gameState.cutsceneTimer === 800) {
+                gameState.cutsceneTextIndex = 5;
+                gameState.currentCutsceneText = BOSS_CUTSCENE_TEXTS[5];
+                cutsceneText.textContent = gameState.currentCutsceneText;
+                cutsceneText.style.opacity = '1';
+                
+                // Final text stays for 2 seconds then ends cutscene
+                setTimeout(() => {
+                    endCutscene();
+                }, 2000);
+            }
+        }
+    }
+    
+    requestAnimationFrame(animateCutscene);
+}
+
+// End Cutscene
+function endCutscene() {
+    gameState.cutsceneActive = false;
+    
+    // Remove cutscene overlay
+    const cutsceneOverlay = document.getElementById('cutsceneOverlay');
+    if (cutsceneOverlay) {
+        cutsceneOverlay.remove();
+    }
+    
+    // Show game elements
+    document.getElementById('gameCanvas').style.opacity = '1';
+    document.querySelector('.hud').style.opacity = '1';
+    document.getElementById('touchControls').style.opacity = '1';
+    
+    // Start the actual game
     animate();
+    
+    // Show survival mode instructions
+    const display = document.getElementById('comboDisplay');
+    if (display) {
+        display.textContent = "SURVIVE! Boss defeats itself every 5s";
+        display.classList.add('active');
+        setTimeout(() => {
+            display.classList.remove('active');
+        }, 3000);
+    }
 }
 
 // Event Listeners
@@ -541,6 +713,9 @@ function setupEventListeners() {
     });
     
     document.addEventListener('keydown', (e) => {
+        // Skip input during cutscene
+        if (gameState.cutsceneActive) return;
+        
         const key = e.key.toLowerCase();
         gameState.keys[key] = true;
         
@@ -975,6 +1150,9 @@ function animate() {
 function update() {
     if (!gameState.player || !gameState.cpu) return;
     
+    // Skip updates during cutscene
+    if (gameState.cutsceneActive) return;
+    
     if (gameState.player.attackCooldown > 0) gameState.player.attackCooldown--;
     if (gameState.cpu.attackCooldown > 0) gameState.cpu.attackCooldown--;
     if (gameState.player.parryCooldown > 0) gameState.player.parryCooldown--;
@@ -985,15 +1163,15 @@ function update() {
         // Update boss self-damage timer
         gameState.bossSelfDamageTimer += 1;
         
-        // Every 5 seconds (300 frames at 60fps), boss stuns and loses 10% HP
+        // Every 5 seconds (300 frames at 60fps), boss stuns and loses 5% HP
         if (gameState.bossSelfDamageTimer >= 300) {
             gameState.bossSelfDamageTimer = 0;
             
             // Stun boss for 0.5 seconds
             gameState.isBossStunned = true;
             
-            // Boss loses 10% HP
-            const damage = gameState.cpu.maxHealth * 0.10;
+            // Boss loses 5% HP (reduced from 10%)
+            const damage = gameState.cpu.maxHealth * 0.05;
             gameState.cpu.health = Math.max(0, gameState.cpu.health - damage);
             
             // Create stun effect
@@ -1005,7 +1183,7 @@ function update() {
             // Show boss HP loss message
             const display = document.getElementById('comboDisplay');
             if (display) {
-                display.textContent = `67 BOSS STUNNED! -10% HP`;
+                display.textContent = `67 BOSS STUNNED! -5% HP`;
                 display.classList.add('active');
                 setTimeout(() => {
                     display.classList.remove('active');
@@ -1033,14 +1211,22 @@ function update() {
         }
         
         // Update fake HP to create illusion of low HP
-        // Fake HP decreases slower when real HP is lower
-        if (gameState.playerFakeHP > 5) {
-            const fakeHPDamage = 0.1 * (gameState.playerRealHP / 100);
-            gameState.playerFakeHP = Math.max(5, gameState.playerFakeHP - fakeHPDamage);
+        // Fake HP decreases slower when real HP is lower (adrenaline effect)
+        if (gameState.playerFakeHP > 1) {
+            // Calculate damage scaling based on real HP (more adrenaline when low HP)
+            const adrenalineFactor = 1 - (gameState.playerRealHP / 100);
+            const fakeHPDamage = 0.1 * (1 - adrenalineFactor * 0.7); // Up to 70% damage reduction at low HP
+            
+            gameState.playerFakeHP = Math.max(1, gameState.playerFakeHP - fakeHPDamage);
         }
         
         // Update displayed HP with fake HP
         gameState.player.health = gameState.player.maxHealth * (gameState.playerFakeHP / 100);
+        
+        // Player can still die if real HP reaches 0
+        if (gameState.playerRealHP <= 0) {
+            gameState.player.health = 0;
+        }
     }
     
     // Update boss stun timer for regular boss mechanics
@@ -1206,8 +1392,13 @@ function doBossStompAttack() {
         const damage = baseDamage * phaseMultiplier;
         
         // In survival mode, damage affects both real and fake HP
-        gameState.playerRealHP = Math.max(0, gameState.playerRealHP - (damage / gameState.player.maxHealth * 100));
-        gameState.playerFakeHP = Math.max(5, gameState.playerFakeHP - (damage / gameState.player.maxHealth * 100));
+        const realHPDamage = (damage / gameState.player.maxHealth * 100);
+        gameState.playerRealHP = Math.max(0, gameState.playerRealHP - realHPDamage);
+        
+        // Fake HP takes less damage when real HP is low (adrenaline effect)
+        const adrenalineFactor = 1 - (gameState.playerRealHP / 100);
+        const fakeHPDamage = realHPDamage * (1 - adrenalineFactor * 0.7);
+        gameState.playerFakeHP = Math.max(1, gameState.playerFakeHP - fakeHPDamage);
         
         gameState.player.health = gameState.player.maxHealth * (gameState.playerFakeHP / 100);
         
@@ -1250,8 +1441,13 @@ function doBossDashAttack() {
         const damage = baseDamage * phaseMultiplier;
         
         // In survival mode, damage affects both real and fake HP
-        gameState.playerRealHP = Math.max(0, gameState.playerRealHP - (damage / gameState.player.maxHealth * 100));
-        gameState.playerFakeHP = Math.max(5, gameState.playerFakeHP - (damage / gameState.player.maxHealth * 100));
+        const realHPDamage = (damage / gameState.player.maxHealth * 100);
+        gameState.playerRealHP = Math.max(0, gameState.playerRealHP - realHPDamage);
+        
+        // Fake HP takes less damage when real HP is low (adrenaline effect)
+        const adrenalineFactor = 1 - (gameState.playerRealHP / 100);
+        const fakeHPDamage = realHPDamage * (1 - adrenalineFactor * 0.7);
+        gameState.playerFakeHP = Math.max(1, gameState.playerFakeHP - fakeHPDamage);
         
         gameState.player.health = gameState.player.maxHealth * (gameState.playerFakeHP / 100);
         
@@ -1295,8 +1491,13 @@ function doCpuAttack(type) {
     
     // In survival mode, damage affects both real and fake HP
     if (gameState.isBossFight) {
-        gameState.playerRealHP = Math.max(0, gameState.playerRealHP - (damage / gameState.player.maxHealth * 100));
-        gameState.playerFakeHP = Math.max(5, gameState.playerFakeHP - (damage / gameState.player.maxHealth * 100));
+        const realHPDamage = (damage / gameState.player.maxHealth * 100);
+        gameState.playerRealHP = Math.max(0, gameState.playerRealHP - realHPDamage);
+        
+        // Fake HP takes less damage when real HP is low (adrenaline effect)
+        const adrenalineFactor = 1 - (gameState.playerRealHP / 100);
+        const fakeHPDamage = realHPDamage * (1 - adrenalineFactor * 0.7);
+        gameState.playerFakeHP = Math.max(1, gameState.playerFakeHP - fakeHPDamage);
         
         gameState.player.health = gameState.player.maxHealth * (gameState.playerFakeHP / 100);
     } else {
@@ -1338,7 +1539,13 @@ function updateHealthBars() {
     p1Health.style.width = `${p1Percent * 100}%`;
     p2Health.style.width = `${p2Percent * 100}%`;
     
-    p1HealthText.textContent = `${Math.round(p1Percent * 100)}%`;
+    // Player HP text shows fake percentage in survival mode
+    if (gameState.isBossFight) {
+        p1HealthText.textContent = `${Math.round(gameState.playerFakeHP)}%`;
+    } else {
+        p1HealthText.textContent = `${Math.round(p1Percent * 100)}%`;
+    }
+    
     p2HealthText.textContent = `${Math.round(p2Percent * 100)}%`;
     
     // Player HP bar color based on fake HP (for visual effect)
