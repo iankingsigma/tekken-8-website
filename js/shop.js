@@ -48,6 +48,51 @@ const SHOP_ITEMS = [
         price: 500,
         type: 'permanent',
         effect: 'boss'
+    },
+    {
+        id: 'bgSpace',
+        name: 'Space Background',
+        description: 'Unlock cosmic space background theme',
+        price: 300,
+        type: 'permanent',
+        effect: 'background',
+        bgId: 'space'
+    },
+    {
+        id: 'bgNeon',
+        name: 'Neon City Background',
+        description: 'Unlock vibrant neon city background',
+        price: 350,
+        type: 'permanent',
+        effect: 'background',
+        bgId: 'neon'
+    },
+    {
+        id: 'bgMatrix',
+        name: 'Matrix Background',
+        description: 'Unlock digital matrix code background',
+        price: 400,
+        type: 'permanent',
+        effect: 'background',
+        bgId: 'matrix'
+    },
+    {
+        id: 'bgFire',
+        name: 'Fire Arena Background',
+        description: 'Unlock fiery lava arena background',
+        price: 450,
+        type: 'permanent',
+        effect: 'background',
+        bgId: 'fire'
+    },
+    {
+        id: 'bgIce',
+        name: 'Ice Palace Background',
+        description: 'Unlock frozen ice palace background',
+        price: 450,
+        type: 'permanent',
+        effect: 'background',
+        bgId: 'ice'
     }
 ];
 
@@ -96,17 +141,21 @@ function loadShopItems() {
     SHOP_ITEMS.forEach(item => {
         const isOwned = gameState.playerInventory[item.id];
         const canAfford = gameState.coins >= item.price;
+        const isActive = item.effect === 'background' && gameState.customBackground === item.bgId;
         
         const itemElement = document.createElement('div');
         itemElement.className = 'shop-item';
+        if (isActive) {
+            itemElement.classList.add('active-background');
+        }
         itemElement.innerHTML = `
             <div class="item-name">${item.name}</div>
             <div class="item-desc">${item.description}</div>
             <div class="item-price">${item.price} COINS</div>
             <button class="buy-btn" data-id="${item.id}" ${isOwned || !canAfford ? 'disabled' : ''}>
-                ${isOwned ? 'OWNED' : (canAfford ? 'BUY NOW' : 'NEED COINS')}
+                ${isOwned ? (item.effect === 'background' ? (isActive ? 'ACTIVE' : 'SELECT') : 'OWNED') : (canAfford ? 'BUY NOW' : 'NEED COINS')}
             </button>
-            ${isOwned ? '<div class="owned-badge">OWNED</div>' : ''}
+            ${isOwned ? `<div class="owned-badge">${item.effect === 'background' ? (isActive ? 'ACTIVE' : 'OWNED') : 'OWNED'}</div>` : ''}
         `;
         
         shopItems.appendChild(itemElement);
@@ -142,8 +191,18 @@ function buyItem(itemId) {
         return;
     }
     
-    // Check if already owned
-    if (gameState.playerInventory[itemId]) {
+    // Handle background selection
+    if (item.effect === 'background' && gameState.playerInventory[itemId]) {
+        gameState.customBackground = item.bgId;
+        localStorage.setItem('customBackground', item.bgId);
+        applyCustomBackground();
+        loadShopItems(); // Refresh to show active state
+        showPurchaseSuccess(`${item.name} activated!`);
+        return;
+    }
+    
+    // Check if already owned (except for backgrounds which can be selected)
+    if (gameState.playerInventory[itemId] && item.effect !== 'background') {
         alert('You already own this item!');
         return;
     }
@@ -165,6 +224,10 @@ function buyItem(itemId) {
             gameState.bossUnlocked = true;
             localStorage.setItem('boss67Unlocked', 'true');
             alert('67 BOSS UNLOCKED! You can now play 67 BOSS Survival Mode!');
+        } else if (item.effect === 'background') {
+            gameState.customBackground = item.bgId;
+            localStorage.setItem('customBackground', item.bgId);
+            applyCustomBackground();
         }
     } else {
         if (!gameState.playerInventory[itemId]) {
