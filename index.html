@@ -47,7 +47,7 @@
             </div>
             <div class="menu-footer">
                 <div class="high-score">HIGH SCORE: <span id="highScore">0</span></div>
-                <div class="version">v3.2.2 | BRAINROT EDITION</div>
+                <div class="version">v3.3.0 | ULTIMATE BRAINROT EDITION</div>
             </div>
         </div>
     </div>
@@ -82,6 +82,9 @@
                     </div>
                     <div class="boss-unlocked" id="bossUnlockedInfo" style="display: none; color: #00ff00; margin-top: 1rem; font-size: 0.9rem;">
                         ✅ 67 BOSS UNLOCKED! Select 67 character and 67 BOSS difficulty to fight!
+                    </div>
+                    <div class="boss-warning" id="bossWarningInfo" style="display: none; color: #ff9900; margin-top: 1rem; font-size: 0.9rem; font-weight: bold;">
+                        ⚠️ 67 BOSS: SURVIVAL MODE - Can't damage boss, survive until it defeats itself!
                     </div>
                 </div>
             </div>
@@ -171,18 +174,22 @@
                     </div>
 
                     <div class="control-group">
-                        <div class="control-title">SECRET BOSS</div>
-                        <div class="control-item">
-                            <div class="control-key">67 BOSS</div>
-                            <div class="control-action">Defeat Insane mode with 67 to unlock</div>
-                        </div>
-                        <div class="control-item">
-                            <div class="control-key">SPECIAL ATTACKS</div>
-                            <div class="control-action">Speed Dash (20% dmg) & Stomp (90% dmg)</div>
-                        </div>
+                        <div class="control-title">67 BOSS - SURVIVAL MODE</div>
                         <div class="control-item">
                             <div class="control-key">BOSS MECHANICS</div>
-                            <div class="control-action">50% parry chance, 1% heal on hit</div>
+                            <div class="control-action">Stuns every 5s, loses 10% HP when stunned</div>
+                        </div>
+                        <div class="control-item">
+                            <div class="control-key">PLAYER MECHANICS</div>
+                            <div class="control-action">Can't damage boss, survive until it defeats itself</div>
+                        </div>
+                        <div class="control-item">
+                            <div class="control-key">HP SYSTEM</div>
+                            <div class="control-action">Player heals to 100% every 5s (hidden)</div>
+                        </div>
+                        <div class="control-item">
+                            <div class="control-key">VISUAL HP</div>
+                            <div class="control-action">HP bar shows low HP but you're actually healing</div>
                         </div>
                     </div>
                 </div>
@@ -282,6 +289,18 @@
             <h1 class="main-title">UPDATE LOG</h1>
             <div class="updates-scroll">
                 <div class="update-version">
+                    <h3>v3.3.0 - 67 BOSS SURVIVAL UPDATE</h3>
+                    <ul>
+                        <li>67 BOSS completely redesigned as survival mode</li>
+                        <li>BOSS stuns every 5 seconds, loses 10% HP when stunned</li>
+                        <li>Player can't damage boss - must survive until it defeats itself</li>
+                        <li>Hidden healing system: player heals to 100% every 5 seconds</li>
+                        <li>Visual HP deception: HP bar shows low HP but you're actually healing</li>
+                        <li>Added Menu.mp3 music throughout all game modes</li>
+                        <li>BOSS music (Finale.mp3) plays only during 67 boss fight</li>
+                    </ul>
+                </div>
+                <div class="update-version">
                     <h3>v3.2.2 - BALANCED PARRY UPDATE</h3>
                     <ul>
                         <li>Parry now heals 10% HP and deals 20% damage</li>
@@ -299,42 +318,6 @@
                         <li>Parry button visually disabled during cooldown</li>
                     </ul>
                 </div>
-                <div class="update-version">
-                    <h3>v3.2.0 - PARRY UPDATE</h3>
-                    <ul>
-                        <li>Added Insane Mode - CPU parries 100% of attacks</li>
-                        <li>Replaced Block with Parry system</li>
-                        <li>Parry heals 10% and damages 20% but immobilizes for 1.5s</li>
-                        <li>Fixed tablet controls - replaced joystick with buttons</li>
-                        <li>Fixed shop display issues</li>
-                        <li>All action buttons now work in tablet mode</li>
-                    </ul>
-                </div>
-                <div class="update-version">
-                    <h3>v3.1.0 - BRAINROT UPDATE</h3>
-                    <ul>
-                        <li>Added CPU memory system - CPU learns from your moves</li>
-                        <li>Added difficulty levels (Easy, Medium, Hard)</li>
-                        <li>Added parry system - CPU has 50% chance to parry attacks</li>
-                        <li>Added shop with purchasable items</li>
-                        <li>Fixed tablet controls</li>
-                        <li>Added forward/backward movement in 3D space</li>
-                        <li>Added scrollable controls menu</li>
-                        <li>Added credits screen</li>
-                        <li>Removed versus mode</li>
-                    </ul>
-                </div>
-                <div class="update-version">
-                    <h3>v3.0.0 - MAJOR UPDATE</h3>
-                    <ul>
-                        <li>Complete game redesign</li>
-                        <li>Added device detection (Tablet/Desktop)</li>
-                        <li>Added touch controls for tablets</li>
-                        <li>Added practice mode</li>
-                        <li>Improved CPU AI</li>
-                        <li>Enhanced 3D graphics</li>
-                    </ul>
-                </div>
             </div>
             <button class="nav-btn" id="updatesBackBtn">BACK TO MENU</button>
         </div>
@@ -346,8 +329,8 @@
             <h1 class="main-title">CREDITS</h1>
             <div class="credits-list">
                 <div class="credit-item">
-                    <div class="credit-name">IAN</div>
-                    <div class="credit-role">Lead Developer & Game Design</div>
+                    <div class="credit-name">IAN & Kareem</div>
+                    <div class="credit-role">Director And Idea Management team</div>
                 </div>
                 <div class="credit-item">
                     <div class="credit-name">ZIAD</div>
@@ -355,11 +338,11 @@
                 </div>
                 <div class="credit-item">
                     <div class="credit-name">AAHIL</div>
-                    <div class="credit-role">3D Graphics & UI Design</div>
+                    <div class="credit-role">3D Graphics & Big Improvemnt</div>
                 </div>
                 <div class="credit-item">
                     <div class="credit-name">SPECIAL THANKS</div>
-                    <div class="credit-role">The Brainrot Community</div>
+                    <div class="credit-role">Go into Fullscreen to exit</div>
                 </div>
                 <div class="credit-item" id="secretBossCredit" style="display: none;">
                     <div class="credit-name">SECRET DISCOVERY</div>
@@ -376,9 +359,14 @@
         </div>
     </div>
 
-    <!-- Audio Element for Boss Music -->
+    <!-- Audio Elements -->
     <audio id="bossMusic" loop>
         <source src="Finale.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+    
+    <audio id="menuMusic" loop>
+        <source src="Menu.mp3" type="audio/mpeg">
         Your browser does not support the audio element.
     </audio>
 
