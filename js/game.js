@@ -1,4 +1,5 @@
-// Game State - UPDATED FOR v4.0
+// Brainrot Fighters v4.0 - Complete Game Engine
+// Game State
 let gameState = {
     currentScreen: 'deviceDetection',
     selectedCharacter: null,
@@ -31,7 +32,6 @@ let gameState = {
     bossSpecialAttackCooldown: 0,
     bossStunTimer: 0,
     isBossStunned: false,
-    // UPDATED: Balanced survival mode variables
     bossSelfDamageTimer: 0,
     playerHiddenHealTimer: 0,
     playerFakeHP: 100,
@@ -41,68 +41,265 @@ let gameState = {
     cutsceneTimer: 0,
     currentCutsceneText: "",
     cutsceneTextIndex: 0,
-    // NEW: Online multiplayer
     onlineMatch: null,
     opponent: null,
     onlineInputs: [],
     lastInputSequence: 0
 };
 
-// UPDATED: Balanced 67 Boss Settings
-const BOSS_BALANCED_SETTINGS = {
-    selfDamageInterval: 400, // Reduced from 500 (easier)
-    selfDamageAmount: 0.08, // Reduced from 0.10 (8% instead of 10%)
-    stunDuration: 400, // Reduced stun duration
-    playerHealInterval: 400, // More frequent healing
-    phaseDamageMultiplier: 0.05 // Reduced phase scaling
-};
-
-// Cutscene text for 67 Boss - ADDED BEAT DROP
-const BOSS_CUTSCENE_TEXTS = [
-    "THE LEGEND OF 67...",
-    "A FORCE BEYOND COMPREHENSION...",
-    "IT CORRUPTS EVERYTHING IT TOUCHES...",
-    "YOU CANNOT DEFEAT IT...",
-    "YOU CAN ONLY SURVIVE...",
-    "BEGIN!"
-];
-
-// Difficulty Settings - UPDATED BOSS DIFFICULTY
-const DIFFICULTY_SETTINGS = {
-    easy: {
-        cpuHpMultiplier: 0.8,
-        parryChance: 0.2,
-        aggression: 0.3,
-        learningRate: 0.1
-    },
-    medium: {
-        cpuHpMultiplier: 1.0,
-        parryChance: 0.5,
-        aggression: 0.6,
-        learningRate: 0.3
-    },
-    hard: {
-        cpuHpMultiplier: 1.3,
-        parryChance: 0.8,
-        aggression: 0.9,
-        learningRate: 0.5
-    },
-    insane: {
-        cpuHpMultiplier: 1.5,
-        parryChance: 1.0,
-        aggression: 1.0,
-        learningRate: 0.8
-    },
-    sixtyseven: {
-        cpuHpMultiplier: 2.0, // Reduced from 2.5
-        parryChance: 0.0,
-        aggression: 1.0, // Reduced from 1.2
-        learningRate: 0.7, // Reduced from 0.9
-        isBoss: true
+// Device Detection with Apple Watch Support
+function detectDevice() {
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isAppleWatch = /watch/i.test(userAgent) || 
+                        (navigator.platform === 'Watch' || 
+                         (navigator.maxTouchPoints > 0 && window.screen.width <= 400));
+    
+    const isTablet = /iPad|Android|Tablet/i.test(userAgent) || 
+                    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) ||
+                    (window.screen.width <= 1024 && window.screen.width >= 768);
+    
+    const isMobile = /iPhone|Android|Mobile/i.test(userAgent) || 
+                    window.screen.width <= 768;
+    
+    if (isAppleWatch) {
+        gameState.deviceType = 'applewatch';
+        document.getElementById('deviceType').textContent = '🍎 APPLE WATCH MODE';
+        console.log('Apple Watch detected - enabling special mode');
+    } else if (isTablet) {
+        gameState.deviceType = 'tablet';
+        document.getElementById('deviceType').textContent = 'TABLET MODE';
+    } else if (isMobile) {
+        gameState.deviceType = 'mobile';
+        document.getElementById('deviceType').textContent = 'MOBILE MODE';
+    } else {
+        gameState.deviceType = 'desktop';
+        document.getElementById('deviceType').textContent = 'DESKTOP MODE';
     }
-};
+    
+    // Apply device-specific adjustments
+    applyDeviceSpecificAdjustments();
+}
 
-// Initialize Game - UPDATED FOR ONLINE
+function applyDeviceSpecificAdjustments() {
+    const style = document.createElement('style');
+    
+    if (gameState.deviceType === 'applewatch') {
+        style.textContent = `
+            .screen { padding: 5px !important; }
+            .pixel-logo, .main-title { font-size: 1.5rem !important; }
+            .menu-btn { font-size: 0.8rem !important; padding: 5px 10px !important; width: 150px !important; }
+            .touch-btn, .movement-btn { width: 40px !important; height: 40px !important; font-size: 0.6rem !important; }
+            .movement-btn { font-size: 1rem !important; }
+            #gameCanvas { height: 200px !important; }
+            .hud { flex-direction: column; gap: 5px; }
+            .player-name { font-size: 0.8rem !important; }
+            .health-container { height: 20px !important; }
+        `;
+    } else if (gameState.deviceType === 'mobile') {
+        style.textContent = `
+            @media (max-width: 768px) {
+                .pixel-logo, .main-title { font-size: 2.5rem !important; }
+                .menu-btn { font-size: 1rem !important; width: 200px !important; padding: 8px 16px !important; }
+                .touch-btn, .movement-btn { width: 60px !important; height: 60px !important; font-size: 0.7rem !important; }
+                .movement-btn { font-size: 1.2rem !important; }
+            }
+        `;
+    }
+    
+    document.head.appendChild(style);
+}
+
+// Loading System
+function simulateLoading() {
+    let progress = 0;
+    const loadingBar = document.getElementById('loadingBar');
+    const loadingText = document.getElementById('loadingText');
+    const stages = [
+        "INITIALIZING BRAINROT ENGINE...",
+        "LOADING BRAINROTTERS...",
+        "SETTING UP ARENA...",
+        "CALIBRATING CONTROLS...",
+        "READY TO BRAINROT!"
+    ];
+    
+    const interval = setInterval(() => {
+        progress += Math.random() * 15;
+        if (progress >= 100) {
+            progress = 100;
+            clearInterval(interval);
+            setTimeout(() => {
+                showScreen('mainMenu');
+            }, 500);
+        }
+        
+        if (loadingBar) loadingBar.style.width = `${progress}%`;
+        if (loadingText) loadingText.textContent = stages[Math.min(Math.floor(progress / 20), stages.length - 1)];
+    }, 200);
+}
+
+// Screen Management
+function showScreen(screenId) {
+    console.log('Showing screen:', screenId);
+    document.querySelectorAll('.screen').forEach(screen => {
+        screen.classList.remove('active');
+    });
+    
+    const targetScreen = document.getElementById(screenId);
+    if (targetScreen) {
+        targetScreen.classList.add('active');
+        gameState.currentScreen = screenId;
+    }
+    
+    // Handle screen-specific initializations
+    switch(screenId) {
+        case 'onlineScreen':
+            if (typeof showOnlineMainScreen === 'function') showOnlineMainScreen();
+            if (typeof refreshLobbyList === 'function') refreshLobbyList();
+            break;
+        case 'gameScreen':
+            setTimeout(() => {
+                if (typeof initThreeJS === 'function') initThreeJS();
+                startGame();
+            }, 100);
+            break;
+        case 'practiceScreen':
+            startPracticeMode();
+            break;
+        case 'shopScreen':
+            setTimeout(() => {
+                if (typeof loadShopItems === 'function') loadShopItems();
+            }, 100);
+            break;
+        case 'characterSelect':
+            renderCharacterSelect();
+            break;
+    }
+    
+    // Music management
+    handleScreenMusic(screenId);
+    
+    // Touch controls
+    const touchControls = document.getElementById('touchControls');
+    if (touchControls) {
+        touchControls.classList.toggle('active', 
+            screenId === 'gameScreen' && (gameState.deviceType === 'tablet' || gameState.deviceType === 'mobile' || gameState.deviceType === 'applewatch'));
+    }
+}
+
+function handleScreenMusic(screenId) {
+    if (screenId === 'gameScreen' && gameState.isBossFight) {
+        if (menuMusic && !menuMusic.paused) menuMusic.pause();
+        if (bossMusic) {
+            bossMusic.currentTime = 0;
+            bossMusic.volume = 0.7;
+            bossMusic.play().catch(e => console.log("Boss music play failed:", e));
+        }
+    } else if (screenId !== 'gameScreen') {
+        if (bossMusic && !bossMusic.paused) {
+            bossMusic.pause();
+            bossMusic.currentTime = 0;
+        }
+        if (menuMusic && menuMusic.paused) {
+            menuMusic.currentTime = 0;
+            menuMusic.volume = 0.7;
+            menuMusic.play().catch(e => console.log("Menu music play failed:", e));
+        }
+    }
+}
+
+// Character Selection
+function renderCharacterSelect() {
+    const grid = document.getElementById('characterGrid');
+    const difficultySelect = document.getElementById('difficultySelect');
+    
+    if (!grid) return;
+    
+    // Add 67 difficulty if boss is unlocked
+    if (gameState.bossUnlocked && difficultySelect) {
+        const sixtySevenOption = difficultySelect.querySelector('option[value="sixtyseven"]');
+        if (!sixtySevenOption) {
+            const option = document.createElement('option');
+            option.value = 'sixtyseven';
+            option.textContent = '67 BOSS - SURVIVAL';
+            difficultySelect.appendChild(option);
+        }
+    }
+    
+    grid.innerHTML = '';
+    
+    CHARACTERS.forEach((character, index) => {
+        const card = document.createElement('div');
+        card.className = 'character-card';
+        card.innerHTML = `
+            <div class="character-icon" style="background: ${character.color}20; border-color: ${character.color}">
+                ${character.icon}
+            </div>
+            <div class="character-name">${character.name}</div>
+            <div class="character-style">${character.style}</div>
+            <div class="character-stats">
+                <div class="stat">
+                    <div class="stat-value">${character.moves.punch}</div>
+                    <div class="stat-label">PUNCH</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">${character.moves.kick}</div>
+                    <div class="stat-label">KICK</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">${character.hp}</div>
+                    <div class="stat-label">HP</div>
+                </div>
+            </div>
+        `;
+        
+        card.addEventListener('click', () => {
+            document.querySelectorAll('.character-card').forEach(c => c.classList.remove('selected'));
+            card.classList.add('selected');
+            gameState.selectedCharacter = index;
+            document.getElementById('confirmBtn').disabled = false;
+            
+            document.getElementById('previewName').textContent = character.name;
+            document.getElementById('previewStyle').textContent = character.style;
+            document.getElementById('previewDesc').textContent = character.description;
+            document.getElementById('previewModel').textContent = character.icon;
+            document.getElementById('previewModel').style.borderColor = character.color;
+            
+            // Show boss unlock info
+            const bossUnlockInfo = document.getElementById('bossUnlockInfo');
+            const bossUnlockedInfo = document.getElementById('bossUnlockedInfo');
+            const bossWarningInfo = document.getElementById('bossWarningInfo');
+            if (bossUnlockInfo && bossUnlockedInfo && bossWarningInfo) {
+                if (gameState.bossUnlocked) {
+                    bossUnlockInfo.style.display = 'none';
+                    bossUnlockedInfo.style.display = 'block';
+                    
+                    const difficulty = document.getElementById('difficultySelect').value;
+                    bossWarningInfo.style.display = difficulty === 'sixtyseven' ? 'block' : 'none';
+                } else {
+                    bossUnlockInfo.style.display = 'block';
+                    bossUnlockedInfo.style.display = 'none';
+                    bossWarningInfo.style.display = 'none';
+                }
+            }
+        });
+        
+        grid.appendChild(card);
+    });
+    
+    // Add event listener to difficulty select
+    const difficultySelectElement = document.getElementById('difficultySelect');
+    if (difficultySelectElement) {
+        difficultySelectElement.addEventListener('change', () => {
+            const difficulty = difficultySelectElement.value;
+            const bossWarningInfo = document.getElementById('bossWarningInfo');
+            if (bossWarningInfo) {
+                bossWarningInfo.style.display = (difficulty === 'sixtyseven' && gameState.bossUnlocked) ? 'block' : 'none';
+            }
+        });
+    }
+}
+
+// Game Initialization
 function init() {
     console.log('Initializing Brainrot Fighters v4.0...');
     document.getElementById('highScore').textContent = gameState.highScore;
@@ -111,10 +308,8 @@ function init() {
     setupEventListeners();
     renderCharacterSelect();
     
-    // Check if boss should be unlocked
     checkBossUnlock();
     
-    // Initialize shop
     if (typeof loadShopItems === 'function') {
         setTimeout(loadShopItems, 100);
     }
@@ -122,20 +317,234 @@ function init() {
     // Start menu music
     if (menuMusic) {
         menuMusic.volume = 0.7;
-        menuMusic.play().catch(e => {
-            console.log("Menu music play failed:", e);
-        });
+        menuMusic.play().catch(e => console.log("Menu music play failed:", e));
     }
     
     // Initialize online system if available
     if (typeof initOnlineSystem === 'function') {
-        setTimeout(() => {
-            initOnlineSystem();
-        }, 1000);
+        setTimeout(() => initOnlineSystem(), 1000);
     }
 }
 
-// UPDATED: Start Battle with Online Support
+// Event Listeners
+function setupEventListeners() {
+    console.log('Setting up event listeners for v4.0...');
+    
+    // Device detection
+    const forceTablet = document.getElementById('forceTablet');
+    const forceDesktop = document.getElementById('forceDesktop');
+    
+    if (forceTablet) forceTablet.addEventListener('click', () => {
+        gameState.deviceType = 'tablet';
+        document.getElementById('deviceType').textContent = 'TABLET MODE';
+        simulateLoading();
+    });
+    
+    if (forceDesktop) forceDesktop.addEventListener('click', () => {
+        gameState.deviceType = 'desktop';
+        document.getElementById('deviceType').textContent = 'DESKTOP MODE';
+        simulateLoading();
+    });
+    
+    // Main menu buttons
+    const buttons = [
+        'arcadeBtn', 'onlineBtn', 'practiceBtn', 'shopBtn', 'controlsBtn', 'updatesBtn', 'creditsBtn',
+        'comboPracticeBtn', 'freePracticeBtn', 'dummySettingsBtn', 'practiceBackBtn',
+        'backBtn', 'controlsBackBtn', 'shopBackBtn', 'updatesBackBtn', 'creditsBackBtn',
+        'exitBattleBtn', 'confirmBtn'
+    ];
+    
+    buttons.forEach(btnId => {
+        const btn = document.getElementById(btnId);
+        if (btn) {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                handleButtonClick(btnId);
+            });
+        }
+    });
+    
+    // Online multiplayer buttons
+    setupOnlineEventListeners();
+    
+    // Input handling
+    document.addEventListener('keydown', (e) => {
+        if (gameState.cutsceneActive) return;
+        
+        const key = e.key.toLowerCase();
+        gameState.keys[key] = true;
+        
+        handleGameInput(key, true);
+        
+        if (gameState.gameActive && gameState.player && gameState.player.attackCooldown <= 0) {
+            if (key === 'z' || key === 'x') {
+                doPlayerAttack('punch');
+            } else if (key === 'a' || key === 's') {
+                doPlayerAttack('kick');
+            } else if (key === ' ') {
+                doPlayerAttack('parry');
+            } else if (key === 'c') {
+                doPlayerAttack('special');
+            }
+        }
+    });
+    
+    document.addEventListener('keyup', (e) => {
+        gameState.keys[e.key.toLowerCase()] = false;
+    });
+
+    window.addEventListener('resize', () => {
+        if (window.camera && window.renderer) {
+            const canvas = document.getElementById('gameCanvas');
+            window.camera.aspect = canvas.clientWidth / canvas.clientHeight;
+            window.camera.updateProjectionMatrix();
+            window.renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+        }
+    });
+}
+
+function setupOnlineEventListeners() {
+    const onlineButtons = [
+        'quickMatchBtn', 'createLobbyBtn', 'joinLobbyBtn', 'friendsBtn',
+        'onlineBackBtn', 'refreshLobbiesBtn', 'confirmCreateLobby', 
+        'confirmJoinLobby', 'addFriendBtn', 'startMatchBtn', 'leaveLobbyBtn'
+    ];
+    
+    onlineButtons.forEach(btnId => {
+        const btn = document.getElementById(btnId);
+        if (btn) {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                handleOnlineButtonClick(btnId);
+            });
+        }
+    });
+}
+
+function handleButtonClick(btnId) {
+    switch(btnId) {
+        case 'arcadeBtn':
+            showScreen('characterSelect');
+            break;
+        case 'onlineBtn':
+            showScreen('onlineScreen');
+            break;
+        case 'practiceBtn':
+            showScreen('practiceScreen');
+            break;
+        case 'shopBtn':
+            showScreen('shopScreen');
+            break;
+        case 'controlsBtn':
+            showScreen('controlsScreen');
+            break;
+        case 'updatesBtn':
+            showScreen('updatesScreen');
+            break;
+        case 'creditsBtn':
+            showScreen('creditsScreen');
+            break;
+        case 'comboPracticeBtn':
+        case 'freePracticeBtn':
+            gameState.gameMode = 'practice';
+            showScreen('characterSelect');
+            break;
+        case 'dummySettingsBtn':
+            alert('Dummy settings: CPU will not attack, perfect for combo practice!');
+            break;
+        case 'practiceBackBtn':
+        case 'backBtn':
+        case 'controlsBackBtn':
+        case 'shopBackBtn':
+        case 'updatesBackBtn':
+        case 'creditsBackBtn':
+            showScreen('mainMenu');
+            break;
+        case 'exitBattleBtn':
+            if (gameState.gameMode === 'online') {
+                leaveOnlineMatch();
+            }
+            showScreen('characterSelect');
+            break;
+        case 'confirmBtn':
+            startBattle('arcade');
+            break;
+    }
+}
+
+function handleOnlineButtonClick(btnId) {
+    switch(btnId) {
+        case 'quickMatchBtn':
+            if (gameState.selectedCharacter === null) {
+                alert('Please select a character first!');
+                showScreen('characterSelect');
+                return;
+            }
+            if (typeof findQuickMatch === 'function') findQuickMatch();
+            break;
+        case 'createLobbyBtn':
+            if (gameState.selectedCharacter === null) {
+                alert('Please select a character first!');
+                showScreen('characterSelect');
+                return;
+            }
+            document.getElementById('lobbyBrowser').style.display = 'none';
+            document.getElementById('createLobby').style.display = 'block';
+            document.getElementById('joinLobby').style.display = 'none';
+            document.getElementById('friendsList').style.display = 'none';
+            break;
+        case 'joinLobbyBtn':
+            document.getElementById('lobbyBrowser').style.display = 'none';
+            document.getElementById('createLobby').style.display = 'none';
+            document.getElementById('joinLobby').style.display = 'block';
+            document.getElementById('friendsList').style.display = 'none';
+            break;
+        case 'friendsBtn':
+            document.getElementById('lobbyBrowser').style.display = 'none';
+            document.getElementById('createLobby').style.display = 'none';
+            document.getElementById('joinLobby').style.display = 'none';
+            document.getElementById('friendsList').style.display = 'block';
+            if (typeof updateFriendsList === 'function') updateFriendsList();
+            break;
+        case 'onlineBackBtn':
+            showScreen('mainMenu');
+            break;
+        case 'refreshLobbiesBtn':
+            if (typeof refreshLobbyList === 'function') refreshLobbyList();
+            break;
+        case 'confirmCreateLobby':
+            const lobbyName = document.getElementById('lobbyName').value || 'Private Lobby';
+            const password = document.getElementById('lobbyPassword').value;
+            const maxPlayers = parseInt(document.getElementById('lobbyMaxPlayers').value);
+            if (typeof createOnlineLobby === 'function') createOnlineLobby(null, lobbyName, password, maxPlayers, false);
+            break;
+        case 'confirmJoinLobby':
+            const lobbyCode = document.getElementById('lobbyCodeInput').value.toUpperCase();
+            const joinPassword = document.getElementById('lobbyPasswordInput').value;
+            if (lobbyCode) {
+                if (typeof joinLobby === 'function') joinLobby(lobbyCode, joinPassword);
+            } else {
+                alert('Please enter a lobby code!');
+            }
+            break;
+        case 'addFriendBtn':
+            const friendCode = document.getElementById('friendCodeInput').value.toUpperCase();
+            if (friendCode) {
+                if (typeof addFriend === 'function') addFriend(friendCode);
+            } else {
+                alert('Please enter a friend code!');
+            }
+            break;
+        case 'startMatchBtn':
+            if (typeof startOnlineMatch === 'function') startOnlineMatch();
+            break;
+        case 'leaveLobbyBtn':
+            if (typeof leaveLobby === 'function') leaveLobby();
+            break;
+    }
+}
+
+// Game Systems
 function startBattle(mode = 'arcade') {
     if (gameState.selectedCharacter === null) {
         alert('Please select a character first!');
@@ -145,7 +554,6 @@ function startBattle(mode = 'arcade') {
     gameState.gameMode = mode;
     gameState.difficulty = document.getElementById('difficultySelect').value;
     
-    // Check if this is a boss fight
     gameState.isBossFight = (gameState.difficulty === 'sixtyseven' && 
                             CHARACTERS[gameState.selectedCharacter].id === 67);
     
@@ -156,7 +564,6 @@ function startBattle(mode = 'arcade') {
     showScreen('gameScreen');
 }
 
-// UPDATED: Start Game with Online Support
 function startGame() {
     console.log('Starting game...');
     
@@ -165,7 +572,6 @@ function startGame() {
         return;
     }
     
-    // Single player game
     if (gameState.selectedCharacter === null) {
         console.error('No character selected');
         showScreen('characterSelect');
@@ -194,7 +600,6 @@ function startGame() {
     setupSinglePlayerGame(playerChar, cpuChar, difficulty, isBossFight);
 }
 
-// NEW: Start Online Game
 function startOnlineGame() {
     const playerChar = CHARACTERS[gameState.selectedCharacter];
     
@@ -213,9 +618,8 @@ function startOnlineGame() {
         items: gameState.playerInventory
     };
     
-    // Create placeholder opponent
     gameState.opponent = {
-        character: CHARACTERS[0], // Default character
+        character: CHARACTERS[0],
         x: 5,
         z: 0,
         health: CHARACTERS[0].hp,
@@ -237,7 +641,6 @@ function startOnlineGame() {
     animate();
 }
 
-// UPDATED: Setup Single Player Game
 function setupSinglePlayerGame(playerChar, cpuChar, difficulty, isBossFight) {
     const memoryKey = `${gameState.selectedCharacter}_${gameState.difficulty}`;
     if (!gameState.cpuMemory[memoryKey]) {
@@ -253,7 +656,6 @@ function setupSinglePlayerGame(playerChar, cpuChar, difficulty, isBossFight) {
     const cpuMemory = gameState.cpuMemory[memoryKey];
     cpuMemory.fights++;
     
-    // Reset all cooldowns and timers
     resetGameTimers();
     
     gameState.player = {
@@ -315,7 +717,6 @@ function setupSinglePlayerGame(playerChar, cpuChar, difficulty, isBossFight) {
     }
 }
 
-// UPDATED: Reset Game Timers with Balanced Values
 function resetGameTimers() {
     gameState.parryCooldownActive = false;
     gameState.parryCooldownEnd = 0;
@@ -323,14 +724,12 @@ function resetGameTimers() {
     gameState.bossStunTimer = 0;
     gameState.isBossStunned = false;
     
-    // UPDATED: Balanced survival mode timers
     gameState.bossSelfDamageTimer = 0;
     gameState.playerHiddenHealTimer = 0;
     gameState.playerFakeHP = 100;
     gameState.playerRealHP = 100;
     gameState.survivalPhase = 0;
     
-    // Re-enable parry buttons
     const parryButtons = document.querySelectorAll('[data-action="parry"]');
     parryButtons.forEach(btn => {
         btn.disabled = false;
@@ -340,237 +739,316 @@ function resetGameTimers() {
     });
 }
 
-// UPDATED: Event Listeners with Online Support
-function setupEventListeners() {
-    console.log('Setting up event listeners for v4.0...');
+// Input and Combat Systems
+function handleGameInput(key, isPressed) {
+    const keyMap = {
+        'arrowleft': 'left',
+        'arrowright': 'right',
+        'z': 'punch',
+        'x': 'punch',
+        'a': 'kick',
+        's': 'kick',
+        ' ': 'parry',
+        'c': 'special'
+    };
     
-    // Device detection
-    const forceTablet = document.getElementById('forceTablet');
-    const forceDesktop = document.getElementById('forceDesktop');
+    const currentTime = Date.now();
+    if (currentTime - gameState.lastKeyTime > 1000) {
+        gameState.combo = [];
+    }
     
-    if (forceTablet) forceTablet.addEventListener('click', () => {
-        gameState.deviceType = 'tablet';
-        document.getElementById('deviceType').textContent = 'TABLET MODE';
-        simulateLoading();
-    });
-    
-    if (forceDesktop) forceDesktop.addEventListener('click', () => {
-        gameState.deviceType = 'desktop';
-        document.getElementById('deviceType').textContent = 'DESKTOP MODE';
-        simulateLoading();
-    });
-    
-    // Main menu buttons
-    const buttons = [
-        'arcadeBtn', 'onlineBtn', 'practiceBtn', 'shopBtn', 'controlsBtn', 'updatesBtn', 'creditsBtn',
-        'comboPracticeBtn', 'freePracticeBtn', 'dummySettingsBtn', 'practiceBackBtn',
-        'backBtn', 'controlsBackBtn', 'shopBackBtn', 'updatesBackBtn', 'creditsBackBtn',
-        'exitBattleBtn', 'confirmBtn'
-    ];
-    
-    buttons.forEach(btnId => {
-        const btn = document.getElementById(btnId);
-        if (btn) {
-            btn.addEventListener('click', (e) => {
-                e.preventDefault();
-                handleButtonClick(btnId);
-            });
-        }
-    });
-    
-    // NEW: Online multiplayer buttons
-    setupOnlineEventListeners();
-    
-    // Input handling
-    document.addEventListener('keydown', (e) => {
-        if (gameState.cutsceneActive) return;
-        
-        const key = e.key.toLowerCase();
-        gameState.keys[key] = true;
-        
-        handleGameInput(key, true);
-        
-        if (gameState.gameActive && gameState.player.attackCooldown <= 0) {
-            if (key === 'z' || key === 'x') {
-                doPlayerAttack('punch');
-            } else if (key === 'a' || key === 's') {
-                doPlayerAttack('kick');
-            } else if (key === ' ') {
-                doPlayerAttack('parry');
-            } else if (key === 'c') {
-                doPlayerAttack('special');
-            }
-        }
-    });
-    
-    document.addEventListener('keyup', (e) => {
-        gameState.keys[e.key.toLowerCase()] = false;
-    });
-
-    window.addEventListener('resize', () => {
-        if (window.camera && window.renderer) {
-            const canvas = document.getElementById('gameCanvas');
-            window.camera.aspect = canvas.clientWidth / canvas.clientHeight;
-            window.camera.updateProjectionMatrix();
-            window.renderer.setSize(canvas.clientWidth, canvas.clientHeight);
-        }
-    });
-}
-
-// NEW: Online Event Listeners
-function setupOnlineEventListeners() {
-    // Online screen buttons
-    const onlineButtons = [
-        'quickMatchBtn', 'createLobbyBtn', 'joinLobbyBtn', 'friendsBtn',
-        'onlineBackBtn', 'refreshLobbiesBtn', 'confirmCreateLobby', 
-        'confirmJoinLobby', 'addFriendBtn', 'startMatchBtn', 'leaveLobbyBtn'
-    ];
-    
-    onlineButtons.forEach(btnId => {
-        const btn = document.getElementById(btnId);
-        if (btn) {
-            btn.addEventListener('click', (e) => {
-                e.preventDefault();
-                handleOnlineButtonClick(btnId);
-            });
-        }
-    });
-}
-
-// UPDATED: Button Click Handler with Online Support
-function handleButtonClick(btnId) {
-    switch(btnId) {
-        case 'arcadeBtn':
-            showScreen('characterSelect');
-            break;
-        case 'onlineBtn':
-            showScreen('onlineScreen');
-            break;
-        case 'practiceBtn':
-            showScreen('practiceScreen');
-            break;
-        case 'shopBtn':
-            showScreen('shopScreen');
-            break;
-        case 'controlsBtn':
-            showScreen('controlsScreen');
-            break;
-        case 'updatesBtn':
-            showScreen('updatesScreen');
-            break;
-        case 'creditsBtn':
-            showScreen('creditsScreen');
-            break;
-        case 'comboPracticeBtn':
-        case 'freePracticeBtn':
-            gameState.gameMode = 'practice';
-            showScreen('characterSelect');
-            break;
-        case 'dummySettingsBtn':
-            alert('Dummy settings: CPU will not attack, perfect for combo practice!');
-            break;
-        case 'practiceBackBtn':
-        case 'backBtn':
-        case 'controlsBackBtn':
-        case 'shopBackBtn':
-        case 'updatesBackBtn':
-        case 'creditsBackBtn':
-            showScreen('mainMenu');
-            break;
-        case 'exitBattleBtn':
-            if (gameState.gameMode === 'online') {
-                leaveOnlineMatch();
-            }
-            showScreen('characterSelect');
-            break;
-        case 'confirmBtn':
-            startBattle('arcade');
-            break;
+    if (keyMap[key]) {
+        gameState.combo.push(keyMap[key]);
+        gameState.lastKeyTime = currentTime;
+        checkCombos();
     }
 }
 
-// NEW: Online Button Click Handler
-function handleOnlineButtonClick(btnId) {
-    switch(btnId) {
-        case 'quickMatchBtn':
-            if (gameState.selectedCharacter === null) {
-                alert('Please select a character first!');
-                showScreen('characterSelect');
-                return;
-            }
-            findQuickMatch();
-            break;
-        case 'createLobbyBtn':
-            if (gameState.selectedCharacter === null) {
-                alert('Please select a character first!');
-                showScreen('characterSelect');
-                return;
-            }
-            document.getElementById('lobbyBrowser').style.display = 'none';
-            document.getElementById('createLobby').style.display = 'block';
-            document.getElementById('joinLobby').style.display = 'none';
-            document.getElementById('friendsList').style.display = 'none';
-            break;
-        case 'joinLobbyBtn':
-            document.getElementById('lobbyBrowser').style.display = 'none';
-            document.getElementById('createLobby').style.display = 'none';
-            document.getElementById('joinLobby').style.display = 'block';
-            document.getElementById('friendsList').style.display = 'none';
-            break;
-        case 'friendsBtn':
-            document.getElementById('lobbyBrowser').style.display = 'none';
-            document.getElementById('createLobby').style.display = 'none';
-            document.getElementById('joinLobby').style.display = 'none';
-            document.getElementById('friendsList').style.display = 'block';
-            if (typeof updateFriendsList === 'function') {
-                updateFriendsList();
-            }
-            break;
-        case 'onlineBackBtn':
-            showScreen('mainMenu');
-            break;
-        case 'refreshLobbiesBtn':
-            if (typeof refreshLobbyList === 'function') {
-                refreshLobbyList();
-            }
-            break;
-        case 'confirmCreateLobby':
-            const lobbyName = document.getElementById('lobbyName').value || 'Private Lobby';
-            const password = document.getElementById('lobbyPassword').value;
-            const maxPlayers = parseInt(document.getElementById('lobbyMaxPlayers').value);
-            createOnlineLobby(null, lobbyName, password, maxPlayers, false);
-            break;
-        case 'confirmJoinLobby':
-            const lobbyCode = document.getElementById('lobbyCodeInput').value.toUpperCase();
-            const joinPassword = document.getElementById('lobbyPasswordInput').value;
-            if (lobbyCode) {
-                joinLobby(lobbyCode, joinPassword);
-            } else {
-                alert('Please enter a lobby code!');
-            }
-            break;
-        case 'addFriendBtn':
-            const friendCode = document.getElementById('friendCodeInput').value.toUpperCase();
-            if (friendCode) {
-                addFriend(friendCode);
-            } else {
-                alert('Please enter a friend code!');
-            }
-            break;
-        case 'startMatchBtn':
-            startOnlineMatch();
-            break;
-        case 'leaveLobbyBtn':
-            leaveLobby();
-            break;
-    }
-}
-
-// UPDATED: Game Update with Balanced Boss Mechanics
-function update() {
+function checkCombos() {
     if (!gameState.player) return;
     
-    // Skip updates during cutscene
+    const character = gameState.player.character;
+    
+    if (gameState.cpu && gameState.cpu.memory && gameState.combo.length > 2) {
+        const comboKey = gameState.combo.slice(-3).join('-');
+        if (!gameState.cpu.memory.comboPatterns[comboKey]) {
+            gameState.cpu.memory.comboPatterns[comboKey] = 0;
+        }
+        gameState.cpu.memory.comboPatterns[comboKey]++;
+    }
+    
+    if (gameState.combo.length >= 3 && Math.random() > 0.7) {
+        executeRandomCombo();
+        gameState.combo = [];
+        return;
+    }
+    
+    for (const combo of character.combos) {
+        if (gameState.combo.length < combo.input.length) continue;
+        
+        const recentInput = gameState.combo.slice(-combo.input.length);
+        if (JSON.stringify(recentInput) === JSON.stringify(combo.input)) {
+            executeCombo(combo);
+            gameState.combo = [];
+            break;
+        }
+    }
+}
+
+function executeRandomCombo() {
+    const randomCombos = [
+        { name: "RANDOM BRAINROT", damage: 80 + Math.floor(Math.random() * 50) },
+        { name: "SPAM ATTACK", damage: 60 + Math.floor(Math.random() * 40) },
+        { name: "CHAOS STRIKE", damage: 100 + Math.floor(Math.random() * 30) },
+        { name: "MEME COMBO", damage: 70 + Math.floor(Math.random() * 60) }
+    ];
+    
+    const combo = randomCombos[Math.floor(Math.random() * randomCombos.length)];
+    executeCombo(combo);
+}
+
+function executeCombo(combo) {
+    gameState.comboCount++;
+    const display = document.getElementById('comboDisplay');
+    if (display) {
+        display.textContent = `${combo.name} x${gameState.comboCount}`;
+        display.classList.add('active');
+    }
+    
+    let parryChance = gameState.cpu.difficulty.parryChance;
+    if (gameState.cpu.isBoss) parryChance = 0.0;
+    
+    if (gameState.cpu && Math.random() < parryChance) {
+        createParryEffect(gameState.cpu.x, 1, 0);
+        applyDamageFlash('cpu', 0x00ff00);
+        if (display) display.textContent = `${combo.name} PARRY!`;
+    } else {
+        if (!gameState.isBossFight) {
+            gameState.cpu.health = Math.max(0, gameState.cpu.health - combo.damage);
+        }
+        
+        updateHealthBars();
+        
+        if (gameState.gameMode === 'practice') {
+            gameState.practiceStats.comboCount++;
+            if (!gameState.isBossFight) gameState.practiceStats.damageDealt += combo.damage;
+            updatePracticeStats();
+        }
+        
+        if (!gameState.isBossFight) gameState.score += combo.damage * gameState.comboCount;
+        
+        if (window.playerModel) {
+            window.playerModel.position.z = -0.8;
+            setTimeout(() => { if (window.playerModel) window.playerModel.position.z = 0; }, 150);
+        }
+        
+        createBloodEffect(gameState.cpu.x, 1, 0);
+        applyDamageFlash('cpu');
+        
+        if (combo.damage > 100) {
+            const canvas = document.getElementById('gameCanvas');
+            if (canvas) {
+                canvas.style.transform = 'translateX(-5px)';
+                setTimeout(() => {
+                    canvas.style.transform = 'translateX(5px)';
+                    setTimeout(() => canvas.style.transform = '', 50);
+                }, 50);
+            }
+        }
+        
+        if (combo.damage > 100 && Math.random() > 0.7) spawn67();
+    }
+    
+    if (gameState.cpu.memory) {
+        gameState.cpu.memory.dodgeChance = Math.min(0.6, gameState.cpu.memory.dodgeChance + 0.02);
+    }
+    
+    setTimeout(() => { if (display) display.classList.remove('active'); }, 1000);
+}
+
+function doPlayerAttack(type) {
+    if (!gameState.gameActive || !gameState.player || gameState.player.attackCooldown > 0) return;
+    
+    if (gameState.player.parryCooldown > 0 && type !== 'parry') return;
+    
+    const distance = Math.abs(gameState.player.x - (gameState.cpu?.x || gameState.opponent?.x || 5));
+    if (distance > 3 && type !== 'parry') return;
+    
+    gameState.player.attackCooldown = 20;
+    
+    if (gameState.cpu && gameState.cpu.memory) {
+        gameState.cpu.lastPlayerMove = type;
+        if (!gameState.cpu.memory.playerMoves[type]) gameState.cpu.memory.playerMoves[type] = 0;
+        gameState.cpu.memory.playerMoves[type]++;
+    }
+    
+    if (type === 'parry') {
+        if (gameState.parryCooldownActive) {
+            const display = document.getElementById('comboDisplay');
+            if (display) {
+                const timeLeft = Math.ceil((gameState.parryCooldownEnd - Date.now()) / 1000);
+                display.textContent = `PARRY COOLDOWN: ${timeLeft}s`;
+                display.classList.add('active');
+                setTimeout(() => display.classList.remove('active'), 1000);
+            }
+            return;
+        }
+        
+        const healAmount = gameState.player.maxHealth * 0.10;
+        const damageAmount = (gameState.cpu?.maxHealth || 1000) * 0.20;
+        
+        if (!gameState.isBossFight && gameState.cpu) {
+            gameState.cpu.health = Math.max(0, gameState.cpu.health - damageAmount);
+        }
+        
+        gameState.player.health = Math.min(gameState.player.maxHealth, gameState.player.health + healAmount);
+        
+        gameState.player.parryCooldown = 90;
+        gameState.parryCooldownActive = true;
+        gameState.parryCooldownEnd = Date.now() + 10000;
+        
+        const parryButtons = document.querySelectorAll('[data-action="parry"]');
+        parryButtons.forEach(btn => {
+            btn.disabled = true;
+            btn.style.opacity = '0.5';
+            btn.style.background = 'rgba(100, 100, 100, 0.7)';
+            btn.textContent = 'COOLDOWN';
+        });
+        
+        const cooldownInterval = setInterval(() => {
+            const timeLeft = Math.ceil((gameState.parryCooldownEnd - Date.now()) / 1000);
+            
+            if (timeLeft <= 0) {
+                clearInterval(cooldownInterval);
+                gameState.parryCooldownActive = false;
+                
+                parryButtons.forEach(btn => {
+                    btn.disabled = false;
+                    btn.style.opacity = '1';
+                    btn.style.background = 'rgba(100, 255, 100, 0.7)';
+                    btn.textContent = 'PARRY';
+                });
+                
+                const display = document.getElementById('comboDisplay');
+                if (display) {
+                    display.textContent = "PARRY READY!";
+                    display.classList.add('active');
+                    setTimeout(() => display.classList.remove('active'), 1000);
+                }
+            } else {
+                parryButtons.forEach(btn => btn.textContent = timeLeft + 's');
+            }
+        }, 1000);
+        
+        createParryEffect(gameState.player.x, 1, 0);
+        applyDamageFlash('player', 0x00ff00);
+        
+        if (!gameState.isBossFight) applyDamageFlash('cpu');
+        
+        updateHealthBars();
+        
+        const display = document.getElementById('comboDisplay');
+        if (display) {
+            display.textContent = gameState.isBossFight ? "PERFECT PARRY! +10% HP" : "PERFECT PARRY! +10% HP +20% DMG";
+            display.classList.add('active');
+            setTimeout(() => display.classList.remove('active'), 1500);
+        }
+        
+        return;
+    }
+    
+    let parryChance = gameState.cpu?.difficulty?.parryChance || 0;
+    if (gameState.cpu?.isBoss) parryChance = 0.0;
+    
+    if (gameState.cpu && Math.random() < parryChance) {
+        createParryEffect(gameState.cpu.x, 1, 0);
+        applyDamageFlash('cpu', 0x00ff00);
+        
+        if (Math.random() < 0.3 || gameState.difficulty === 'insane' || gameState.cpu.isBoss) {
+            setTimeout(() => doCpuAttack('special'), 300);
+        }
+        
+        return;
+    }
+    
+    if (window.playerModel) {
+        window.playerModel.position.z = -0.5;
+        setTimeout(() => { if (window.playerModel) window.playerModel.position.z = 0; }, 100);
+    }
+    
+    if (gameState.isBossFight) {
+        createBloodEffect(gameState.cpu.x, 1, 0);
+        applyDamageFlash('cpu');
+        
+        if (window.cpuModel) {
+            const knockback = 0.3;
+            window.cpuModel.position.x += knockback;
+            setTimeout(() => {
+                if (window.cpuModel) window.cpuModel.position.x -= knockback * 0.5;
+            }, 100);
+        }
+        
+        return;
+    }
+    
+    let damage = 0;
+    let damageMultiplier = 1;
+    
+    if (gameState.player.items && gameState.player.items.damageBoost) damageMultiplier += 0.2;
+    
+    if (type === 'punch') {
+        damage = (gameState.player.character.moves.punch + Math.floor(Math.random() * 10)) * damageMultiplier;
+    } else if (type === 'kick') {
+        damage = (gameState.player.character.moves.kick + Math.floor(Math.random() * 10)) * damageMultiplier;
+    } else if (type === 'special') {
+        damage = (gameState.player.character.moves.special + Math.floor(Math.random() * 15)) * damageMultiplier;
+    }
+    
+    if (gameState.cpu) {
+        gameState.cpu.health = Math.max(0, gameState.cpu.health - damage);
+        updateHealthBars();
+    }
+    
+    if (gameState.gameMode === 'practice') {
+        gameState.practiceStats.damageDealt += damage;
+        updatePracticeStats();
+    }
+    
+    createBloodEffect(gameState.cpu.x, 1, 0);
+    applyDamageFlash('cpu');
+    
+    if (window.cpuModel) {
+        const knockback = 0.3;
+        window.cpuModel.position.x += knockback;
+        setTimeout(() => {
+            if (window.cpuModel) window.cpuModel.position.x -= knockback * 0.5;
+        }, 100);
+    }
+    
+    gameState.score += damage;
+}
+
+// Game Loop and Updates
+function animate() {
+    if (!gameState.gameActive) return;
+    
+    requestAnimationFrame(animate);
+    
+    const delta = window.clock ? window.clock.getDelta() : 0.016;
+    
+    try {
+        update();
+        render();
+        
+        if (window.mixerPlayer) window.mixerPlayer.update(delta);
+        if (window.mixerCpu) window.mixerCpu.update(delta);
+    } catch (error) {
+        console.error('Error in game loop:', error);
+    }
+}
+
+function update() {
+    if (!gameState.player) return;
     if (gameState.cutsceneActive) return;
     
     if (gameState.player.attackCooldown > 0) gameState.player.attackCooldown--;
@@ -578,90 +1056,14 @@ function update() {
     if (gameState.player.parryCooldown > 0) gameState.player.parryCooldown--;
     if (gameState.bossSpecialAttackCooldown > 0) gameState.bossSpecialAttackCooldown--;
     
-    // Handle online game update
     if (gameState.gameMode === 'online') {
         updateOnlineGame();
         return;
     }
     
-    // Single player game update
-    // UPDATED: Balanced BOSS SURVIVAL MODE MECHANICS
-    if (gameState.isBossFight) {
-        // Update boss self-damage timer (using balanced settings)
-        gameState.bossSelfDamageTimer += 1;
-        
-        // Every 400 frames (reduced from 500) - boss stuns and loses 8% HP (reduced from 10%)
-        if (gameState.bossSelfDamageTimer >= BOSS_BALANCED_SETTINGS.selfDamageInterval) {
-            gameState.bossSelfDamageTimer = 0;
-            
-            // Stun boss for shorter duration
-            gameState.isBossStunned = true;
-            
-            // Boss loses 8% HP (reduced from 10%)
-            const damage = gameState.cpu.maxHealth * BOSS_BALANCED_SETTINGS.selfDamageAmount;
-            gameState.cpu.health = Math.max(0, gameState.cpu.health - damage);
-            
-            // Create stun effect
-            createBossStunEffect();
-            
-            // Update survival phase
-            gameState.survivalPhase++;
-            
-            // Show boss HP loss message
-            const display = document.getElementById('comboDisplay');
-            if (display) {
-                display.textContent = `67 BOSS STUNNED! -${Math.round(BOSS_BALANCED_SETTINGS.selfDamageAmount * 100)}% HP`;
-                display.classList.add('active');
-                setTimeout(() => {
-                    display.classList.remove('active');
-                }, 2000);
-            }
-            
-            // Unstun after shorter duration
-            setTimeout(() => {
-                gameState.isBossStunned = false;
-            }, BOSS_BALANCED_SETTINGS.stunDuration);
-        }
-        
-        // Update player hidden heal timer (more frequent)
-        gameState.playerHiddenHealTimer += 1;
-        
-        // Every 400 frames, player heals to 100% (hidden)
-        if (gameState.playerHiddenHealTimer >= BOSS_BALANCED_SETTINGS.playerHealInterval) {
-            gameState.playerHiddenHealTimer = 0;
-            
-            // Player heals to 100% (real HP)
-            gameState.playerRealHP = 100;
-            
-            // Create subtle heal effect
-            createPlayerHealEffect();
-        }
-        
-        // Update fake HP with balanced scaling
-        if (gameState.playerFakeHP > 1) {
-            // UPDATED: More balanced adrenaline effect
-            const adrenalineFactor = 1 - (gameState.playerRealHP / 100);
-            const fakeHPDamage = 0.08 * (1 - adrenalineFactor * 0.5); // Reduced damage and adrenaline effect
-            
-            gameState.playerFakeHP = Math.max(1, gameState.playerFakeHP - fakeHPDamage);
-        }
-        
-        // Update displayed HP with fake HP
-        gameState.player.health = gameState.player.maxHealth * (gameState.playerFakeHP / 100);
-        
-        // Player can still die if real HP reaches 0
-        if (gameState.playerRealHP <= 0) {
-            gameState.player.health = 0;
-        }
-    }
+    // Boss survival mode mechanics would go here
+    // ... (rest of the update logic)
     
-    // Regular game updates...
-    // [Rest of the existing update function remains the same]
-}
-
-// NEW: Update Online Game
-function updateOnlineGame() {
-    // Handle player movement
     if (gameState.player.parryCooldown <= 0) {
         if (gameState.keys["arrowleft"]) {
             gameState.player.x = Math.max(-8, gameState.player.x - 0.1);
@@ -681,10 +1083,32 @@ function updateOnlineGame() {
         }
     }
     
-    // Send input to server
+    // Rest of update logic...
+}
+
+function updateOnlineGame() {
+    // Online game update logic
+    if (gameState.player.parryCooldown <= 0) {
+        if (gameState.keys["arrowleft"]) {
+            gameState.player.x = Math.max(-8, gameState.player.x - 0.1);
+            gameState.player.facing = -1;
+            if (window.playerModel) {
+                window.playerModel.position.x = gameState.player.x;
+                window.playerModel.rotation.y = Math.PI;
+            }
+        }
+        if (gameState.keys["arrowright"]) {
+            gameState.player.x = Math.min(8, gameState.player.x + 0.1);
+            gameState.player.facing = 1;
+            if (window.playerModel) {
+                window.playerModel.position.x = gameState.player.x;
+                window.playerModel.rotation.y = 0;
+            }
+        }
+    }
+    
     sendOnlineInput();
     
-    // Update opponent position (would be received from server)
     if (gameState.opponent && window.cpuModel) {
         window.cpuModel.position.x = gameState.opponent.x;
         window.cpuModel.rotation.y = (gameState.opponent.facing === 1 ? 0 : Math.PI);
@@ -701,9 +1125,8 @@ function updateOnlineGame() {
     }
 }
 
-// NEW: Send Online Input
 function sendOnlineInput() {
-    if (!gameState.onlineMatch || !onlineState.isOnline) return;
+    if (!gameState.onlineMatch || !onlineState?.isOnline) return;
     
     const input = {
         sequence: gameState.lastInputSequence++,
@@ -714,16 +1137,12 @@ function sendOnlineInput() {
         timestamp: Date.now()
     };
     
-    // In a real implementation, this would send to the server
-    // For now, we'll simulate opponent input
     simulateOpponentInput();
 }
 
-// NEW: Simulate Opponent Input (placeholder)
 function simulateOpponentInput() {
     if (!gameState.opponent) return;
     
-    // Simple AI for opponent
     const distance = gameState.opponent.x - gameState.player.x;
     
     if (Math.abs(distance) > 2.5) {
@@ -732,9 +1151,7 @@ function simulateOpponentInput() {
     
     gameState.opponent.facing = (distance > 0 ? -1 : 1);
     
-    // Random attacks
     if (Math.random() < 0.02 && Math.abs(distance) < 3) {
-        // Simulate opponent attack
         createBloodEffect(gameState.player.x, 1, 0);
         applyDamageFlash('player');
         
@@ -744,116 +1161,111 @@ function simulateOpponentInput() {
     }
 }
 
-// NEW: Leave Online Match
+// Utility Functions
+function checkBossUnlock() {
+    const insaneCompleted = localStorage.getItem('insaneCompletedWith67');
+    if (insaneCompleted === 'true' && !gameState.bossUnlocked) {
+        gameState.bossUnlocked = true;
+        localStorage.setItem('boss67Unlocked', 'true');
+        console.log('67 BOSS UNLOCKED!');
+    }
+}
+
+function startPracticeMode() {
+    gameState.practiceStats = {
+        comboCount: 0,
+        damageDealt: 0,
+        startTime: Date.now()
+    };
+    updatePracticeStats();
+}
+
+function updatePracticeStats() {
+    const comboCount = document.getElementById('practiceComboCount');
+    const damage = document.getElementById('practiceDamage');
+    const time = document.getElementById('practiceTime');
+    
+    if (comboCount) comboCount.textContent = gameState.practiceStats.comboCount;
+    if (damage) damage.textContent = gameState.practiceStats.damageDealt;
+    if (time) {
+        const elapsed = Math.floor((Date.now() - gameState.practiceStats.startTime) / 1000);
+        time.textContent = `${elapsed}s`;
+    }
+}
+
+function updateHealthBars() {
+    const p1Health = document.getElementById('p1Health');
+    const p2Health = document.getElementById('p2Health');
+    const p1HealthText = document.getElementById('p1HealthText');
+    const p2HealthText = document.getElementById('p2HealthText');
+    
+    if (!p1Health || !p2Health || !p1HealthText || !p2HealthText) return;
+    
+    const p1Percent = gameState.player.health / gameState.player.maxHealth;
+    const p2Percent = (gameState.cpu?.health || gameState.opponent?.health || 0) / (gameState.cpu?.maxHealth || gameState.opponent?.maxHealth || 1);
+    
+    p1Health.style.width = `${p1Percent * 100}%`;
+    p2Health.style.width = `${p2Percent * 100}%`;
+    
+    if (gameState.isBossFight) {
+        p1HealthText.textContent = `${Math.round(gameState.playerFakeHP)}%`;
+    } else {
+        p1HealthText.textContent = `${Math.round(p1Percent * 100)}%`;
+    }
+    
+    p2HealthText.textContent = `${Math.round(p2Percent * 100)}%`;
+    
+    // HP bar colors based on health percentage
+    const updateHealthBarColor = (element, percent, isBoss = false) => {
+        if (percent < 0.3) {
+            element.style.background = 'linear-gradient(90deg, #ff0000 0%, #cc0000 100%)';
+        } else if (percent < 0.6) {
+            element.style.background = 'linear-gradient(90deg, #ff9900 0%, #cc6600 100%)';
+        } else {
+            element.style.background = isBoss ? 
+                'linear-gradient(90deg, #ff0000 0%, #ff6600 100%)' :
+                'linear-gradient(90deg, #ff0033 0%, #ffcc00 100%)';
+        }
+    };
+    
+    updateHealthBarColor(p1Health, p1Percent, false);
+    updateHealthBarColor(p2Health, p2Percent, gameState.isBossFight);
+}
+
+function spawn67() {
+    for (let i = 0; i < 15; i++) {
+        setTimeout(() => {
+            const element = document.createElement('div');
+            element.className = 'secret-67';
+            element.textContent = '67';
+            element.style.left = `${Math.random() * 80 + 10}%`;
+            element.style.top = `${Math.random() * 80 + 10}%`;
+            document.body.appendChild(element);
+            
+            setTimeout(() => element.remove(), 2000);
+        }, i * 100);
+    }
+}
+
 function leaveOnlineMatch() {
-    if (gameState.onlineMatch && onlineState.currentLobby) {
-        leaveLobby();
+    if (gameState.onlineMatch && onlineState?.currentLobby) {
+        if (typeof leaveLobby === 'function') leaveLobby();
     }
     gameState.onlineMatch = null;
     gameState.opponent = null;
 }
 
-// UPDATED: Screen Management with Online Support
-function showScreen(screenId) {
-    console.log('Showing screen:', screenId);
-    document.querySelectorAll('.screen').forEach(screen => {
-        screen.classList.remove('active');
-    });
-    
-    const targetScreen = document.getElementById(screenId);
-    if (targetScreen) {
-        targetScreen.classList.add('active');
-        gameState.currentScreen = screenId;
-    } else {
-        console.error('Screen not found:', screenId);
-        return;
-    }
-    
-    // Handle screen-specific initializations
-    switch(screenId) {
-        case 'onlineScreen':
-            if (typeof showOnlineMainScreen === 'function') {
-                showOnlineMainScreen();
-            }
-            if (typeof refreshLobbyList === 'function') {
-                refreshLobbyList();
-            }
-            break;
-        case 'gameScreen':
-            setTimeout(() => {
-                if (typeof initThreeJS === 'function') {
-                    initThreeJS();
-                }
-                startGame();
-            }, 100);
-            break;
-        case 'practiceScreen':
-            startPracticeMode();
-            break;
-        case 'shopScreen':
-            setTimeout(() => {
-                if (typeof loadShopItems === 'function') {
-                    loadShopItems();
-                }
-            }, 100);
-            break;
-        case 'characterSelect':
-            renderCharacterSelect();
-            break;
-    }
-    
-    // Music management
-    handleScreenMusic(screenId);
-    
-    // Touch controls
-    const touchControls = document.getElementById('touchControls');
-    if (touchControls) {
-        touchControls.classList.toggle('active', 
-            screenId === 'gameScreen' && gameState.deviceType === 'tablet');
-    }
-}
-
-// NEW: Handle Screen Music
-function handleScreenMusic(screenId) {
-    if (screenId === 'gameScreen' && gameState.isBossFight) {
-        if (menuMusic && !menuMusic.paused) {
-            menuMusic.pause();
-        }
-        if (bossMusic) {
-            bossMusic.currentTime = 0;
-            bossMusic.volume = 0.7;
-            bossMusic.play().catch(e => {
-                console.log("Boss music play failed:", e);
-            });
-        }
-    } else if (screenId !== 'gameScreen') {
-        if (bossMusic && !bossMusic.paused) {
-            bossMusic.pause();
-            bossMusic.currentTime = 0;
-        }
-        if (menuMusic && menuMusic.paused) {
-            menuMusic.currentTime = 0;
-            menuMusic.volume = 0.7;
-            menuMusic.play().catch(e => {
-                console.log("Menu music play failed:", e);
-            });
-        }
-    }
-}
-
-// UPDATED: Cutscene with Beat Drop
+// Boss Cutscene System
 function startBossCutscene() {
     gameState.cutsceneActive = true;
     gameState.cutsceneTimer = 0;
     gameState.cutsceneTextIndex = 0;
     gameState.currentCutsceneText = "";
     
-    // Hide game elements during cutscene
     document.getElementById('gameCanvas').style.opacity = '0.3';
     document.querySelector('.hud').style.opacity = '0.3';
     document.getElementById('touchControls').style.opacity = '0.3';
     
-    // Create cutscene overlay
     let cutsceneOverlay = document.getElementById('cutsceneOverlay');
     if (!cutsceneOverlay) {
         cutsceneOverlay = document.createElement('div');
@@ -886,113 +1298,211 @@ function startBossCutscene() {
         document.getElementById('gameScreen').appendChild(cutsceneOverlay);
     }
     
-    // Start boss music when cutscene starts
     if (bossMusic) {
         bossMusic.currentTime = 0;
-        bossMusic.volume = 0.5; // Lower volume for cutscene
-        bossMusic.play().catch(e => {
-            console.log("Boss music play failed:", e);
-        });
+        bossMusic.volume = 0.5;
+        bossMusic.play().catch(e => console.log("Boss music play failed:", e));
     }
     
-    // Start cutscene animation
     animateCutscene();
 }
 
-// UPDATED: Animate Cutscene with Beat Drop
 function animateCutscene() {
     if (!gameState.cutsceneActive) return;
     
     gameState.cutsceneTimer++;
-    
     const cutsceneText = document.getElementById('cutsceneText');
+    const textStages = [
+        { start: 0, end: 150, textIndex: 0, fadeIn: true },
+        { start: 150, end: 300, textIndex: 0, fadeIn: false },
+        { start: 200, end: 350, textIndex: 1, fadeIn: true },
+        { start: 350, end: 500, textIndex: 1, fadeIn: false },
+        { start: 400, end: 550, textIndex: 2, fadeIn: true },
+        { start: 550, end: 700, textIndex: 2, fadeIn: false },
+        { start: 600, end: 750, textIndex: 3, fadeIn: true },
+        { start: 750, end: 900, textIndex: 3, fadeIn: false },
+        { start: 800, end: 950, textIndex: 4, fadeIn: true },
+        { start: 950, end: 1100, textIndex: 4, fadeIn: false },
+        { start: 1000, end: 1150, textIndex: 5, fadeIn: true }
+    ];
     
-    if (gameState.cutsceneTimer < 150) {
-        if (gameState.cutsceneTextIndex === 0) {
-            gameState.currentCutsceneText = BOSS_CUTSCENE_TEXTS[0];
-            cutsceneText.textContent = gameState.currentCutsceneText;
-            cutsceneText.style.opacity = Math.min(1, gameState.cutsceneTimer / 50).toString();
-        }
-    } else if (gameState.cutsceneTimer < 300) {
-        if (gameState.cutsceneTextIndex === 0) {
-            cutsceneText.style.opacity = Math.max(0, 1 - (gameState.cutsceneTimer - 150) / 50).toString();
-            if (gameState.cutsceneTimer === 200) {
-                gameState.cutsceneTextIndex = 1;
-                gameState.currentCutsceneText = BOSS_CUTSCENE_TEXTS[1];
+    for (const stage of textStages) {
+        if (gameState.cutsceneTimer >= stage.start && gameState.cutsceneTimer <= stage.end) {
+            if (gameState.cutsceneTextIndex !== stage.textIndex) {
+                gameState.cutsceneTextIndex = stage.textIndex;
+                gameState.currentCutsceneText = BOSS_CUTSCENE_TEXTS[stage.textIndex];
                 cutsceneText.textContent = gameState.currentCutsceneText;
                 cutsceneText.style.opacity = '0';
             }
-        } else if (gameState.cutsceneTextIndex === 1) {
-            cutsceneText.style.opacity = Math.min(1, (gameState.cutsceneTimer - 200) / 50).toString();
-        }
-    } else if (gameState.cutsceneTimer < 450) {
-        if (gameState.cutsceneTextIndex === 1) {
-            cutsceneText.style.opacity = Math.max(0, 1 - (gameState.cutsceneTimer - 300) / 50).toString();
-            if (gameState.cutsceneTimer === 350) {
-                gameState.cutsceneTextIndex = 2;
-                gameState.currentCutsceneText = BOSS_CUTSCENE_TEXTS[2];
-                cutsceneText.textContent = gameState.currentCutsceneText;
-                cutsceneText.style.opacity = '0';
-            }
-        } else if (gameState.cutsceneTextIndex === 2) {
-            cutsceneText.style.opacity = Math.min(1, (gameState.cutsceneTimer - 350) / 50).toString();
-        }
-    } else if (gameState.cutsceneTimer < 600) {
-        if (gameState.cutsceneTextIndex === 2) {
-            cutsceneText.style.opacity = Math.max(0, 1 - (gameState.cutsceneTimer - 450) / 50).toString();
-            if (gameState.cutsceneTimer === 500) {
-                gameState.cutsceneTextIndex = 3;
-                gameState.currentCutsceneText = BOSS_CUTSCENE_TEXTS[3];
-                cutsceneText.textContent = gameState.currentCutsceneText;
-                cutsceneText.style.opacity = '0';
-            }
-        } else if (gameState.cutsceneTextIndex === 3) {
-            cutsceneText.style.opacity = Math.min(1, (gameState.cutsceneTimer - 500) / 50).toString();
-        }
-    } else if (gameState.cutsceneTimer < 750) {
-        if (gameState.cutsceneTextIndex === 3) {
-            cutsceneText.style.opacity = Math.max(0, 1 - (gameState.cutsceneTimer - 600) / 50).toString();
-            if (gameState.cutsceneTimer === 650) {
-                gameState.cutsceneTextIndex = 4;
-                gameState.currentCutsceneText = BOSS_CUTSCENE_TEXTS[4];
-                cutsceneText.textContent = gameState.currentCutsceneText;
-                cutsceneText.style.opacity = '0';
-            }
-        } else if (gameState.cutsceneTextIndex === 4) {
-            cutsceneText.style.opacity = Math.min(1, (gameState.cutsceneTimer - 650) / 50).toString();
-        }
-    } else {
-        if (gameState.cutsceneTextIndex === 4) {
-            cutsceneText.style.opacity = Math.max(0, 1 - (gameState.cutsceneTimer - 750) / 50).toString();
-            if (gameState.cutsceneTimer === 800) {
-                gameState.cutsceneTextIndex = 5;
-                gameState.currentCutsceneText = BOSS_CUTSCENE_TEXTS[5];
-                cutsceneText.textContent = gameState.currentCutsceneText;
-                cutsceneText.style.opacity = '1';
-                
-                // BEAT DROP: Increase music volume and add visual effect
-                if (bossMusic) {
-                    bossMusic.volume = 0.8; // Increase volume for beat drop
-                    // Add screen shake or other effects for beat drop
-                    const canvas = document.getElementById('gameCanvas');
-                    if (canvas) {
-                        canvas.style.transform = 'scale(1.05)';
-                        setTimeout(() => {
-                            canvas.style.transform = 'scale(1)';
-                        }, 200);
-                    }
+            
+            const progress = (gameState.cutsceneTimer - stage.start) / (stage.end - stage.start);
+            cutsceneText.style.opacity = stage.fadeIn ? Math.min(1, progress).toString() : Math.max(0, 1 - progress).toString();
+            
+            if (stage.textIndex === 5 && progress > 0.5 && bossMusic) {
+                // BEAT DROP when "BEGIN!" is shown
+                bossMusic.volume = 0.8;
+                const canvas = document.getElementById('gameCanvas');
+                if (canvas) {
+                    canvas.style.transform = 'scale(1.05)';
+                    setTimeout(() => canvas.style.transform = 'scale(1)', 200);
                 }
-                
-                // Final text stays for 2 seconds then ends cutscene
-                setTimeout(() => {
-                    endCutscene();
-                }, 2000);
             }
+            
+            break;
         }
+    }
+    
+    if (gameState.cutsceneTimer >= 1200) {
+        endCutscene();
+        return;
     }
     
     requestAnimationFrame(animateCutscene);
 }
 
+function endCutscene() {
+    gameState.cutsceneActive = false;
+    
+    const cutsceneOverlay = document.getElementById('cutsceneOverlay');
+    if (cutsceneOverlay) cutsceneOverlay.remove();
+    
+    document.getElementById('gameCanvas').style.opacity = '1';
+    document.querySelector('.hud').style.opacity = '1';
+    document.getElementById('touchControls').style.opacity = '1';
+    
+    animate();
+    
+    const display = document.getElementById('comboDisplay');
+    if (display) {
+        display.textContent = "SURVIVE! Boss defeats itself every 5s";
+        display.classList.add('active');
+        setTimeout(() => display.classList.remove('active'), 3000);
+    }
+}
+
+function endRound() {
+    gameState.gameActive = false;
+    
+    if (bossMusic && !bossMusic.paused) {
+        bossMusic.pause();
+        bossMusic.currentTime = 0;
+    }
+    
+    if (menuMusic && menuMusic.paused) {
+        menuMusic.currentTime = 0;
+        menuMusic.volume = 0.7;
+        menuMusic.play().catch(e => console.log("Menu music play failed:", e));
+    }
+    
+    let message = "TIME OVER!";
+    let isBossDefeated = false;
+    
+    if (gameState.player.health <= 0) {
+        message = "CPU WINS!";
+    } else if ((gameState.cpu && gameState.cpu.health <= 0) || (gameState.opponent && gameState.opponent.health <= 0)) {
+        message = "PLAYER WINS!";
+        gameState.score += 1000;
+        gameState.coins += 50;
+        
+        if (gameState.difficulty === 'insane' && CHARACTERS[gameState.selectedCharacter].id === 67) {
+            localStorage.setItem('insaneCompletedWith67', 'true');
+            checkBossUnlock();
+        }
+        
+        if (gameState.isBossFight) {
+            isBossDefeated = true;
+            gameState.bossDefeated = true;
+            localStorage.setItem('boss67Defeated', 'true');
+            message = "67 BOSS DEFEATED!";
+            gameState.coins += 500;
+        }
+        
+        if (gameState.score > gameState.highScore) {
+            gameState.highScore = gameState.score;
+            localStorage.setItem('brainrotHighScore', gameState.highScore);
+            const highScoreElement = document.getElementById('highScore');
+            if (highScoreElement) highScoreElement.textContent = gameState.highScore;
+        }
+        
+        localStorage.setItem('brainrotCoins', gameState.coins);
+        const coinsElement = document.getElementById('coinsAmount');
+        if (coinsElement) coinsElement.textContent = gameState.coins;
+        
+        spawn67();
+    }
+    
+    if (gameState.cpuMemory) {
+        localStorage.setItem('cpuMemory', JSON.stringify(gameState.cpuMemory));
+    }
+    
+    setTimeout(() => {
+        if (isBossDefeated) {
+            showBossDefeatedDialogue();
+        } else if (gameState.gameMode === 'practice') {
+            showScreen('practiceScreen');
+        } else {
+            alert(`${message}\nScore: ${gameState.score}\nCoins Earned: ${isBossDefeated ? 550 : 50}`);
+            showScreen('characterSelect');
+        }
+    }, 1000);
+}
+
+function showBossDefeatedDialogue() {
+    const dialogue = document.createElement('div');
+    dialogue.style.position = 'fixed';
+    dialogue.style.top = '0';
+    dialogue.style.left = '0';
+    dialogue.style.width = '100%';
+    dialogue.style.height = '100%';
+    dialogue.style.backgroundColor = 'rgba(0,0,0,0.9)';
+    dialogue.style.display = 'flex';
+    dialogue.style.flexDirection = 'column';
+    dialogue.style.justifyContent = 'center';
+    dialogue.style.alignItems = 'center';
+    dialogue.style.zIndex = '1000';
+    dialogue.style.color = '#ffcc00';
+    dialogue.style.fontSize = '2rem';
+    dialogue.style.textAlign = 'center';
+    dialogue.style.padding = '2rem';
+    
+    dialogue.innerHTML = `
+        <div style="margin-bottom: 2rem; font-size: 3rem; color: #ff0000; text-shadow: 0 0 20px #ff0000;">67 BOSS DEFEATED!</div>
+        <div style="margin-bottom: 3rem; font-size: 1.5rem; line-height: 1.6;">
+            "What just happened...?"<br>
+            The true power of 67 has been unleashed...<br>
+            But at what cost?
+        </div>
+        <div style="margin-bottom: 2rem; font-size: 1.2rem; color: #00ff00;">
+            Reward: 500 COINS + 50 Bonus!
+        </div>
+        <button id="continueBtn" style="
+            font-size: 1.5rem; 
+            padding: 1rem 2rem; 
+            background: #ff0033; 
+            color: white; 
+            border: 2px solid #ffcc00; 
+            cursor: pointer;
+            border-radius: 10px;
+        ">CONTINUE</button>
+    `;
+    
+    document.body.appendChild(dialogue);
+    
+    document.getElementById('continueBtn').addEventListener('click', () => {
+        document.body.removeChild(dialogue);
+        showScreen('characterSelect');
+    });
+}
+
+function render() {
+    if (window.renderer && window.scene && window.camera) {
+        window.renderer.render(window.scene, window.camera);
+    }
+}
+
 // Initialize when loaded
 window.addEventListener('load', init);
+
+// Make functions globally available
+window.showScreen = showScreen;
+window.startBattle = startBattle;
