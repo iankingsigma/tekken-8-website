@@ -1,5 +1,3 @@
-[file name]: js/shop.js
-[file content begin]
 // Shop System - FIXED AND WORKING v4.0
 const SHOP_ITEMS = [
     {
@@ -301,4 +299,3 @@ window.loadShopItems = loadShopItems;
 window.buyItem = buyItem;
 window.applyShopEffects = applyShopEffects;
 window.updateDoubleCoins = updateDoubleCoins;
-[file content end]
