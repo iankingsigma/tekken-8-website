@@ -30,7 +30,13 @@ let gameState = {
     isBossFight: false,
     bossSpecialAttackCooldown: 0,
     bossStunTimer: 0,
-    isBossStunned: false
+    isBossStunned: false,
+    // NEW: Survival mode variables
+    bossSelfDamageTimer: 0,
+    playerHiddenHealTimer: 0,
+    playerFakeHP: 100, // Visual HP that player sees
+    playerRealHP: 100, // Actual HP used for calculations
+    survivalPhase: 0
 };
 
 // Difficulty Settings
@@ -61,15 +67,16 @@ const DIFFICULTY_SETTINGS = {
     },
     sixtyseven: {
         cpuHpMultiplier: 2.5,
-        parryChance: 0.0, // REMOVED PARRYING
+        parryChance: 0.0,
         aggression: 1.2,
         learningRate: 0.9,
         isBoss: true
     }
 };
 
-// Boss Music
+// Music
 let bossMusic = document.getElementById('bossMusic');
+let menuMusic = document.getElementById('menuMusic');
 
 // Initialize Game
 function init() {
@@ -85,6 +92,14 @@ function init() {
     
     if (typeof loadShopItems === 'function') {
         setTimeout(loadShopItems, 100);
+    }
+    
+    // Start menu music
+    if (menuMusic) {
+        menuMusic.volume = 0.7;
+        menuMusic.play().catch(e => {
+            console.log("Menu music play failed:", e);
+        });
     }
 }
 
@@ -152,10 +167,32 @@ function showScreen(screenId) {
         return;
     }
     
-    // Stop boss music when leaving game screen
-    if (screenId !== 'gameScreen' && bossMusic) {
-        bossMusic.pause();
-        bossMusic.currentTime = 0;
+    // Music management
+    if (screenId === 'gameScreen' && gameState.isBossFight) {
+        // Stop menu music and play boss music
+        if (menuMusic && !menuMusic.paused) {
+            menuMusic.pause();
+        }
+        if (bossMusic) {
+            bossMusic.currentTime = 0;
+            bossMusic.volume = 0.7;
+            bossMusic.play().catch(e => {
+                console.log("Boss music play failed:", e);
+            });
+        }
+    } else if (screenId !== 'gameScreen') {
+        // Stop boss music and play menu music
+        if (bossMusic && !bossMusic.paused) {
+            bossMusic.pause();
+            bossMusic.currentTime = 0;
+        }
+        if (menuMusic && menuMusic.paused) {
+            menuMusic.currentTime = 0;
+            menuMusic.volume = 0.7;
+            menuMusic.play().catch(e => {
+                console.log("Menu music play failed:", e);
+            });
+        }
     }
     
     if (screenId === 'gameScreen') {
@@ -200,7 +237,7 @@ function renderCharacterSelect() {
         if (!sixtySevenOption) {
             const option = document.createElement('option');
             option.value = 'sixtyseven';
-            option.textContent = '67 BOSS';
+            option.textContent = '67 BOSS - SURVIVAL';
             difficultySelect.appendChild(option);
         }
     }
@@ -249,19 +286,45 @@ function renderCharacterSelect() {
             // Show boss unlock info
             const bossUnlockInfo = document.getElementById('bossUnlockInfo');
             const bossUnlockedInfo = document.getElementById('bossUnlockedInfo');
-            if (bossUnlockInfo && bossUnlockedInfo) {
+            const bossWarningInfo = document.getElementById('bossWarningInfo');
+            if (bossUnlockInfo && bossUnlockedInfo && bossWarningInfo) {
                 if (gameState.bossUnlocked) {
                     bossUnlockInfo.style.display = 'none';
                     bossUnlockedInfo.style.display = 'block';
+                    
+                    // Show warning if 67 BOSS difficulty is selected
+                    const difficulty = document.getElementById('difficultySelect').value;
+                    if (difficulty === 'sixtyseven') {
+                        bossWarningInfo.style.display = 'block';
+                    } else {
+                        bossWarningInfo.style.display = 'none';
+                    }
                 } else {
                     bossUnlockInfo.style.display = 'block';
                     bossUnlockedInfo.style.display = 'none';
+                    bossWarningInfo.style.display = 'none';
                 }
             }
         });
         
         grid.appendChild(card);
     });
+    
+    // Add event listener to difficulty select to show/hide boss warning
+    const difficultySelectElement = document.getElementById('difficultySelect');
+    if (difficultySelectElement) {
+        difficultySelectElement.addEventListener('change', () => {
+            const difficulty = difficultySelectElement.value;
+            const bossWarningInfo = document.getElementById('bossWarningInfo');
+            if (bossWarningInfo) {
+                if (difficulty === 'sixtyseven' && gameState.bossUnlocked) {
+                    bossWarningInfo.style.display = 'block';
+                } else {
+                    bossWarningInfo.style.display = 'none';
+                }
+            }
+        });
+    }
 }
 
 // Start Battle
@@ -279,7 +342,7 @@ function startBattle(mode = 'arcade') {
                             CHARACTERS[gameState.selectedCharacter].id === 67);
     
     if (gameState.isBossFight) {
-        console.log('STARTING 67 BOSS FIGHT!');
+        console.log('STARTING 67 BOSS SURVIVAL MODE!');
     }
     
     showScreen('gameScreen');
@@ -327,16 +390,7 @@ function startGame() {
         // Use the boss character
         cpuChar = BOSS_67;
         isBossFight = true;
-        console.log('BOSS FIGHT INITIATED!');
-        
-        // Play boss music
-        if (bossMusic) {
-            bossMusic.currentTime = 0;
-            bossMusic.volume = 0.7;
-            bossMusic.play().catch(e => {
-                console.log("Boss music play failed:", e);
-            });
-        }
+        console.log('BOSS SURVIVAL MODE INITIATED!');
     } else {
         // Regular CPU character
         let cpuIndex;
@@ -360,12 +414,19 @@ function startGame() {
     const cpuMemory = gameState.cpuMemory[memoryKey];
     cpuMemory.fights++;
     
-    // Reset parry cooldown for new game
+    // Reset all cooldowns and timers
     gameState.parryCooldownActive = false;
     gameState.parryCooldownEnd = 0;
     gameState.bossSpecialAttackCooldown = 0;
     gameState.bossStunTimer = 0;
     gameState.isBossStunned = false;
+    
+    // NEW: Survival mode timers
+    gameState.bossSelfDamageTimer = 0;
+    gameState.playerHiddenHealTimer = 0;
+    gameState.playerFakeHP = 100;
+    gameState.playerRealHP = 100;
+    gameState.survivalPhase = 0;
     
     // Re-enable parry buttons
     const parryButtons = document.querySelectorAll('[data-action="parry"]');
@@ -413,7 +474,17 @@ function startGame() {
     if (isBossFight) {
         document.getElementById('p2Name').textContent = "67 BOSS";
         document.getElementById('p2Name').style.color = "#ff0000";
-        document.getElementById('roundText').textContent = "FINAL BOSS";
+        document.getElementById('roundText').textContent = "SURVIVAL MODE";
+        
+        // Show survival mode instructions
+        const display = document.getElementById('comboDisplay');
+        if (display) {
+            display.textContent = "SURVIVE! Boss defeats itself every 5s";
+            display.classList.add('active');
+            setTimeout(() => {
+                display.classList.remove('active');
+            }, 3000);
+        }
     } else {
         document.getElementById('p2Name').style.color = "";
         document.getElementById('roundText').textContent = `ROUND ${gameState.round}`;
@@ -570,7 +641,7 @@ function handleButtonClick(btnId) {
     }
 }
 
-// Player Attack
+// Player Attack - UPDATED FOR BOSS SURVIVAL MODE
 function doPlayerAttack(type) {
     if (!gameState.gameActive || gameState.player.attackCooldown > 0) return;
     
@@ -609,8 +680,12 @@ function doPlayerAttack(type) {
         const healAmount = gameState.player.maxHealth * 0.10;
         const damageAmount = gameState.cpu.maxHealth * 0.20;
         
+        // In boss survival mode, player can't damage boss with parry
+        if (!gameState.isBossFight) {
+            gameState.cpu.health = Math.max(0, gameState.cpu.health - damageAmount);
+        }
+        
         gameState.player.health = Math.min(gameState.player.maxHealth, gameState.player.health + healAmount);
-        gameState.cpu.health = Math.max(0, gameState.cpu.health - damageAmount);
         
         gameState.player.parryCooldown = 90;
         gameState.parryCooldownActive = true;
@@ -655,13 +730,20 @@ function doPlayerAttack(type) {
         
         createParryEffect(gameState.player.x, 1, 0);
         applyDamageFlash('player', 0x00ff00);
-        applyDamageFlash('cpu');
+        
+        if (!gameState.isBossFight) {
+            applyDamageFlash('cpu');
+        }
         
         updateHealthBars();
         
         const display = document.getElementById('comboDisplay');
         if (display) {
-            display.textContent = "PERFECT PARRY! +10% HP";
+            if (gameState.isBossFight) {
+                display.textContent = "PERFECT PARRY! +10% HP";
+            } else {
+                display.textContent = "PERFECT PARRY! +10% HP";
+            }
             display.classList.add('active');
             setTimeout(() => {
                 display.classList.remove('active');
@@ -671,10 +753,10 @@ function doPlayerAttack(type) {
         return;
     }
     
-    // BOSS SPECIFIC: 0% parry chance (REMOVED PARRYING)
+    // BOSS SPECIFIC: 0% parry chance
     let parryChance = gameState.cpu.difficulty.parryChance;
     if (gameState.cpu.isBoss) {
-        parryChance = 0.0; // 0% parry chance for boss (NERFED)
+        parryChance = 0.0;
     }
     
     if (gameState.cpu && Math.random() < parryChance) {
@@ -695,6 +777,24 @@ function doPlayerAttack(type) {
         }, 100);
     }
     
+    // IN BOSS SURVIVAL MODE: PLAYER CAN'T DAMAGE BOSS
+    if (gameState.isBossFight) {
+        // Just visual effects, no actual damage
+        createBloodEffect(gameState.cpu.x, 1, 0);
+        applyDamageFlash('cpu');
+        
+        if (window.cpuModel) {
+            const knockback = 0.3;
+            window.cpuModel.position.x += knockback;
+            setTimeout(() => {
+                if (window.cpuModel) window.cpuModel.position.x -= knockback * 0.5;
+            }, 100);
+        }
+        
+        return;
+    }
+    
+    // Regular damage calculation for non-boss fights
     let damage = 0;
     let damageMultiplier = 1;
     
@@ -784,10 +884,10 @@ function executeCombo(combo) {
         display.classList.add('active');
     }
     
-    // BOSS SPECIFIC: 0% parry chance (REMOVED PARRYING)
+    // BOSS SPECIFIC: 0% parry chance
     let parryChance = gameState.cpu.difficulty.parryChance;
     if (gameState.cpu.isBoss) {
-        parryChance = 0.0; // NERFED
+        parryChance = 0.0;
     }
     
     if (gameState.cpu && Math.random() < parryChance) {
@@ -795,16 +895,24 @@ function executeCombo(combo) {
         applyDamageFlash('cpu', 0x00ff00);
         if (display) display.textContent = `${combo.name} PARRY!`;
     } else {
-        gameState.cpu.health = Math.max(0, gameState.cpu.health - combo.damage);
+        // IN BOSS SURVIVAL MODE: PLAYER CAN'T DAMAGE BOSS WITH COMBOS
+        if (!gameState.isBossFight) {
+            gameState.cpu.health = Math.max(0, gameState.cpu.health - combo.damage);
+        }
+        
         updateHealthBars();
         
         if (gameState.gameMode === 'practice') {
             gameState.practiceStats.comboCount++;
-            gameState.practiceStats.damageDealt += combo.damage;
+            if (!gameState.isBossFight) {
+                gameState.practiceStats.damageDealt += combo.damage;
+            }
             updatePracticeStats();
         }
         
-        gameState.score += combo.damage * gameState.comboCount;
+        if (!gameState.isBossFight) {
+            gameState.score += combo.damage * gameState.comboCount;
+        }
         
         if (window.playerModel) {
             window.playerModel.position.z = -0.8;
@@ -863,7 +971,7 @@ function animate() {
     }
 }
 
-// Update Game State
+// Update Game State - COMPLETELY UPDATED FOR SURVIVAL MODE
 function update() {
     if (!gameState.player || !gameState.cpu) return;
     
@@ -872,12 +980,75 @@ function update() {
     if (gameState.player.parryCooldown > 0) gameState.player.parryCooldown--;
     if (gameState.bossSpecialAttackCooldown > 0) gameState.bossSpecialAttackCooldown--;
     
-    // Update boss stun timer
-    if (gameState.cpu.isBoss) {
+    // BOSS SURVIVAL MODE MECHANICS
+    if (gameState.isBossFight) {
+        // Update boss self-damage timer
+        gameState.bossSelfDamageTimer += 1;
+        
+        // Every 5 seconds (300 frames at 60fps), boss stuns and loses 10% HP
+        if (gameState.bossSelfDamageTimer >= 300) {
+            gameState.bossSelfDamageTimer = 0;
+            
+            // Stun boss for 0.5 seconds
+            gameState.isBossStunned = true;
+            
+            // Boss loses 10% HP
+            const damage = gameState.cpu.maxHealth * 0.10;
+            gameState.cpu.health = Math.max(0, gameState.cpu.health - damage);
+            
+            // Create stun effect
+            createBossStunEffect();
+            
+            // Update survival phase
+            gameState.survivalPhase++;
+            
+            // Show boss HP loss message
+            const display = document.getElementById('comboDisplay');
+            if (display) {
+                display.textContent = `67 BOSS STUNNED! -10% HP`;
+                display.classList.add('active');
+                setTimeout(() => {
+                    display.classList.remove('active');
+                }, 2000);
+            }
+            
+            // Unstun after 0.5 seconds
+            setTimeout(() => {
+                gameState.isBossStunned = false;
+            }, 500);
+        }
+        
+        // Update player hidden heal timer
+        gameState.playerHiddenHealTimer += 1;
+        
+        // Every 5 seconds, player heals to 100% (hidden)
+        if (gameState.playerHiddenHealTimer >= 300) {
+            gameState.playerHiddenHealTimer = 0;
+            
+            // Player heals to 100% (real HP)
+            gameState.playerRealHP = 100;
+            
+            // Create subtle heal effect (player won't see it clearly)
+            createPlayerHealEffect();
+        }
+        
+        // Update fake HP to create illusion of low HP
+        // Fake HP decreases slower when real HP is lower
+        if (gameState.playerFakeHP > 5) {
+            const fakeHPDamage = 0.1 * (gameState.playerRealHP / 100);
+            gameState.playerFakeHP = Math.max(5, gameState.playerFakeHP - fakeHPDamage);
+        }
+        
+        // Update displayed HP with fake HP
+        gameState.player.health = gameState.player.maxHealth * (gameState.playerFakeHP / 100);
+    }
+    
+    // Update boss stun timer for regular boss mechanics
+    if (gameState.cpu.isBoss && !gameState.isBossStunned) {
         gameState.bossStunTimer += 1;
         
-        // Stun boss every 5 seconds for 2 seconds
-        if (gameState.bossStunTimer >= 300) { // 5 seconds at 60fps
+        // Stun boss every 5 seconds for 2 seconds (regular boss mechanic)
+        if (gameState.bossStunTimer >= 300) {
             gameState.isBossStunned = true;
             gameState.bossStunTimer = 0;
             
@@ -890,10 +1061,8 @@ function update() {
                 }, 1000);
             }
             
-            // Create stun effect
             createStunEffect(gameState.cpu.x, 2, 0);
             
-            // Unstun after 2 seconds
             setTimeout(() => {
                 gameState.isBossStunned = false;
             }, 2000);
@@ -967,7 +1136,7 @@ function updateBossAI() {
     
     // Move towards player
     if (Math.abs(distance) > 2.5) {
-        gameState.cpu.x += (distance > 0 ? -0.08 : 0.08); // Boss moves faster
+        gameState.cpu.x += (distance > 0 ? -0.08 : 0.08);
     }
     
     if (window.cpuModel) {
@@ -984,12 +1153,12 @@ function updateBossAI() {
             if (Math.random() < 0.15) {
                 // Stomp attack - 15% chance
                 doBossStompAttack();
-                gameState.bossSpecialAttackCooldown = 120; // 2 second cooldown
+                gameState.bossSpecialAttackCooldown = 120;
                 return;
             } else if (Math.random() < 0.3) {
                 // Speed dash attack
                 doBossDashAttack();
-                gameState.bossSpecialAttackCooldown = 90; // 1.5 second cooldown
+                gameState.bossSpecialAttackCooldown = 90;
                 return;
             }
         }
@@ -1003,7 +1172,7 @@ function updateBossAI() {
     }
 }
 
-// Boss Special Attacks
+// Boss Special Attacks - UPDATED FOR SURVIVAL MODE
 function doBossStompAttack() {
     console.log("BOSS STOMP ATTACK!");
     
@@ -1031,17 +1200,22 @@ function doBossStompAttack() {
     // Check if player is in range
     const distance = Math.abs(gameState.player.x - gameState.cpu.x);
     if (distance < 3) {
-        // 30% damage (NERFED from 90%)
-        const damage = gameState.player.maxHealth * 0.30;
-        gameState.player.health = Math.max(0, gameState.player.health - damage);
+        // Calculate damage based on survival phase
+        const baseDamage = gameState.player.maxHealth * 0.30;
+        const phaseMultiplier = 1 + (gameState.survivalPhase * 0.1);
+        const damage = baseDamage * phaseMultiplier;
         
-        // REMOVED HEALING
+        // In survival mode, damage affects both real and fake HP
+        gameState.playerRealHP = Math.max(0, gameState.playerRealHP - (damage / gameState.player.maxHealth * 100));
+        gameState.playerFakeHP = Math.max(5, gameState.playerFakeHP - (damage / gameState.player.maxHealth * 100));
+        
+        gameState.player.health = gameState.player.maxHealth * (gameState.playerFakeHP / 100);
         
         updateHealthBars();
         createBloodEffect(gameState.player.x, 1, 0);
         applyDamageFlash('player');
         
-        console.log("STOMP HIT! 30% damage");
+        console.log("STOMP HIT! Player real HP:", gameState.playerRealHP, "Fake HP:", gameState.playerFakeHP);
     }
 }
 
@@ -1070,17 +1244,22 @@ function doBossDashAttack() {
     // Check if player is hit during dash
     const distance = Math.abs(gameState.player.x - gameState.cpu.x);
     if (distance < 2) {
-        // 20% damage
-        const damage = gameState.player.maxHealth * 0.20;
-        gameState.player.health = Math.max(0, gameState.player.health - damage);
+        // Calculate damage based on survival phase
+        const baseDamage = gameState.player.maxHealth * 0.20;
+        const phaseMultiplier = 1 + (gameState.survivalPhase * 0.05);
+        const damage = baseDamage * phaseMultiplier;
         
-        // REMOVED HEALING
+        // In survival mode, damage affects both real and fake HP
+        gameState.playerRealHP = Math.max(0, gameState.playerRealHP - (damage / gameState.player.maxHealth * 100));
+        gameState.playerFakeHP = Math.max(5, gameState.playerFakeHP - (damage / gameState.player.maxHealth * 100));
+        
+        gameState.player.health = gameState.player.maxHealth * (gameState.playerFakeHP / 100);
         
         updateHealthBars();
         createBloodEffect(gameState.player.x, 1, 0);
         applyDamageFlash('player');
         
-        console.log("DASH HIT! 20% damage");
+        console.log("DASH HIT! Player real HP:", gameState.playerRealHP, "Fake HP:", gameState.playerFakeHP);
     }
     
     // Return to original position after dash
@@ -1114,9 +1293,16 @@ function doCpuAttack(type) {
         damage = (gameState.cpu.character.moves.special + Math.floor(Math.random() * 12)) * difficulty.aggression;
     }
     
-    // REMOVED BOSS HEALING PASSIVE
+    // In survival mode, damage affects both real and fake HP
+    if (gameState.isBossFight) {
+        gameState.playerRealHP = Math.max(0, gameState.playerRealHP - (damage / gameState.player.maxHealth * 100));
+        gameState.playerFakeHP = Math.max(5, gameState.playerFakeHP - (damage / gameState.player.maxHealth * 100));
+        
+        gameState.player.health = gameState.player.maxHealth * (gameState.playerFakeHP / 100);
+    } else {
+        gameState.player.health = Math.max(0, gameState.player.health - damage);
+    }
     
-    gameState.player.health = Math.max(0, gameState.player.health - damage);
     updateHealthBars();
     
     applyDamageFlash('player');
@@ -1155,14 +1341,28 @@ function updateHealthBars() {
     p1HealthText.textContent = `${Math.round(p1Percent * 100)}%`;
     p2HealthText.textContent = `${Math.round(p2Percent * 100)}%`;
     
-    if (p1Percent < 0.3) {
-        p1Health.style.background = 'linear-gradient(90deg, #ff0000 0%, #cc0000 100%)';
-    } else if (p1Percent < 0.6) {
-        p1Health.style.background = 'linear-gradient(90deg, #ff9900 0%, #cc6600 100%)';
+    // Player HP bar color based on fake HP (for visual effect)
+    if (gameState.isBossFight) {
+        const fakeHPPercent = gameState.playerFakeHP;
+        if (fakeHPPercent < 20) {
+            p1Health.style.background = 'linear-gradient(90deg, #ff0000 0%, #cc0000 100%)';
+        } else if (fakeHPPercent < 50) {
+            p1Health.style.background = 'linear-gradient(90deg, #ff9900 0%, #cc6600 100%)';
+        } else {
+            p1Health.style.background = 'linear-gradient(90deg, #ff0033 0%, #ffcc00 100%)';
+        }
     } else {
-        p1Health.style.background = 'linear-gradient(90deg, #ff0033 0%, #ffcc00 100%)';
+        // Regular HP colors for non-boss fights
+        if (p1Percent < 0.3) {
+            p1Health.style.background = 'linear-gradient(90deg, #ff0000 0%, #cc0000 100%)';
+        } else if (p1Percent < 0.6) {
+            p1Health.style.background = 'linear-gradient(90deg, #ff9900 0%, #cc6600 100%)';
+        } else {
+            p1Health.style.background = 'linear-gradient(90deg, #ff0033 0%, #ffcc00 100%)';
+        }
     }
     
+    // CPU HP bar colors
     if (p2Percent < 0.3) {
         p2Health.style.background = 'linear-gradient(90deg, #ff0000 0%, #cc0000 100%)';
     } else if (p2Percent < 0.6) {
@@ -1179,6 +1379,15 @@ function endRound() {
     if (bossMusic && !bossMusic.paused) {
         bossMusic.pause();
         bossMusic.currentTime = 0;
+    }
+    
+    // Start menu music again
+    if (menuMusic && menuMusic.paused) {
+        menuMusic.currentTime = 0;
+        menuMusic.volume = 0.7;
+        menuMusic.play().catch(e => {
+            console.log("Menu music play failed:", e);
+        });
     }
     
     let message = "TIME OVER!";
@@ -1297,6 +1506,38 @@ function spawn67() {
             }, 2000);
         }, i * 100);
     }
+}
+
+// NEW: Boss stun effect for survival mode
+function createBossStunEffect() {
+    const stunElement = document.createElement('div');
+    stunElement.className = 'boss-stun-effect';
+    stunElement.textContent = 'BOSS STUNNED!';
+    stunElement.style.left = '50%';
+    stunElement.style.top = '40%';
+    document.getElementById('gameScreen').appendChild(stunElement);
+    
+    setTimeout(() => {
+        if (stunElement.parentNode) {
+            stunElement.parentNode.removeChild(stunElement);
+        }
+    }, 500);
+}
+
+// NEW: Player heal effect (subtle)
+function createPlayerHealEffect() {
+    const healElement = document.createElement('div');
+    healElement.className = 'player-heal-effect';
+    healElement.textContent = '+';
+    healElement.style.left = '50%';
+    healElement.style.top = '20%';
+    document.getElementById('gameScreen').appendChild(healElement);
+    
+    setTimeout(() => {
+        if (healElement.parentNode) {
+            healElement.parentNode.removeChild(healElement);
+        }
+    }, 1000);
 }
 
 // Damage flash effect
