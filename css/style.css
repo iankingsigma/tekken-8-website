@@ -1,4 +1,4 @@
-/* Brainrot Fighters v4.5 - Complete CSS */
+/* Brainrot Fighters v4.5 - Complete CSS with Custom Backgrounds */
 * {
     margin: 0;
     padding: 0;
@@ -13,6 +13,46 @@ body {
     width: 100vw;
     height: 100vh;
     image-rendering: pixelated;
+    transition: background 0.5s ease;
+}
+
+/* Custom Backgrounds */
+body.bg-space {
+    background: linear-gradient(135deg, #0a0a2a 0%, #000033 50%, #0a002a 100%);
+    background-image: 
+        radial-gradient(white, rgba(255,255,255,.2) 2px, transparent 4px),
+        radial-gradient(white, rgba(255,255,255,.15) 1px, transparent 3px),
+        radial-gradient(white, rgba(255,255,255,.1) 2px, transparent 4px);
+    background-size: 550px 550px, 350px 350px, 250px 250px;
+    background-position: 0 0, 40px 60px, 130px 270px;
+}
+
+body.bg-neon {
+    background: linear-gradient(135deg, #0a002a 0%, #330066 50%, #6600cc 100%);
+    background-image: 
+        linear-gradient(90deg, transparent 79px, #ff00ff 79px, #ff00ff 81px, transparent 81px),
+        linear-gradient(#00ffff 1px, transparent 1px);
+    background-size: 100% 100%, 20px 20px;
+}
+
+body.bg-matrix {
+    background: #000;
+    background-image: 
+        linear-gradient(rgba(0, 255, 0, 0.1) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 255, 0, 0.1) 1px, transparent 1px);
+    background-size: 20px 20px;
+}
+
+body.bg-fire {
+    background: linear-gradient(135deg, #330000 0%, #cc0000 50%, #ff6600 100%);
+    background-image: 
+        radial-gradient(ellipse at center, rgba(255,100,0,0.3) 0%, rgba(255,50,0,0.1) 70%, rgba(255,0,0,0) 100%);
+}
+
+body.bg-ice {
+    background: linear-gradient(135deg, #001a33 0%, #0066cc 50%, #00ccff 100%);
+    background-image: 
+        radial-gradient(ellipse at center, rgba(0,200,255,0.2) 0%, rgba(0,100,255,0.1) 70%, rgba(0,50,255,0) 100%);
 }
 
 .screen {
@@ -25,7 +65,7 @@ body {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    background: #000;
+    background: transparent;
     z-index: 10;
     padding: 20px;
 }
@@ -119,7 +159,7 @@ body {
 
 /* Main Menu */
 #mainMenu {
-    background: linear-gradient(135deg, #000 0%, #1a0a2a 100%);
+    background: transparent;
 }
 
 .menu-content {
@@ -179,7 +219,7 @@ body {
 
 /* Character Select */
 #characterSelect {
-    background: linear-gradient(135deg, #000 0%, #0a1a2a 100%);
+    background: transparent;
 }
 
 .select-ui {
@@ -530,7 +570,7 @@ body {
 
 /* Online Multiplayer */
 #onlineScreen {
-    background: linear-gradient(135deg, #000 0%, #0a2a1a 100%);
+    background: transparent;
 }
 
 .online-content {
@@ -812,7 +852,7 @@ body {
 
 /* Shop Styles */
 #shopScreen {
-    background: linear-gradient(135deg, #000 0%, #2a1a0a 100%);
+    background: transparent;
 }
 
 .shop-content {
@@ -858,6 +898,11 @@ body {
 .shop-item:hover {
     border-color: #ffcc00;
     transform: translateY(-2px);
+}
+
+.shop-item.active-background {
+    border-color: #00ff00;
+    box-shadow: 0 0 15px #00ff00;
 }
 
 .item-name {
@@ -918,7 +963,7 @@ body {
 
 /* Controls Screen */
 #controlsScreen {
-    background: linear-gradient(135deg, #000 0%, #1a2a0a 100%);
+    background: transparent;
 }
 
 .controls-content {
@@ -1031,7 +1076,7 @@ body {
 
 /* Update Log */
 #updatesScreen {
-    background: linear-gradient(135deg, #000 0%, #0a2a1a 100%);
+    background: transparent;
 }
 
 .updates-content {
@@ -1082,7 +1127,7 @@ body {
 
 /* Credits */
 #creditsScreen {
-    background: linear-gradient(135deg, #000 0%, #1a0a2a 100%);
+    background: transparent;
 }
 
 .credits-content {
@@ -1240,6 +1285,77 @@ body {
     padding: 2rem;
     color: #aaa;
     font-style: italic;
+}
+
+/* Second Life Effect */
+.second-life-effect {
+    animation: secondLifePulse 2s infinite;
+}
+
+@keyframes secondLifePulse {
+    0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    50% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.7; }
+    100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
+
+/* Global Message */
+@keyframes pulseGlow {
+    0% { box-shadow: 0 0 10px #ff0033; }
+    50% { box-shadow: 0 0 30px #ff0033, 0 0 40px #ff0033; }
+    100% { box-shadow: 0 0 10px #ff0033; }
+}
+
+/* Boss Stun Effect */
+.boss-stun-effect {
+    position: absolute;
+    top: 40%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 3rem;
+    color: #ffff00;
+    text-shadow: 0 0 10px #ff9900;
+    z-index: 100;
+    animation: stunPulse 0.5s infinite;
+}
+
+@keyframes stunPulse {
+    0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    50% { opacity: 0.5; transform: translate(-50%, -50%) scale(1.1); }
+    100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+/* Player Heal Effect */
+.player-heal-effect {
+    position: absolute;
+    top: 20%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 4rem;
+    color: #00ff00;
+    text-shadow: 0 0 10px #00ff00;
+    z-index: 100;
+    animation: healFloat 1s forwards;
+}
+
+@keyframes healFloat {
+    0% { transform: translate(-50%, -50%); opacity: 1; }
+    100% { transform: translate(-50%, -100%); opacity: 0; }
+}
+
+/* Secret 67 Effect */
+.secret-67 {
+    position: fixed;
+    font-size: 2rem;
+    color: #ffcc00;
+    text-shadow: 0 0 10px #ff0033;
+    z-index: 9999;
+    pointer-events: none;
+    animation: float67 2s forwards;
+}
+
+@keyframes float67 {
+    0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(-100px) rotate(360deg); opacity: 0; }
 }
 
 /* Responsive */
