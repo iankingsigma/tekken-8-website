@@ -1270,3 +1270,206 @@ body {
     .touch-btn, .movement-btn { width: 60px; height: 60px; font-size: 0.7rem; }
     .movement-btn { font-size: 1.2rem; }
 }
+
+/* css/style.css */
+/* Add these new styles to your existing CSS */
+
+/* Admin Panel */
+.admin-panel {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.9);
+    border: 2px solid #ff0033;
+    border-radius: 10px;
+    padding: 1rem;
+    z-index: 10000;
+    max-width: 300px;
+}
+
+.admin-content h3 {
+    color: #ff0033;
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+.admin-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.admin-controls button {
+    background: rgba(255, 0, 51, 0.3);
+    border: 1px solid #ff0033;
+    color: white;
+    padding: 0.5rem;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.8rem;
+}
+
+.admin-controls button:hover {
+    background: rgba(255, 0, 51, 0.7);
+}
+
+.admin-controls input {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid #ff0033;
+    border-radius: 5px;
+    padding: 0.5rem;
+    color: white;
+    font-size: 0.8rem;
+}
+
+.admin-access {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid #ff0033;
+    border-radius: 5px;
+    padding: 0.5rem;
+    z-index: 9999;
+    display: flex;
+    gap: 0.5rem;
+}
+
+.admin-access input {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid #ff0033;
+    border-radius: 3px;
+    padding: 0.3rem;
+    color: white;
+    width: 120px;
+    font-size: 0.8rem;
+}
+
+.admin-access button {
+    background: rgba(255, 0, 51, 0.3);
+    border: 1px solid #ff0033;
+    color: white;
+    padding: 0.3rem 0.6rem;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 0.8rem;
+}
+
+/* Shop Categories */
+.shop-categories {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin: 1rem 0;
+}
+
+.category-btn {
+    background: rgba(255, 0, 51, 0.3);
+    border: 2px solid #ff0033;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.category-btn.active {
+    background: rgba(255, 0, 51, 0.7);
+    box-shadow: 0 0 10px #ff0033;
+}
+
+.category-btn:hover {
+    background: rgba(255, 0, 51, 0.5);
+}
+
+/* Background Preview */
+.background-preview {
+    width: 100%;
+    height: 100px;
+    border: 2px solid #ff0033;
+    border-radius: 5px;
+    margin-bottom: 0.5rem;
+    background-size: cover;
+    background-position: center;
+}
+
+.background-default { background: linear-gradient(135deg, #000 0%, #1a1a3a 100%); }
+.background-space { background: linear-gradient(135deg, #000428 0%, #004e92 100%); }
+.background-hell { background: linear-gradient(135deg, #23074d 0%, #cc5333 100%); }
+.background-cyber { background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%); }
+.background-neon { background: linear-gradient(135deg, #ff00cc 0%, #333399 100%); }
+
+/* Second Life Effect */
+.second-life-effect {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 0, 0, 0.7);
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    animation: secondLifePulse 2s infinite;
+}
+
+.second-life-text {
+    font-size: 4rem;
+    color: #fff;
+    text-shadow: 0 0 20px #ff0000;
+    animation: textPulse 1s infinite;
+}
+
+@keyframes secondLifePulse {
+    0% { background: rgba(255, 0, 0, 0.7); }
+    50% { background: rgba(255, 100, 0, 0.7); }
+    100% { background: rgba(255, 0, 0, 0.7); }
+}
+
+@keyframes textPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+/* Global Message */
+.global-message {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.9);
+    border: 3px solid #ff0033;
+    border-radius: 10px;
+    padding: 2rem;
+    z-index: 10000;
+    color: #ffcc00;
+    font-size: 1.5rem;
+    text-align: center;
+    max-width: 80%;
+    box-shadow: 0 0 30px #ff0033;
+}
+
+/* Boss Timer Display */
+.boss-timer {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #ffcc00;
+    font-size: 1.2rem;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    border: 2px solid #ff0033;
+    z-index: 100;
+}
+
+/* Add to existing styles */
+.shop-category-title {
+    text-align: center;
+    color: #ffcc00;
+    margin: 1rem 0;
+    font-size: 1.5rem;
+}
