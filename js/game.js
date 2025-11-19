@@ -63,7 +63,8 @@ const BOSS_CUTSCENE_TEXTS = [
     "A SECOND CHANCE AWAITS...",
     "WHEN ALL SEEMS LOST...",
     "THE LEGEND WILL PROTECT YOU...",
-    "BEGIN!"
+    "THE LEGEND OF THE BLOODROT...",
+    "FIGHT!"
 ];
 
 // Admin Panel Functions
