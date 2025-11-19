@@ -51,7 +51,7 @@ let gameState = {
     customBackgroundUrl: localStorage.getItem('customBackgroundUrl') || ''
 };
 
-// Extended Boss Cutscene Text (19 seconds total)
+// Extended Boss Cutscene Text (20 seconds total)
 const BOSS_CUTSCENE_TEXTS = [
     "THE LEGEND OF 67...",
     "A FORCE BEYOND COMPREHENSION...",
