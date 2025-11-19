@@ -47,7 +47,8 @@ let gameState = {
     bossDamageMultiplier: 1.0,
     bossStunPhase: 0,
     globalMessage: "",
-    customBackground: localStorage.getItem('customBackground') || 'default'
+    customBackground: localStorage.getItem('customBackground') || 'default',
+    customBackgroundUrl: localStorage.getItem('customBackgroundUrl') || ''
 };
 
 // Extended Boss Cutscene Text (19 seconds total)
@@ -67,6 +68,7 @@ const BOSS_CUTSCENE_TEXTS = [
 
 // Admin Panel Functions
 function initAdminPanel() {
+    console.log('Initializing admin panel...');
     let adminCode = '';
     
     document.addEventListener('keydown', (e) => {
@@ -78,6 +80,7 @@ function initAdminPanel() {
         }
         
         if (adminCode === '231214') {
+            console.log('Admin code activated!');
             toggleAdminPanel();
             adminCode = '';
         }
@@ -85,6 +88,7 @@ function initAdminPanel() {
 }
 
 function toggleAdminPanel() {
+    console.log('Toggling admin panel...');
     const existingPanel = document.getElementById('adminPanel');
     if (existingPanel) {
         existingPanel.remove();
@@ -124,8 +128,16 @@ function toggleAdminPanel() {
             <input type="text" id="globalMessageInput" placeholder="Global Message" 
                    style="width: 100%; padding: 5px; background: #222; color: white; border: 1px solid #ff0033; border-radius: 3px;">
         </div>
+        <div style="margin-bottom: 10px;">
+            <input type="text" id="customBgInput" placeholder="Custom Background URL" 
+                   value="${gameState.customBackgroundUrl}"
+                   style="width: 100%; padding: 5px; background: #222; color: white; border: 1px solid #ff0033; border-radius: 3px;">
+        </div>
         <button id="sendGlobalMessage" style="width: 100%; padding: 8px; background: #ff0033; color: white; border: none; border-radius: 5px; cursor: pointer;">
             SEND GLOBAL MESSAGE
+        </button>
+        <button id="setCustomBg" style="width: 100%; padding: 8px; background: #ff0033; color: white; border: none; border-radius: 5px; cursor: pointer; margin-top: 5px;">
+            SET CUSTOM BG
         </button>
         <button id="closeAdminPanel" style="width: 100%; padding: 8px; background: #333; color: white; border: none; border-radius: 5px; cursor: pointer; margin-top: 5px;">
             CLOSE
@@ -166,10 +178,26 @@ function toggleAdminPanel() {
         }
     });
     
+    document.getElementById('setCustomBg').addEventListener('click', () => {
+        const bgUrl = document.getElementById('customBgInput').value;
+        if (bgUrl.trim()) {
+            setCustomBackground(bgUrl);
+        }
+    });
+    
     document.getElementById('closeAdminPanel').addEventListener('click', () => {
         adminPanel.remove();
         gameState.adminMode = false;
     });
+}
+
+function setCustomBackground(url) {
+    gameState.customBackgroundUrl = url;
+    gameState.customBackground = 'custom';
+    localStorage.setItem('customBackgroundUrl', url);
+    localStorage.setItem('customBackground', 'custom');
+    applyCustomBackground();
+    showGlobalMessage('Custom background set!');
 }
 
 function showGlobalMessage(message) {
@@ -234,11 +262,21 @@ function init() {
 function applyCustomBackground() {
     const body = document.body;
     
-    // Remove existing custom background classes
-    body.classList.remove('bg-space', 'bg-neon', 'bg-matrix', 'bg-fire', 'bg-ice');
+    // Remove existing custom background classes and styles
+    body.classList.remove('bg-space', 'bg-neon', 'bg-matrix', 'bg-fire', 'bg-ice', 'bg-custom');
+    body.style.backgroundImage = '';
+    body.style.backgroundSize = '';
+    body.style.backgroundPosition = '';
+    body.style.backgroundRepeat = '';
     
     // Apply selected background
-    if (gameState.customBackground !== 'default') {
+    if (gameState.customBackground === 'custom' && gameState.customBackgroundUrl) {
+        body.classList.add('bg-custom');
+        body.style.backgroundImage = `url('${gameState.customBackgroundUrl}')`;
+        body.style.backgroundSize = 'cover';
+        body.style.backgroundPosition = 'center';
+        body.style.backgroundRepeat = 'no-repeat';
+    } else if (gameState.customBackground !== 'default') {
         body.classList.add(`bg-${gameState.customBackground}`);
     }
 }
@@ -256,7 +294,8 @@ function startBossCutscene() {
     
     document.getElementById('gameCanvas').style.opacity = '0.3';
     document.querySelector('.hud').style.opacity = '0.3';
-    document.getElementById('touchControls').style.opacity = '0.3';
+    const touchControls = document.getElementById('touchControls');
+    if (touchControls) touchControls.style.opacity = '0.3';
     
     let cutsceneOverlay = document.getElementById('cutsceneOverlay');
     if (!cutsceneOverlay) {
@@ -290,20 +329,25 @@ function startBossCutscene() {
         document.getElementById('gameScreen').appendChild(cutsceneOverlay);
     }
     
+    cutsceneOverlay.style.display = 'flex';
     animateCutscene();
 }
 
 function animateCutscene() {
     if (!gameState.cutsceneActive) return;
     
-    gameState.cutsceneTimer++;
-    
     const cutsceneText = document.getElementById('cutsceneText');
-    const totalDuration = 570; // 19 seconds at 30fps
     const texts = BOSS_CUTSCENE_TEXTS;
-    const textDuration = totalDuration / texts.length;
+    const totalDuration = 19000; // 19 seconds in milliseconds
+    const textDuration = totalDuration / texts.length; // ~1.72 seconds per text
     
-    const currentTextIndex = Math.floor(gameState.cutsceneTimer / textDuration);
+    const currentTime = Date.now();
+    if (!gameState.cutsceneStartTime) {
+        gameState.cutsceneStartTime = currentTime;
+    }
+    
+    const elapsed = currentTime - gameState.cutsceneStartTime;
+    const currentTextIndex = Math.floor(elapsed / textDuration);
     
     if (currentTextIndex < texts.length) {
         if (currentTextIndex !== gameState.cutsceneTextIndex) {
@@ -311,14 +355,19 @@ function animateCutscene() {
             gameState.currentCutsceneText = texts[currentTextIndex];
             cutsceneText.textContent = gameState.currentCutsceneText;
             cutsceneText.style.opacity = '0';
+            
+            // Fade in
+            setTimeout(() => {
+                cutsceneText.style.opacity = '1';
+            }, 100);
         }
         
-        // Fade in/out effect
-        const progressInText = (gameState.cutsceneTimer % textDuration) / textDuration;
-        if (progressInText < 0.2) {
+        // Fade out near the end of each text segment
+        const progressInText = (elapsed % textDuration) / textDuration;
+        if (progressInText > 0.8) {
+            cutsceneText.style.opacity = (1 - ((progressInText - 0.8) * 5)).toString();
+        } else if (progressInText < 0.2) {
             cutsceneText.style.opacity = (progressInText * 5).toString();
-        } else if (progressInText > 0.8) {
-            cutsceneText.style.opacity = ((1 - progressInText) * 5).toString();
         } else {
             cutsceneText.style.opacity = '1';
         }
@@ -329,6 +378,32 @@ function animateCutscene() {
     }
     
     requestAnimationFrame(animateCutscene);
+}
+
+function endCutscene() {
+    gameState.cutsceneActive = false;
+    gameState.cutsceneStartTime = null;
+    
+    const cutsceneOverlay = document.getElementById('cutsceneOverlay');
+    if (cutsceneOverlay) {
+        cutsceneOverlay.style.display = 'none';
+    }
+    
+    document.getElementById('gameCanvas').style.opacity = '1';
+    document.querySelector('.hud').style.opacity = '1';
+    const touchControls = document.getElementById('touchControls');
+    if (touchControls) touchControls.style.opacity = '1';
+    
+    animate();
+    
+    const display = document.getElementById('comboDisplay');
+    if (display) {
+        display.textContent = "SURVIVE! Boss stuns every 40s with 1% damage!";
+        display.classList.add('active');
+        setTimeout(() => {
+            display.classList.remove('active');
+        }, 3000);
+    }
 }
 
 // Updated boss fight mechanics
@@ -814,6 +889,72 @@ function doCpuAttack(type) {
     }
 }
 
+// Practice Mode Functions
+function startPracticeMode() {
+    console.log('Starting practice mode...');
+    gameState.practiceStats = {
+        comboCount: 0,
+        damageDealt: 0,
+        startTime: Date.now()
+    };
+    
+    // Create practice UI if it doesn't exist
+    let practiceUI = document.getElementById('practiceUI');
+    if (!practiceUI) {
+        practiceUI = document.createElement('div');
+        practiceUI.id = 'practiceUI';
+        practiceUI.style.cssText = `
+            position: absolute;
+            top: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: #ffcc00;
+            padding: 20px;
+            border: 2px solid #ff0033;
+            border-radius: 10px;
+            z-index: 100;
+            text-align: center;
+        `;
+        practiceUI.innerHTML = `
+            <h3>PRACTICE MODE</h3>
+            <div>Combos: <span id="practiceComboCount">0</span></div>
+            <div>Damage: <span id="practiceDamage">0</span></div>
+            <div>Time: <span id="practiceTime">0s</span></div>
+            <button id="resetPractice" style="margin-top: 10px; padding: 5px 10px; background: #ff0033; color: white; border: none; border-radius: 5px;">RESET</button>
+        `;
+        document.getElementById('gameScreen').appendChild(practiceUI);
+        
+        document.getElementById('resetPractice').addEventListener('click', () => {
+            startPracticeMode();
+        });
+    }
+    
+    updatePracticeStats();
+    
+    // Start a simple practice match
+    if (gameState.selectedCharacter === null) {
+        // Default to first character for practice
+        gameState.selectedCharacter = 0;
+    }
+    
+    gameState.gameMode = 'practice';
+    startGame();
+}
+
+function updatePracticeStats() {
+    const comboCount = document.getElementById('practiceComboCount');
+    const damage = document.getElementById('practiceDamage');
+    const time = document.getElementById('practiceTime');
+    
+    if (comboCount) comboCount.textContent = gameState.practiceStats.comboCount;
+    if (damage) damage.textContent = gameState.practiceStats.damageDealt;
+    if (time) {
+        const elapsed = Math.floor((Date.now() - gameState.practiceStats.startTime) / 1000);
+        time.textContent = `${elapsed}s`;
+    }
+}
+
 // Rest of the existing functions remain the same...
 function detectDevice() {
     const userAgent = navigator.userAgent.toLowerCase();
@@ -915,6 +1056,11 @@ function showScreen(screenId) {
         }, 100);
     } else if (screenId === 'characterSelect') {
         renderCharacterSelect();
+    } else if (screenId === 'onlineScreen') {
+        // Initialize online system if available
+        if (typeof initOnlineSystem === 'function') {
+            initOnlineSystem();
+        }
     }
     
     const touchControls = document.getElementById('touchControls');
@@ -1044,30 +1190,8 @@ function startBattle(mode = 'arcade') {
     showScreen('gameScreen');
 }
 
-function startPracticeMode() {
-    gameState.practiceStats = {
-        comboCount: 0,
-        damageDealt: 0,
-        startTime: Date.now()
-    };
-    updatePracticeStats();
-}
-
-function updatePracticeStats() {
-    const comboCount = document.getElementById('practiceComboCount');
-    const damage = document.getElementById('practiceDamage');
-    const time = document.getElementById('practiceTime');
-    
-    if (comboCount) comboCount.textContent = gameState.practiceStats.comboCount;
-    if (damage) damage.textContent = gameState.practiceStats.damageDealt;
-    if (time) {
-        const elapsed = Math.floor((Date.now() - gameState.practiceStats.startTime) / 1000);
-        time.textContent = `${elapsed}s`;
-    }
-}
-
 function startGame() {
-    console.log('Starting game...');
+    console.log('Starting game... Mode:', gameState.gameMode);
     if (gameState.selectedCharacter === null) {
         console.error('No character selected');
         showScreen('characterSelect');
@@ -1186,30 +1310,6 @@ function startGame() {
     }
 }
 
-function endCutscene() {
-    gameState.cutsceneActive = false;
-    
-    const cutsceneOverlay = document.getElementById('cutsceneOverlay');
-    if (cutsceneOverlay) {
-        cutsceneOverlay.remove();
-    }
-    
-    document.getElementById('gameCanvas').style.opacity = '1';
-    document.querySelector('.hud').style.opacity = '1';
-    document.getElementById('touchControls').style.opacity = '1';
-    
-    animate();
-    
-    const display = document.getElementById('comboDisplay');
-    if (display) {
-        display.textContent = "SURVIVE! Boss stuns every 40s with 1% damage!";
-        display.classList.add('active');
-        setTimeout(() => {
-            display.classList.remove('active');
-        }, 3000);
-    }
-}
-
 function setupEventListeners() {
     console.log('Setting up event listeners...');
     
@@ -1229,10 +1329,10 @@ function setupEventListeners() {
     });
     
     const buttons = [
-        'arcadeBtn', 'practiceBtn', 'shopBtn', 'controlsBtn', 'updatesBtn', 'creditsBtn',
+        'arcadeBtn', 'practiceBtn', 'onlineBtn', 'shopBtn', 'controlsBtn', 'updatesBtn', 'creditsBtn',
         'comboPracticeBtn', 'freePracticeBtn', 'dummySettingsBtn', 'practiceBackBtn',
-        'backBtn', 'controlsBackBtn', 'shopBackBtn', 'updatesBackBtn', 'creditsBackBtn',
-        'exitBattleBtn', 'confirmBtn'
+        'backBtn', 'controlsBackBtn', 'shopBackBtn', 'updatesBackBtn', 'creditsBackBtn', 'onlineBackBtn',
+        'exitBattleBtn', 'confirmBtn', 'quickMatchBtn', 'createLobbyBtn', 'joinLobbyBtn', 'friendsBtn'
     ];
     
     buttons.forEach(btnId => {
@@ -1304,12 +1404,16 @@ function setupEventListeners() {
 }
 
 function handleButtonClick(btnId) {
+    console.log('Button clicked:', btnId);
     switch(btnId) {
         case 'arcadeBtn':
             showScreen('characterSelect');
             break;
         case 'practiceBtn':
             showScreen('practiceScreen');
+            break;
+        case 'onlineBtn':
+            showScreen('onlineScreen');
             break;
         case 'shopBtn':
             showScreen('shopScreen');
@@ -1337,6 +1441,7 @@ function handleButtonClick(btnId) {
         case 'shopBackBtn':
         case 'updatesBackBtn':
         case 'creditsBackBtn':
+        case 'onlineBackBtn':
             showScreen('mainMenu');
             break;
         case 'exitBattleBtn':
@@ -1344,6 +1449,22 @@ function handleButtonClick(btnId) {
             break;
         case 'confirmBtn':
             startBattle('arcade');
+            break;
+        case 'quickMatchBtn':
+            if (typeof findQuickMatch === 'function') {
+                findQuickMatch();
+            } else {
+                alert('Online mode not available in this version');
+            }
+            break;
+        case 'createLobbyBtn':
+            alert('Create Lobby feature coming soon!');
+            break;
+        case 'joinLobbyBtn':
+            alert('Join Lobby feature coming soon!');
+            break;
+        case 'friendsBtn':
+            alert('Friends system coming soon!');
             break;
     }
 }
