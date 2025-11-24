@@ -1,204 +1,242 @@
-// Three.js Initialization
+// Three.js Renderer with GLB Model Support
+let scene, camera, renderer, mixer, clock;
+let playerModel, cpuModel;
+let modelLoader;
+
 function initThreeJS() {
     try {
-        console.log('Initializing Three.js...');
+        console.log('Initializing Three.js with GLB models...');
         
         // Scene
-        window.scene = new THREE.Scene();
-        window.scene.background = new THREE.Color(0x000000);
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x000000);
         
-        // Camera - Adjusted for better view
+        // Camera
         const canvas = document.getElementById('gameCanvas');
         if (!canvas) {
             console.error('Canvas element not found');
             return;
         }
         
-        window.camera = new THREE.PerspectiveCamera(60, canvas.clientWidth / canvas.clientHeight, 0.1, 1000);
-        window.camera.position.set(0, 8, 15);
-        window.camera.lookAt(0, 0, 0);
+        camera = new THREE.PerspectiveCamera(60, canvas.clientWidth / canvas.clientHeight, 0.1, 1000);
+        camera.position.set(0, 8, 15);
+        camera.lookAt(0, 0, 0);
         
         // Renderer
-        window.renderer = new THREE.WebGLRenderer({ 
+        renderer = new THREE.WebGLRenderer({ 
             canvas, 
-            antialias: false,
+            antialias: true,
             alpha: true
         });
-        window.renderer.setSize(canvas.clientWidth, canvas.clientHeight);
-        window.renderer.setPixelRatio(1);
-        window.renderer.shadowMap.enabled = true;
+        renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         
-        // Enhanced Lighting
+        // Lighting
         const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
-        window.scene.add(ambientLight);
+        scene.add(ambientLight);
         
         const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
         directionalLight.position.set(10, 15, 10);
         directionalLight.castShadow = true;
         directionalLight.shadow.mapSize.width = 2048;
         directionalLight.shadow.mapSize.height = 2048;
-        window.scene.add(directionalLight);
+        scene.add(directionalLight);
         
-        const backLight = new THREE.DirectionalLight(0x4444ff, 0.3);
-        backLight.position.set(-5, 5, -5);
-        window.scene.add(backLight);
+        // Arena
+        createArena();
         
-        // Enhanced Arena
-        const arenaGeometry = new THREE.BoxGeometry(25, 1, 12);
-        const arenaMaterial = new THREE.MeshPhongMaterial({ 
-            color: 0x1a1a2a,
-            shininess: 50,
-            specular: 0x222244
-        });
-        window.arena = new THREE.Mesh(arenaGeometry, arenaMaterial);
-        window.arena.position.y = -1;
-        window.arena.receiveShadow = true;
-        window.scene.add(window.arena);
+        // Initialize loader
+        initModelLoader();
         
-        // Arena details
-        const gridHelper = new THREE.GridHelper(25, 25, 0xff0033, 0x222244);
-        gridHelper.position.y = 0.01;
-        window.scene.add(gridHelper);
-        
-        // Arena border
-        const borderGeometry = new THREE.BoxGeometry(26, 0.5, 13);
-        const borderMaterial = new THREE.MeshPhongMaterial({ 
-            color: 0xff0033,
-            emissive: 0x330000
-        });
-        const border = new THREE.Mesh(borderGeometry, borderMaterial);
-        border.position.y = -0.75;
-        window.scene.add(border);
-        
-        // Create fighters
-        createHumanoidFighters();
-        
-        // Initialize clock
-        window.clock = new THREE.Clock();
+        // Clock for animations
+        clock = new THREE.Clock();
         
         console.log('Three.js initialized successfully');
+        
+        // Start animation loop
+        animate();
+        
     } catch (error) {
         console.error('Error initializing Three.js:', error);
+        // Fallback to canvas rendering
+        fallbackToCanvas();
     }
 }
 
-function createHumanoidFighters() {
-    if (!window.gameState || !window.gameState.player || !window.gameState.cpu) {
-        console.error('Game state not properly initialized');
-        createPlaceholderFighters();
-        return;
-    }
-    
-    const playerChar = window.gameState.player.character;
-    const cpuChar = window.gameState.cpu.character;
-    
-    // Remove existing fighters if any
-    if (window.playerModel) {
-        window.scene.remove(window.playerModel);
-    }
-    if (window.cpuModel) {
-        window.scene.remove(window.cpuModel);
-    }
-    
-    // Create player character
-    window.playerModel = createHumanoidModel(playerChar.color, window.gameState.player.x, 0);
-    window.scene.add(window.playerModel);
-    
-    // Create CPU character - special model for boss
-    if (window.gameState.cpu.isBoss) {
-        window.cpuModel = createBoss67Model(window.gameState.cpu.x, 0);
+function initModelLoader() {
+    // Check if GLTFLoader is available
+    if (typeof THREE.GLTFLoader === 'undefined') {
+        console.warn('GLTFLoader not available, loading from CDN...');
+        loadScript('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/loaders/GLTFLoader.js', () => {
+            modelLoader = new THREE.GLTFLoader();
+            loadFighterModels();
+        });
     } else {
-        window.cpuModel = createHumanoidModel(cpuChar.color, window.gameState.cpu.x, 0);
+        modelLoader = new THREE.GLTFLoader();
+        loadFighterModels();
     }
-    window.cpuModel.rotation.y = Math.PI; // Face player
-    window.scene.add(window.cpuModel);
-    
-    console.log('Fighters created:', playerChar.name, 'vs', cpuChar.name);
 }
 
-function createPlaceholderFighters() {
-    // Create temporary placeholder fighters
-    const playerColor = 0xff0033;
-    const cpuColor = 0x00ff00;
-    
-    window.playerModel = createHumanoidModel(playerColor, -5, 0);
-    window.scene.add(window.playerModel);
-    
-    window.cpuModel = createHumanoidModel(cpuColor, 5, 0);
-    window.cpuModel.rotation.y = Math.PI;
-    window.scene.add(window.cpuModel);
-    
-    console.log('Placeholder fighters created');
+function loadScript(src, callback) {
+    const script = document.createElement('script');
+    script.src = src;
+    script.onload = callback;
+    document.head.appendChild(script);
 }
 
-function createBoss67Model(x, z) {
+function loadFighterModels() {
+    console.log('Loading fighter models...');
+    
+    // Load player model
+    modelLoader.load(
+        'assets/models/player.glb',
+        (gltf) => {
+            console.log('Player model loaded successfully');
+            playerModel = setupModel(gltf, -5, 0, 0x00ff00);
+            scene.add(playerModel);
+        },
+        (progress) => {
+            console.log('Loading player model:', (progress.loaded / progress.total * 100) + '%');
+        },
+        (error) => {
+            console.error('Error loading player model:', error);
+            createFallbackPlayerModel();
+        }
+    );
+    
+    // Load CPU model (using player model for now, or different model if available)
+    modelLoader.load(
+        'assets/models/player.glb',
+        (gltf) => {
+            console.log('CPU model loaded successfully');
+            cpuModel = setupModel(gltf, 5, 0, 0xff0000);
+            cpuModel.rotation.y = Math.PI; // Face player
+            scene.add(cpuModel);
+        },
+        (progress) => {
+            console.log('Loading CPU model:', (progress.loaded / progress.total * 100) + '%');
+        },
+        (error) => {
+            console.error('Error loading CPU model:', error);
+            createFallbackCPUModel();
+        }
+    );
+}
+
+function setupModel(gltf, x, z, color) {
+    const model = gltf.scene;
+    
+    // Position and scale
+    model.position.set(x, 0, z);
+    model.scale.set(1, 1, 1);
+    
+    // Enable shadows
+    model.traverse((child) => {
+        if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+            
+            // Apply color if needed
+            if (color && child.material) {
+                child.material.color = new THREE.Color(color);
+            }
+        }
+    });
+    
+    // Set up animations if available
+    if (gltf.animations && gltf.animations.length) {
+        mixer = new THREE.AnimationMixer(model);
+        const action = mixer.clipAction(gltf.animations[0]);
+        action.play();
+    }
+    
+    return model;
+}
+
+function createFallbackPlayerModel() {
+    console.log('Creating fallback player model');
+    playerModel = createHumanoidModel(0x00ff00, -5, 0);
+    scene.add(playerModel);
+}
+
+function createFallbackCPUModel() {
+    console.log('Creating fallback CPU model');
+    cpuModel = createHumanoidModel(0xff0000, 5, 0);
+    cpuModel.rotation.y = Math.PI;
+    scene.add(cpuModel);
+}
+
+function createArena() {
+    // Floor
+    const floorGeometry = new THREE.PlaneGeometry(25, 12);
+    const floorMaterial = new THREE.MeshPhongMaterial({ 
+        color: 0x1a1a2a,
+        shininess: 30
+    });
+    const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+    floor.rotation.x = -Math.PI / 2;
+    floor.receiveShadow = true;
+    scene.add(floor);
+    
+    // Grid
+    const gridHelper = new THREE.GridHelper(25, 25, 0xff0033, 0x222244);
+    gridHelper.position.y = 0.01;
+    scene.add(gridHelper);
+    
+    // Walls
+    const wallGeometry = new THREE.BoxGeometry(25, 3, 1);
+    const wallMaterial = new THREE.MeshPhongMaterial({ color: 0x333344 });
+    
+    const leftWall = new THREE.Mesh(wallGeometry, wallMaterial);
+    leftWall.position.set(0, 1.5, -6);
+    scene.add(leftWall);
+    
+    const rightWall = new THREE.Mesh(wallGeometry, wallMaterial);
+    rightWall.position.set(0, 1.5, 6);
+    scene.add(rightWall);
+}
+
+function createHumanoidModel(color, x, z) {
     const group = new THREE.Group();
     group.position.set(x, 0, z);
     
-    // Boss has a more intimidating appearance
-    const mainColor = new THREE.Color(0xff0000); // Red color for boss
-    const glowColor = new THREE.Color(0xff6600);
-    const detailColor = new THREE.Color(0xffff00);
-    
-    // Larger body
-    const bodyGeometry = new THREE.CylinderGeometry(0.7, 0.8, 1.5, 8);
-    const bodyMaterial = new THREE.MeshPhongMaterial({ 
-        color: mainColor,
-        emissive: glowColor,
-        emissiveIntensity: 0.3
-    });
+    // Body parts
+    const bodyGeometry = new THREE.CylinderGeometry(0.5, 0.6, 1.5, 8);
+    const bodyMaterial = new THREE.MeshPhongMaterial({ color: color });
     const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
-    body.position.y = 0.9;
+    body.position.y = 1;
     body.castShadow = true;
     group.add(body);
     
-    // Larger head
-    const headGeometry = new THREE.SphereGeometry(0.6, 16, 16);
-    const headMaterial = new THREE.MeshPhongMaterial({ 
-        color: mainColor,
-        emissive: glowColor,
-        emissiveIntensity: 0.2
-    });
+    // Head
+    const headGeometry = new THREE.SphereGeometry(0.4, 16, 16);
+    const headMaterial = new THREE.MeshPhongMaterial({ color: 0xffcc99 });
     const head = new THREE.Mesh(headGeometry, headMaterial);
-    head.position.y = 1.9;
+    head.position.y = 2.2;
     head.castShadow = true;
     group.add(head);
     
-    // Glowing eyes
-    const eyeGeometry = new THREE.SphereGeometry(0.15, 8, 8);
-    const eyeMaterial = new THREE.MeshBasicMaterial({ 
-        color: 0x00ff00,
-        emissive: 0x00ff00,
-        emissiveIntensity: 0.8
-    });
-    
-    const leftEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
-    leftEye.position.set(-0.2, 1.95, 0.5);
-    group.add(leftEye);
-    
-    const rightEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
-    rightEye.position.set(0.2, 1.95, 0.5);
-    group.add(rightEye);
-    
     // Arms
-    const armGeometry = new THREE.CylinderGeometry(0.2, 0.2, 1.2, 8);
-    const armMaterial = new THREE.MeshPhongMaterial({ color: mainColor });
+    const armGeometry = new THREE.CylinderGeometry(0.15, 0.15, 1.2, 8);
+    const armMaterial = new THREE.MeshPhongMaterial({ color: color });
     
     const leftArm = new THREE.Mesh(armGeometry, armMaterial);
-    leftArm.position.set(-0.9, 0.9, 0);
+    leftArm.position.set(-0.8, 1, 0);
     leftArm.rotation.z = Math.PI / 6;
     leftArm.castShadow = true;
     group.add(leftArm);
     
     const rightArm = new THREE.Mesh(armGeometry, armMaterial);
-    rightArm.position.set(0.9, 0.9, 0);
+    rightArm.position.set(0.8, 1, 0);
     rightArm.rotation.z = -Math.PI / 6;
     rightArm.castShadow = true;
     group.add(rightArm);
     
     // Legs
-    const legGeometry = new THREE.CylinderGeometry(0.25, 0.25, 1.4, 8);
-    const legMaterial = new THREE.MeshPhongMaterial({ color: detailColor });
+    const legGeometry = new THREE.CylinderGeometry(0.2, 0.2, 1.5, 8);
+    const legMaterial = new THREE.MeshPhongMaterial({ color: 0x333366 });
     
     const leftLeg = new THREE.Mesh(legGeometry, legMaterial);
     leftLeg.position.set(-0.3, -0.9, 0);
@@ -210,200 +248,185 @@ function createBoss67Model(x, z) {
     rightLeg.castShadow = true;
     group.add(rightLeg);
     
-    // Boss aura effect
-    const auraGeometry = new THREE.SphereGeometry(1.2, 16, 16);
-    const auraMaterial = new THREE.MeshBasicMaterial({
-        color: 0xff0000,
-        transparent: true,
-        opacity: 0.2,
-        side: THREE.DoubleSide
-    });
-    const aura = new THREE.Mesh(auraGeometry, auraMaterial);
-    aura.position.y = 0.8;
-    group.add(aura);
+    return group;
+}
+
+function animate() {
+    requestAnimationFrame(animate);
     
-    // Animate the aura
-    function animateAura() {
-        if (aura) {
-            aura.scale.x = 1 + Math.sin(Date.now() * 0.005) * 0.1;
-            aura.scale.y = 1 + Math.cos(Date.now() * 0.005) * 0.1;
-            aura.scale.z = 1 + Math.sin(Date.now() * 0.005) * 0.1;
-            requestAnimationFrame(animateAura);
-        }
+    const delta = clock.getDelta();
+    
+    // Update animations
+    if (mixer) {
+        mixer.update(delta);
     }
-    animateAura();
     
-    return group;
+    // Update game state if available
+    if (window.gameState && window.gameState.player && window.gameState.cpu) {
+        updateModelPositions();
+    }
+    
+    // Render scene
+    if (renderer && scene && camera) {
+        renderer.render(scene, camera);
+    }
 }
 
-function createHumanoidModel(color, x, z) {
-    const group = new THREE.Group();
-    group.position.set(x, 0, z);
+function updateModelPositions() {
+    if (playerModel && gameState.player) {
+        playerModel.position.x = gameState.player.x;
+        playerModel.rotation.y = gameState.player.facing === 1 ? 0 : Math.PI;
+    }
     
-    // Convert hex color to THREE.Color
-    const mainColor = new THREE.Color(color);
-    const skinColor = new THREE.Color(0xffcc99);
-    const pantsColor = new THREE.Color(0x333366);
-    
-    // Head
-    const headGeometry = new THREE.SphereGeometry(0.4, 16, 16);
-    const headMaterial = new THREE.MeshPhongMaterial({ color: skinColor });
-    const head = new THREE.Mesh(headGeometry, headMaterial);
-    head.position.y = 1.6;
-    head.castShadow = true;
-    group.add(head);
-    
-    // Body (Torso)
-    const bodyGeometry = new THREE.CylinderGeometry(0.5, 0.6, 1.2, 8);
-    const bodyMaterial = new THREE.MeshPhongMaterial({ color: mainColor });
-    const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
-    body.position.y = 0.7;
-    body.castShadow = true;
-    group.add(body);
-    
-    // Arms
-    const armGeometry = new THREE.CylinderGeometry(0.15, 0.15, 1, 8);
-    const armMaterial = new THREE.MeshPhongMaterial({ color: mainColor });
-    
-    const leftArm = new THREE.Mesh(armGeometry, armMaterial);
-    leftArm.position.set(-0.7, 0.7, 0);
-    leftArm.rotation.z = Math.PI / 6;
-    leftArm.castShadow = true;
-    group.add(leftArm);
-    
-    const rightArm = new THREE.Mesh(armGeometry, armMaterial);
-    rightArm.position.set(0.7, 0.7, 0);
-    rightArm.rotation.z = -Math.PI / 6;
-    rightArm.castShadow = true;
-    group.add(rightArm);
-    
-    // Legs
-    const legGeometry = new THREE.CylinderGeometry(0.2, 0.2, 1.2, 8);
-    const legMaterial = new THREE.MeshPhongMaterial({ color: pantsColor });
-    
-    const leftLeg = new THREE.Mesh(legGeometry, legMaterial);
-    leftLeg.position.set(-0.25, -0.8, 0);
-    leftLeg.castShadow = true;
-    group.add(leftLeg);
-    
-    const rightLeg = new THREE.Mesh(legGeometry, legMaterial);
-    rightLeg.position.set(0.25, -0.8, 0);
-    rightLeg.castShadow = true;
-    group.add(rightLeg);
-    
-    // Face details
-    const eyeGeometry = new THREE.SphereGeometry(0.05, 8, 8);
-    const eyeMaterial = new THREE.MeshPhongMaterial({ color: 0x000000 });
-    
-    const leftEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
-    leftEye.position.set(-0.15, 1.65, 0.35);
-    group.add(leftEye);
-    
-    const rightEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
-    rightEye.position.set(0.15, 1.65, 0.35);
-    group.add(rightEye);
-    
-    return group;
+    if (cpuModel && gameState.cpu) {
+        cpuModel.position.x = gameState.cpu.x;
+        cpuModel.rotation.y = gameState.cpu.facing === 1 ? 0 : Math.PI;
+    }
 }
 
-function createBloodEffect(x, y, z) {
-    if (!window.scene) return;
+function fallbackToCanvas() {
+    console.log('Falling back to canvas rendering');
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
     
-    const bloodGeometry = new THREE.SphereGeometry(0.3, 8, 8);
-    const bloodMaterial = new THREE.MeshPhongMaterial({ 
-        color: 0xff0000,
-        transparent: true,
-        opacity: 0.8
-    });
-    
-    const blood = new THREE.Mesh(bloodGeometry, bloodMaterial);
-    blood.position.set(x, y, z);
-    blood.castShadow = true;
-    window.scene.add(blood);
-    
-    // Animate blood effect
-    const startTime = Date.now();
-    const duration = 500; // milliseconds
-    
-    function animateBlood() {
-        const elapsed = Date.now() - startTime;
-        const progress = elapsed / duration;
+    function renderCanvas() {
+        if (!gameState.gameActive) return;
         
-        if (progress < 1) {
-            blood.scale.set(1 + progress, 1 + progress, 1 + progress);
-            blood.material.opacity = 0.8 * (1 - progress);
-            requestAnimationFrame(animateBlood);
-        } else {
-            window.scene.remove(blood);
+        ctx.fillStyle = '#1a1a2a';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Draw arena
+        ctx.fillStyle = '#333';
+        ctx.fillRect(50, 300, 700, 10);
+        
+        // Draw players
+        if (gameState.player) {
+            drawFighter(ctx, gameState.player.x, 250, gameState.player.character.color, gameState.player.health / gameState.player.maxHealth);
         }
+        
+        if (gameState.cpu) {
+            drawFighter(ctx, gameState.cpu.x, 250, gameState.cpu.character.color, gameState.cpu.health / gameState.cpu.maxHealth, true);
+        }
+        
+        requestAnimationFrame(renderCanvas);
     }
     
-    animateBlood();
+    renderCanvas();
 }
 
-function applyDamageFlash(character, color = 0xff0000) {
-    let model;
-    if (character === 'player') {
-        model = window.playerModel;
-    } else if (character === 'cpu') {
-        model = window.cpuModel;
+function drawFighter(ctx, x, y, color, healthPercent, isFlipped = false) {
+    ctx.save();
+    
+    if (isFlipped) {
+        ctx.translate(x + 50, y);
+        ctx.scale(-1, 1);
+        x = -50;
+    } else {
+        ctx.translate(x, y);
     }
     
+    // Body
+    ctx.fillStyle = color;
+    ctx.fillRect(0, 0, 100, 150);
+    
+    // Health bar
+    ctx.fillStyle = '#333';
+    ctx.fillRect(-10, -30, 120, 15);
+    ctx.fillStyle = healthPercent > 0.5 ? '#00ff00' : healthPercent > 0.2 ? '#ffff00' : '#ff0000';
+    ctx.fillRect(-10, -30, 120 * healthPercent, 15);
+    
+    ctx.restore();
+}
+
+// Model animation functions
+function playAttackAnimation(character) {
+    let model = character === 'player' ? playerModel : cpuModel;
     if (!model) return;
     
-    // Flash the model
-    model.children.forEach(child => {
-        if (child.material) {
-            const originalColor = child.material.color.clone();
-            child.material.color.set(color);
-            
-            setTimeout(() => {
-                if (child.material) {
-                    child.material.color.copy(originalColor);
-                }
-            }, 200);
-        }
-    });
+    // Simple attack animation
+    model.position.z = -0.5;
+    setTimeout(() => {
+        if (model) model.position.z = 0;
+    }, 100);
 }
 
-function createParryEffect(x, y, z) {
-    if (!window.scene) return;
+function playDamageAnimation(character) {
+    let model = character === 'player' ? playerModel : cpuModel;
+    if (!model) return;
     
-    const parryGeometry = new THREE.RingGeometry(0.2, 0.5, 16);
-    const parryMaterial = new THREE.MeshBasicMaterial({ 
-        color: 0x00ff00,
-        side: THREE.DoubleSide,
-        transparent: true,
-        opacity: 0.8
+    // Flash effect
+    const originalMaterials = [];
+    model.traverse((child) => {
+        if (child.isMesh && child.material) {
+            originalMaterials.push({
+                mesh: child,
+                color: child.material.color.clone()
+            });
+            child.material.color.set(0xff0000);
+        }
     });
     
-    const parry = new THREE.Mesh(parryGeometry, parryMaterial);
-    parry.position.set(x, y, z);
-    parry.rotation.x = Math.PI / 2;
-    window.scene.add(parry);
+    setTimeout(() => {
+        originalMaterials.forEach(item => {
+            if (item.mesh.material) {
+                item.mesh.material.color.copy(item.color);
+            }
+        });
+    }, 200);
+}
+
+function createEffect(type, x, y, z) {
+    if (!scene) return;
     
-    // Animate parry effect
-    const startTime = Date.now();
-    const duration = 500;
+    let effect;
     
-    function animateParry() {
-        const elapsed = Date.now() - startTime;
-        const progress = elapsed / duration;
-        
-        if (progress < 1) {
-            parry.scale.set(1 + progress * 2, 1 + progress * 2, 1);
-            parry.material.opacity = 0.8 * (1 - progress);
-            requestAnimationFrame(animateParry);
-        } else {
-            window.scene.remove(parry);
-        }
+    switch(type) {
+        case 'hit':
+            const hitGeometry = new THREE.SphereGeometry(0.3, 8, 8);
+            const hitMaterial = new THREE.MeshBasicMaterial({ 
+                color: 0xff0000,
+                transparent: true,
+                opacity: 0.8
+            });
+            effect = new THREE.Mesh(hitGeometry, hitMaterial);
+            break;
+            
+        case 'parry':
+            const parryGeometry = new THREE.RingGeometry(0.2, 0.5, 16);
+            const parryMaterial = new THREE.MeshBasicMaterial({ 
+                color: 0x00ff00,
+                side: THREE.DoubleSide,
+                transparent: true,
+                opacity: 0.8
+            });
+            effect = new THREE.Mesh(parryGeometry, parryMaterial);
+            effect.rotation.x = Math.PI / 2;
+            break;
     }
     
-    animateParry();
+    if (effect) {
+        effect.position.set(x, y, z);
+        scene.add(effect);
+        
+        // Animate and remove
+        let scale = 1;
+        function animateEffect() {
+            scale += 0.1;
+            effect.scale.set(scale, scale, scale);
+            effect.material.opacity -= 0.05;
+            
+            if (effect.material.opacity > 0) {
+                requestAnimationFrame(animateEffect);
+            } else {
+                scene.remove(effect);
+            }
+        }
+        animateEffect();
+    }
 }
 
-// Make functions globally available
-window.createHumanoidFighters = createHumanoidFighters;
-window.createBloodEffect = createBloodEffect;
-window.applyDamageFlash = applyDamageFlash;
-window.createParryEffect = createParryEffect;
+// Make functions available globally
+window.initThreeJS = initThreeJS;
+window.playAttackAnimation = playAttackAnimation;
+window.playDamageAnimation = playDamageAnimation;
+window.createEffect = createEffect;
