@@ -1,9 +1,9 @@
-/* BRAINROT FIGHTERS v5.0 - TEKKEN STYLE COMPLETE OVERHAUL */
+/* BRAINROT FIGHTERS - WORKING VERSION */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Courier New', monospace;
 }
 
 body {
@@ -12,133 +12,84 @@ body {
     overflow: hidden;
     width: 100vw;
     height: 100vh;
-    transition: background 0.5s ease;
 }
 
-/* TEKKEN STYLE BACKGROUNDS */
 body.bg-tekken {
     background: linear-gradient(135deg, #0a001a 0%, #1a0033 50%, #0a002a 100%);
-    background-image: 
-        radial-gradient(circle at 20% 80%, rgba(120, 0, 255, 0.3) 0%, transparent 50%),
-        radial-gradient(circle at 80% 20%, rgba(255, 0, 120, 0.3) 0%, transparent 50%),
-        linear-gradient(45deg, transparent 49%, rgba(255, 255, 255, 0.1) 50%, transparent 51%);
-    background-size: 100% 100%, 100% 100%, 30px 30px;
 }
 
-body.bg-dojo {
-    background: linear-gradient(135deg, #2a1a0a 0%, #1a0a00 100%);
-    background-image: 
-        radial-gradient(ellipse at 30% 20%, rgba(139, 69, 19, 0.4) 0%, transparent 50%),
-        radial-gradient(ellipse at 70% 80%, rgba(101, 67, 33, 0.3) 0%, transparent 50%);
+/* SCREENS */
+.screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: transparent;
 }
 
-body.bg-urban {
-    background: linear-gradient(135deg, #1a1a2a 0%, #16213e 50%, #0f3460 100%);
-    background-image: 
-        linear-gradient(90deg, transparent 24px, rgba(255,255,255,0.1) 24px, rgba(255,255,255,0.1) 25px, transparent 25px),
-        linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px);
-    background-size: 26px 26px, 26px 26px;
+.screen.active {
+    display: flex;
 }
 
-/* TEKKEN LOADING SCREEN */
-#loading {
+/* LOADING SCREEN */
+#loading.active {
     background: linear-gradient(135deg, #0a001a 0%, #330066 100%);
 }
 
-.tekken-logo {
-    font-size: 4rem;
-    font-weight: 900;
-    color: #ff0033;
-    text-shadow: 
-        0 0 20px #ff0033,
-        0 0 40px #ff0033,
-        0 0 60px #ff0033,
-        2px 2px 0 #000,
-        -2px -2px 0 #000;
-    margin-bottom: 3rem;
-    letter-spacing: 4px;
-    text-transform: uppercase;
-    animation: logoPulse 2s infinite;
+.loading-content {
+    text-align: center;
 }
 
-@keyframes logoPulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.05); }
+.tekken-logo {
+    font-size: 3rem;
+    font-weight: bold;
+    color: #ff0033;
+    text-shadow: 0 0 20px #ff0033;
+    margin-bottom: 2rem;
 }
 
 .loading-bar-container {
-    width: 500px;
-    height: 8px;
-    background: #333;
+    width: 400px;
+    height: 20px;
+    background: #222244;
     border: 2px solid #ff0033;
-    border-radius: 4px;
+    border-radius: 10px;
     overflow: hidden;
     margin: 2rem auto;
-    position: relative;
 }
 
 .loading-bar {
     height: 100%;
     width: 0%;
-    background: linear-gradient(90deg, #ff0033 0%, #ff6600 50%, #ff0033 100%);
-    transition: width 0.3s ease;
-    position: relative;
+    background: linear-gradient(90deg, #ff0033 0%, #ffcc00 100%);
+    transition: width 0.3s;
 }
 
-.loading-bar::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-    animation: loadingShine 1.5s infinite;
+.loading-text {
+    font-size: 1.2rem;
+    color: #ffcc00;
 }
 
-@keyframes loadingShine {
-    0% { transform: translateX(-100%); }
-    100% { transform: translateX(100%); }
-}
-
-/* TEKKEN MAIN MENU */
-#mainMenu {
-    background: transparent;
-}
-
+/* MAIN MENU */
 .menu-content {
     text-align: center;
-    padding: 2rem;
 }
 
 .tekken-logo-main {
-    font-size: 6rem;
-    font-weight: 900;
-    color: #ff0033;
-    text-shadow: 
-        0 0 30px #ff0033,
-        0 0 60px #ff0033,
-        4px 4px 0 #000,
-        -4px -4px 0 #000;
-    margin-bottom: 1rem;
-    letter-spacing: 6px;
-    line-height: 1.2;
-    text-transform: uppercase;
-}
-
-.version-badge {
-    font-size: 1.2rem;
-    color: #ffcc00;
-    background: linear-gradient(45deg, #ff0033, #ff6600);
-    padding: 0.5rem 1.5rem;
-    border-radius: 25px;
-    display: inline-block;
-    margin-bottom: 3rem;
+    font-size: 4rem;
     font-weight: bold;
-    text-shadow: 1px 1px 2px #000;
+    color: #ff0033;
+    text-shadow: 0 0 30px #ff0033;
+    margin-bottom: 3rem;
+    line-height: 1.2;
 }
 
-.menu-options-tekken {
+.menu-options {
     display: flex;
     flex-direction: column;
     gap: 1rem;
@@ -146,603 +97,278 @@ body.bg-urban {
     align-items: center;
 }
 
-.tekken-btn {
-    font-size: 1.4rem;
-    font-weight: bold;
+.menu-btn {
+    font-size: 1.5rem;
     color: #fff;
-    background: linear-gradient(45deg, #333, #555);
-    border: 3px solid #ff0033;
-    padding: 15px 40px;
+    background: rgba(255, 0, 51, 0.3);
+    border: 2px solid #ff0033;
+    padding: 12px 30px;
     cursor: pointer;
     text-align: center;
     width: 300px;
-    transition: all 0.3s ease;
+    transition: all 0.2s;
     text-transform: uppercase;
-    letter-spacing: 2px;
-    position: relative;
-    overflow: hidden;
 }
 
-.tekken-btn::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-    transition: left 0.5s;
+.menu-btn:hover {
+    background: rgba(255, 0, 51, 0.7);
+    transform: scale(1.05);
 }
 
-.tekken-btn:hover::before {
-    left: 100%;
-}
-
-.tekken-btn:hover {
-    background: linear-gradient(45deg, #ff0033, #ff6600);
-    transform: translateY(-3px);
-    box-shadow: 0 10px 20px rgba(255, 0, 51, 0.3);
-}
-
-.menu-footer-tekken {
+.menu-footer {
     position: absolute;
     bottom: 2rem;
-    left: 0;
-    right: 0;
+    width: 100%;
     display: flex;
-    justify-content: space-between;
+    justify-content: space-around;
     padding: 0 2rem;
-    background: rgba(0,0,0,0.8);
-    border-top: 2px solid #ff0033;
 }
 
-.player-info, .session-stats {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    padding: 1rem;
-}
-
-.player-name, .player-rank, .high-score, .coins {
-    font-size: 1rem;
+.high-score, .coins {
     color: #ffcc00;
+    font-size: 1.2rem;
     font-weight: bold;
 }
 
-/* TEKKEN CHARACTER SELECT */
-.select-ui-tekken {
-    width: 95%;
-    max-width: 1400px;
-    height: 95%;
-    display: flex;
-    flex-direction: column;
-    background: rgba(0,0,0,0.9);
-    border: 3px solid #ff0033;
-    border-radius: 10px;
-    padding: 2rem;
-}
-
-.select-header-tekken {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem 2rem;
-    background: linear-gradient(90deg, #ff0033, #ff6600);
-    border-radius: 8px;
-    margin-bottom: 2rem;
-}
-
-.player-tag-tekken {
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: #fff;
-    text-shadow: 2px 2px 0 #000;
-}
-
-.select-title-tekken {
-    font-size: 2.5rem;
-    font-weight: 900;
-    color: #fff;
-    text-transform: uppercase;
-    letter-spacing: 3px;
-    text-shadow: 2px 2px 0 #000;
-}
-
-.tekken-select {
-    background: #222;
-    border: 2px solid #ff0033;
-    color: #fff;
-    padding: 0.5rem 1rem;
-    border-radius: 5px;
-    font-size: 1rem;
-    font-weight: bold;
-}
-
-.character-grid-tekken {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1.5rem;
-    flex: 1;
-    margin-bottom: 2rem;
-    overflow-y: auto;
-    padding: 1rem;
-    background: rgba(255,255,255,0.05);
-    border-radius: 8px;
-}
-
-.character-card-tekken {
-    background: linear-gradient(135deg, #333, #222);
-    border: 3px solid #444;
-    border-radius: 10px;
-    padding: 1.5rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
+/* CHARACTER SELECT */
+.select-ui {
+    width: 90%;
+    max-width: 1000px;
     text-align: center;
-    position: relative;
-    overflow: hidden;
 }
 
-.character-card-tekken:hover {
-    border-color: #ffcc00;
-    transform: translateY(-5px) scale(1.02);
-    box-shadow: 0 10px 20px rgba(255, 204, 0, 0.3);
-}
-
-.character-card-tekken.selected {
-    border-color: #ff0033;
-    background: linear-gradient(135deg, #ff0033, #cc0000);
-    box-shadow: 0 0 30px #ff0033;
-}
-
-.character-icon-tekken {
-    width: 120px;
-    height: 120px;
-    background: #111;
-    border-radius: 50%;
-    margin: 0 auto 1rem;
-    border: 4px solid #444;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 2rem;
+.select-ui h2 {
+    font-size: 2.5rem;
     color: #ffcc00;
-    transition: all 0.3s ease;
+    margin-bottom: 2rem;
 }
 
-.character-card-tekken.selected .character-icon-tekken {
+.character-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.character-card {
+    background: rgba(255, 0, 51, 0.1);
+    border: 2px solid #ff0033;
+    border-radius: 10px;
+    padding: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.character-card:hover {
     border-color: #ffcc00;
-    transform: scale(1.1);
+    transform: translateY(-5px);
 }
 
-.character-name-tekken {
-    font-size: 1.3rem;
-    font-weight: bold;
+.character-card.selected {
+    border-color: #ff0033;
+    background: rgba(255, 0, 51, 0.3);
+    box-shadow: 0 0 20px #ff0033;
+}
+
+.character-name {
+    font-size: 1.2rem;
     color: #fff;
     margin-bottom: 0.5rem;
-    text-transform: uppercase;
 }
 
-.character-style-tekken {
-    font-size: 0.9rem;
+.character-stats {
+    display: flex;
+    justify-content: space-around;
     color: #ffcc00;
-    margin-bottom: 1rem;
+    font-size: 0.9rem;
 }
 
-/* TEKKEN GAME SCREEN */
+.select-controls {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+}
+
+.nav-btn {
+    font-size: 1.2rem;
+    color: #fff;
+    background: rgba(255, 0, 51, 0.3);
+    border: 2px solid #ff0033;
+    padding: 10px 30px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.nav-btn:hover {
+    background: rgba(255, 0, 51, 0.7);
+}
+
+.nav-btn.confirm {
+    background: rgba(255, 204, 0, 0.3);
+    border-color: #ffcc00;
+}
+
+.nav-btn.confirm:hover {
+    background: rgba(255, 204, 0, 0.7);
+}
+
+/* GAME SCREEN */
 #gameScreen {
-    background: #000;
     justify-content: flex-start;
-    padding: 1rem;
+    padding-top: 2rem;
 }
 
 #gameCanvas {
-    width: 100%;
-    max-width: 1200px;
-    height: 600px;
+    border: 3px solid #ff0033;
     background: #000;
-    border: 4px solid #ff0033;
-    border-radius: 10px;
-    box-shadow: 0 0 30px #ff0033;
+    margin-bottom: 1rem;
 }
 
-.hud-tekken {
-    width: 95%;
-    max-width: 1200px;
+.hud {
+    width: 90%;
+    max-width: 800px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-top: 1rem;
-    padding: 1rem;
-    background: rgba(0,0,0,0.8);
-    border-radius: 10px;
-    border: 2px solid #ff0033;
+    margin-bottom: 1rem;
 }
 
-.player-hud-tekken {
-    display: flex;
-    flex-direction: column;
-    width: 45%;
-}
-
-.player-hud-tekken.player1 {
-    align-items: flex-start;
-}
-
-.player-hud-tekken.player2 {
-    align-items: flex-end;
-}
-
-.player-name-tekken {
-    font-size: 1.4rem;
-    font-weight: bold;
-    color: #ffcc00;
-    margin-bottom: 0.5rem;
-    text-shadow: 2px 2px 0 #000;
-}
-
-.health-container-tekken {
-    width: 100%;
-    background: #333;
-    border: 3px solid #444;
-    border-radius: 8px;
-    overflow: hidden;
-    position: relative;
-    height: 30px;
-}
-
-.health-bar-tekken {
-    height: 100%;
-    width: 100%;
-    background: linear-gradient(90deg, #ff0033 0%, #ff9900 50%, #00ff00 100%);
-    transition: width 0.3s ease;
-    position: relative;
-}
-
-.health-text-tekken {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    color: #fff;
-    text-shadow: 1px 1px 2px #000;
-    pointer-events: none;
-    font-size: 1.1rem;
-}
-
-.rage-bar-tekken {
-    width: 100%;
-    height: 8px;
-    background: #222;
-    border: 1px solid #444;
-    border-radius: 4px;
-    margin-top: 0.5rem;
-    overflow: hidden;
-}
-
-.rage-bar-tekken::before {
-    content: '';
-    display: block;
-    height: 100%;
-    width: 0%;
-    background: linear-gradient(90deg, #ff0000, #ffff00);
-    transition: width 0.3s ease;
-}
-
-.round-info-tekken {
+.player-hud {
     display: flex;
     flex-direction: column;
     align-items: center;
-    min-width: 150px;
+    width: 40%;
 }
 
-.round-text-tekken {
-    font-size: 1.3rem;
-    font-weight: bold;
-    color: #ffcc00;
-    margin-bottom: 0.5rem;
-    text-transform: uppercase;
-}
-
-.timer-tekken {
-    font-size: 2.5rem;
-    font-weight: 900;
-    color: #ff0033;
-    background: #111;
-    padding: 0.5rem 1rem;
-    border-radius: 8px;
-    border: 3px solid #ff0033;
-    text-shadow: 0 0 10px #ff0033;
-}
-
-/* TEKKEN TOUCH CONTROLS */
-.touch-controls-tekken {
-    position: absolute;
-    bottom: 20px;
-    left: 0;
-    right: 0;
-    display: none;
-    justify-content: space-between;
-    padding: 0 20px;
-    pointer-events: none;
-}
-
-.touch-controls-tekken.active {
-    display: flex;
-}
-
-.movement-pad, .action-pad {
-    pointer-events: auto;
-}
-
-.d-pad {
-    display: grid;
-    grid-template-areas: 
-        ". up ."
-        "left . right"
-        ". down .";
-    gap: 10px;
-    background: rgba(0,0,0,0.7);
-    border-radius: 20px;
-    padding: 15px;
-}
-
-.movement-btn {
-    width: 70px;
-    height: 70px;
-    background: rgba(255, 0, 51, 0.8);
-    border: 2px solid #ffcc00;
-    border-radius: 15px;
-    color: white;
-    font-size: 1.5rem;
-    font-weight: bold;
-    cursor: pointer;
-    touch-action: manipulation;
-    transition: all 0.1s;
-}
-
-.movement-btn:active {
-    background: rgba(255, 204, 0, 0.9);
-    transform: scale(0.9);
-}
-
-.movement-btn.up { grid-area: up; }
-.movement-btn.left { grid-area: left; }
-.movement-btn.down { grid-area: down; }
-.movement-btn.right { grid-area: right; }
-
-.action-pad {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    background: rgba(0,0,0,0.7);
-    border-radius: 20px;
-    padding: 15px;
-}
-
-.action-row {
-    display: flex;
-    gap: 10px;
-}
-
-.attack-btn {
-    width: 80px;
-    height: 80px;
-    background: rgba(0, 100, 255, 0.8);
-    border: 2px solid #00ccff;
-    border-radius: 50%;
-    color: white;
+.player-name {
     font-size: 1.2rem;
-    font-weight: bold;
-    cursor: pointer;
-    touch-action: manipulation;
-    transition: all 0.1s;
-}
-
-.attack-btn:active {
-    background: rgba(0, 200, 255, 0.9);
-    transform: scale(0.9);
-}
-
-.special-btn {
-    width: 80px;
-    height: 80px;
-    background: rgba(255, 100, 0, 0.8);
-    border: 2px solid #ffcc00;
-    border-radius: 50%;
-    color: white;
-    font-size: 0.9rem;
-    font-weight: bold;
-    cursor: pointer;
-    touch-action: manipulation;
-    transition: all 0.1s;
-}
-
-.special-btn:active {
-    background: rgba(255, 200, 0, 0.9);
-    transform: scale(0.9);
-}
-
-/* TEKKEN COMBO DISPLAY */
-.combo-display-tekken {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 3.5rem;
-    font-weight: 900;
     color: #ffcc00;
-    text-shadow: 
-        0 0 10px #ff0033,
-        0 0 20px #ff0033,
-        0 0 30px #ff0033;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    z-index: 100;
-    pointer-events: none;
-    text-transform: uppercase;
-    letter-spacing: 2px;
+    margin-bottom: 0.5rem;
 }
 
-.combo-display-tekken.active {
-    opacity: 1;
-    animation: comboFloat 2s ease-out;
+.health-container {
+    width: 100%;
+    background: #222;
+    border: 2px solid #333;
+    border-radius: 5px;
+    overflow: hidden;
+    height: 25px;
 }
 
-@keyframes comboFloat {
-    0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
-    50% { transform: translate(-50%, -60%) scale(1.1); opacity: 1; }
-    100% { transform: translate(-50%, -80%) scale(1.2); opacity: 0; }
+.health-bar {
+    height: 100%;
+    width: 100%;
+    background: linear-gradient(90deg, #ff0033 0%, #ffcc00 100%);
+    transition: width 0.3s;
 }
 
-/* RESPONSIVE DESIGN */
-@media (max-width: 768px) {
-    .tekken-logo-main { font-size: 3rem; }
-    .tekken-btn { font-size: 1.1rem; width: 250px; padding: 12px 30px; }
-    .character-grid-tekken { grid-template-columns: repeat(2, 1fr); }
-    .select-title-tekken { font-size: 1.8rem; }
-    .hud-tekken { flex-direction: column; gap: 1rem; }
-    .player-hud-tekken { width: 100%; }
-    .movement-btn, .attack-btn, .special-btn { 
-        width: 60px; height: 60px; font-size: 1rem; 
-    }
+.round-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
-@media (max-width: 480px) {
-    .tekken-logo-main { font-size: 2rem; }
-    .tekken-btn { font-size: 1rem; width: 200px; padding: 10px 20px; }
-    .character-grid-tekken { grid-template-columns: 1fr; }
-    .touch-controls-tekken { padding: 0 10px; }
-    .movement-btn, .attack-btn, .special-btn { 
-        width: 50px; height: 50px; font-size: 0.8rem; 
-    }
+.timer {
+    font-size: 2rem;
+    color: #ff0033;
+    font-weight: bold;
 }
 
-/* BOSS BALANCE ADJUSTMENTS */
-.boss-phase-indicator {
-    position: absolute;
-    top: 10px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(255, 0, 0, 0.8);
+/* SHOP SCREEN */
+.shop-content {
+    width: 90%;
+    max-width: 800px;
+    text-align: center;
+}
+
+.shop-content h2 {
+    font-size: 2.5rem;
+    color: #ffcc00;
+    margin-bottom: 2rem;
+}
+
+.coins-display {
+    font-size: 1.5rem;
+    color: #ffcc00;
+    margin-bottom: 2rem;
+}
+
+.shop-items {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.shop-item {
+    background: rgba(255, 0, 51, 0.1);
+    border: 2px solid #ff0033;
+    border-radius: 10px;
+    padding: 1rem;
+    text-align: center;
+}
+
+.item-name {
+    font-size: 1.2rem;
+    color: #ffcc00;
+    margin-bottom: 0.5rem;
+}
+
+.item-price {
+    color: #ff0033;
+    font-weight: bold;
+    margin-bottom: 1rem;
+}
+
+.buy-btn {
+    background: rgba(255, 204, 0, 0.3);
+    border: 2px solid #ffcc00;
     color: white;
     padding: 0.5rem 1rem;
-    border-radius: 20px;
-    font-weight: bold;
-    z-index: 50;
-}
-
-.boss-stun-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
+    cursor: pointer;
     width: 100%;
-    height: 100%;
-    background: rgba(255, 255, 0, 0.3);
-    z-index: 40;
-    pointer-events: none;
 }
 
-/* ENHANCED ADMIN PANEL */
-.admin-panel-tekken {
-    position: fixed;
-    top: 10px;
-    right: 10px;
-    background: rgba(0,0,0,0.95);
-    border: 3px solid #ff0033;
-    border-radius: 10px;
-    padding: 15px;
-    z-index: 10000;
-    color: white;
-    font-family: 'Courier New', monospace;
-    min-width: 350px;
-    max-height: 80vh;
-    overflow-y: auto;
+.buy-btn:hover {
+    background: rgba(255, 204, 0, 0.7);
 }
 
-.admin-section {
-    margin-bottom: 15px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #333;
+/* CONTROLS SCREEN */
+.controls-content {
+    width: 90%;
+    max-width: 600px;
+    text-align: center;
 }
 
-.admin-section h3 {
-    color: #ff0033;
-    margin-bottom: 10px;
-    text-transform: uppercase;
+.controls-content h2 {
+    font-size: 2.5rem;
+    color: #ffcc00;
+    margin-bottom: 2rem;
 }
 
-.admin-control {
+.controls-list {
+    margin-bottom: 2rem;
+}
+
+.control-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin: 8px 0;
-}
-
-.admin-control label {
-    flex: 1;
-    font-size: 0.9rem;
-}
-
-.admin-control input[type="number"] {
-    width: 60px;
-    background: #333;
-    border: 1px solid #ff0033;
-    color: white;
-    padding: 3px;
-    border-radius: 3px;
-}
-
-.admin-btn {
-    background: #ff0033;
-    color: white;
-    border: none;
-    padding: 8px 12px;
+    padding: 1rem;
+    margin: 0.5rem 0;
+    background: rgba(255, 0, 51, 0.1);
     border-radius: 5px;
-    cursor: pointer;
+}
+
+.control-item span {
+    color: #ffcc00;
     font-weight: bold;
-    margin: 2px;
-    transition: background 0.3s;
 }
 
-.admin-btn:hover {
-    background: #ff6600;
-}
-
-/* SMOOTH ANIMATIONS */
-.fade-in {
-    animation: fadeIn 0.5s ease-in;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-.slide-in-left {
-    animation: slideInLeft 0.5s ease-out;
-}
-
-@keyframes slideInLeft {
-    from { opacity: 0; transform: translateX(-50px); }
-    to { opacity: 1; transform: translateX(0); }
-}
-
-/* PERFORMANCE OPTIMIZATIONS */
-.optimized-render {
-    image-rendering: -webkit-optimize-contrast;
-    image-rendering: pixelated;
-}
-
-/* ACCESSIBILITY */
-.high-contrast {
-    filter: contrast(1.5) brightness(1.2);
-}
-
-.large-text {
-    font-size: 1.2em;
+/* RESPONSIVE */
+@media (max-width: 768px) {
+    .tekken-logo-main { font-size: 2.5rem; }
+    .menu-btn { font-size: 1.2rem; width: 250px; }
+    .character-grid { grid-template-columns: 1fr; }
+    .shop-items { grid-template-columns: 1fr; }
 }
