@@ -98,10 +98,10 @@ Access the enhanced admin panel with:
 
 - **Hidden combos** for each character
 - **Secret boss variations** under specific conditions
-- **Easter egg characters** with unique abilities
+- **Easter egg bcharacters** with unique abilities
 - **Special stage interactions** and environmental attacks
 
 ---
 
-**Developed with ❤️ by Ian, Aahil and Ziad**
+**Developed by Ian, Aahil and Ziad** aahil wtf did u do
 *Experience the ultimate fighting game evolution!*
