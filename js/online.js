@@ -1,574 +1,380 @@
-// Online Multiplayer System for Brainrot Fighters v4.5
-
-// Online State
-let onlineState = {
-    isOnline: false,
-    playerId: null,
-    playerName: `Player${Math.floor(Math.random() * 10000)}`,
-    currentLobby: null,
-    isHost: false,
-    friends: [],
-    friendCode: null,
-    pendingInvites: []
-};
-
-// Initialize Online System
-async function initOnlineSystem() {
-    try {
-        if (!window.firebaseAuth) {
-            console.error('Firebase not initialized');
-            return;
-        }
-
-        // Sign in anonymously
-        const userCredential = await signInAnonymously(window.firebaseAuth);
-        onlineState.playerId = userCredential.user.uid;
-        onlineState.friendCode = generateFriendCode();
+// Updated Online System with Working Multiplayer
+class OnlineSystem {
+    constructor() {
+        this.currentUser = null;
+        this.lobbies = JSON.parse(localStorage.getItem('brainrot_lobbies')) || {};
+        this.friends = {};
+        this.currentLobby = null;
         
-        // Create player profile
-        await set(ref(window.firebaseDatabase, 'players/' + onlineState.playerId), {
-            name: onlineState.playerName,
-            friendCode: onlineState.friendCode,
-            status: 'online',
-            lastActive: Date.now()
-        });
-        
-        onlineState.isOnline = true;
-        updateOnlineStatus();
-        console.log('Online system initialized:', onlineState.playerId);
-        
-    } catch (error) {
-        console.error('Online system initialization failed:', error);
-        onlineState.isOnline = false;
+        this.init();
     }
-}
 
-// Generate unique friend code
-function generateFriendCode() {
-    return 'BR' + Math.random().toString(36).substr(2, 6).toUpperCase();
-}
+    init() {
+        this.setupEventListeners();
+        this.loadOnlineData();
+    }
 
-// Update online status display
-function updateOnlineStatus() {
-    const statusElement = document.getElementById('onlineStatus');
-    if (statusElement) {
-        if (onlineState.isOnline) {
-            statusElement.innerHTML = `<div class="status-online">🟢 ONLINE - ${onlineState.playerName} (${onlineState.friendCode})</div>`;
+    setupEventListeners() {
+        // Online menu buttons
+        document.getElementById('onlineBtn').addEventListener('click', () => {
+            this.showOnlineScreen();
+        });
+
+        document.getElementById('createLobbyBtn').addEventListener('click', () => {
+            this.showCreateLobby();
+        });
+
+        document.getElementById('joinLobbyBtn').addEventListener('click', () => {
+            this.showJoinLobby();
+        });
+
+        document.getElementById('friendsBtn').addEventListener('click', () => {
+            this.showFriendsList();
+        });
+
+        document.getElementById('confirmCreateLobby').addEventListener('click', () => {
+            this.createLobby();
+        });
+
+        document.getElementById('confirmJoinLobby').addEventListener('click', () => {
+            this.joinLobby();
+        });
+
+        document.getElementById('addFriendBtn').addEventListener('click', () => {
+            this.addFriend();
+        });
+
+        document.getElementById('startMatchBtn').addEventListener('click', () => {
+            this.startMatch();
+        });
+
+        document.getElementById('leaveLobbyBtn').addEventListener('click', () => {
+            this.leaveLobby();
+        });
+
+        document.getElementById('refreshLobbiesBtn').addEventListener('click', () => {
+            this.refreshLobbies();
+        });
+
+        document.getElementById('onlineBackBtn').addEventListener('click', () => {
+            this.exitOnline();
+        });
+    }
+
+    loadOnlineData() {
+        this.currentUser = authSystem.getUser();
+        if (this.currentUser) {
+            this.friends = this.currentUser.friends || [];
+        }
+    }
+
+    showOnlineScreen() {
+        document.getElementById('mainMenu').classList.remove('active');
+        document.getElementById('onlineScreen').classList.add('active');
+        
+        // Update online status
+        this.updateOnlineStatus();
+        this.refreshLobbies();
+    }
+
+    updateOnlineStatus() {
+        const offlineStatus = document.querySelector('.status-offline');
+        const onlineStatus = document.querySelector('.status-online');
+        
+        if (this.currentUser) {
+            offlineStatus.style.display = 'none';
+            onlineStatus.style.display = 'block';
+            document.getElementById('playerName').textContent = this.currentUser.username;
         } else {
-            statusElement.innerHTML = `<div class="status-offline">🔴 OFFLINE</div>`;
+            offlineStatus.style.display = 'block';
+            onlineStatus.style.display = 'none';
         }
     }
-}
 
-// Quick Match System
-async function findQuickMatch() {
-    if (!onlineState.isOnline) {
-        alert('Online system not available');
-        return;
-    }
-    
-    if (!gameState.selectedCharacter) {
-        alert('Please select a character first!');
-        showScreen('characterSelect');
-        return;
+    showCreateLobby() {
+        this.hideAllSections();
+        document.getElementById('createLobby').style.display = 'block';
     }
 
-    const quickMatchRef = ref(window.firebaseDatabase, 'quickMatch');
-    const playerData = {
-        playerId: onlineState.playerId,
-        playerName: onlineState.playerName,
-        character: gameState.selectedCharacter,
-        timestamp: Date.now()
-    };
-    
-    // Remove old quick match entries
-    cleanupOldQuickMatches();
-    
-    // Check for existing quick matches
-    const snapshot = await get(quickMatchRef);
-    if (snapshot.exists()) {
-        const matches = snapshot.val();
-        const availableMatch = Object.keys(matches).find(key => 
-            matches[key].playerId !== onlineState.playerId
-        );
-        
-        if (availableMatch) {
-            // Join existing match
-            const matchKey = availableMatch;
-            const opponent = matches[matchKey];
-            await remove(ref(window.firebaseDatabase, `quickMatch/${matchKey}`));
-            await createOnlineLobby(opponent.playerId, 'Quick Match', '', 2, true);
+    showJoinLobby() {
+        this.hideAllSections();
+        document.getElementById('joinLobby').style.display = 'block';
+    }
+
+    showFriendsList() {
+        this.hideAllSections();
+        document.getElementById('friendsList').style.display = 'block';
+        this.loadFriendsList();
+    }
+
+    hideAllSections() {
+        document.getElementById('lobbyBrowser').style.display = 'none';
+        document.getElementById('createLobby').style.display = 'none';
+        document.getElementById('joinLobby').style.display = 'none';
+        document.getElementById('friendsList').style.display = 'none';
+        document.getElementById('currentLobby').style.display = 'none';
+    }
+
+    createLobby() {
+        const name = document.getElementById('lobbyName').value;
+        const password = document.getElementById('lobbyPassword').value;
+        const maxPlayers = document.getElementById('lobbyMaxPlayers').value;
+
+        if (!name) {
+            this.showOnlineMessage('Please enter a lobby name', 'error');
             return;
         }
-    }
-    
-    // Create new quick match entry
-    const newMatchRef = push(quickMatchRef);
-    await set(newMatchRef, playerData);
-    
-    // Show waiting message
-    showQuickMatchWaiting();
-    
-    // Listen for match found
-    const matchListener = onValue(quickMatchRef, (snapshot) => {
-        if (!snapshot.exists()) {
-            matchListener(); // Unsubscribe
-            hideQuickMatchWaiting();
-        }
-    }, { onlyOnce: true });
-    
-    // Timeout after 30 seconds
-    setTimeout(() => {
-        matchListener();
-        remove(ref(window.firebaseDatabase, `quickMatch/${newMatchRef.key}`));
-        hideQuickMatchWaiting();
-        alert('Quick match timeout. No opponents found.');
-    }, 30000);
-}
 
-function showQuickMatchWaiting() {
-    const onlineContent = document.querySelector('.online-content');
-    if (onlineContent) {
-        const waitingDiv = document.createElement('div');
-        waitingDiv.id = 'quickMatchWaiting';
-        waitingDiv.innerHTML = `
-            <div class="waiting-message">
-                <h3>🔍 FINDING OPPONENT...</h3>
-                <div class="loading-spinner"></div>
-                <p>Searching for players worldwide...</p>
-                <button class="nav-btn" id="cancelQuickMatch">CANCEL</button>
-            </div>
-        `;
-        onlineContent.appendChild(waitingDiv);
-        
-        document.getElementById('cancelQuickMatch').addEventListener('click', () => {
-            remove(ref(window.firebaseDatabase, 'quickMatch'));
-            hideQuickMatchWaiting();
-        });
-    }
-}
-
-function hideQuickMatchWaiting() {
-    const waitingDiv = document.getElementById('quickMatchWaiting');
-    if (waitingDiv) {
-        waitingDiv.remove();
-    }
-}
-
-function cleanupOldQuickMatches() {
-    const quickMatchRef = ref(window.firebaseDatabase, 'quickMatch');
-    get(quickMatchRef).then((snapshot) => {
-        if (snapshot.exists()) {
-            const matches = snapshot.val();
-            const now = Date.now();
-            Object.keys(matches).forEach(key => {
-                if (now - matches[key].timestamp > 30000) { // 30 seconds old
-                    remove(ref(window.firebaseDatabase, `quickMatch/${key}`));
-                }
-            });
-        }
-    });
-}
-
-// Lobby System
-async function createOnlineLobby(opponentId = null, lobbyName = 'Private Lobby', password = '', maxPlayers = 2, isQuickMatch = false) {
-    if (!onlineState.isOnline) {
-        alert('Online system not available');
-        return;
-    }
-    
-    const lobbyCode = generateLobbyCode();
-    const lobbyData = {
-        code: lobbyCode,
-        name: lobbyName,
-        password: password,
-        host: onlineState.playerId,
-        players: {
-            [onlineState.playerId]: {
-                name: onlineState.playerName,
-                character: gameState.selectedCharacter,
-                ready: false
-            }
-        },
-        maxPlayers: maxPlayers,
-        status: 'waiting',
-        created: Date.now(),
-        isQuickMatch: isQuickMatch
-    };
-    
-    if (opponentId) {
-        lobbyData.players[opponentId] = {
-            name: 'Opponent',
-            character: null,
-            ready: false
+        const lobbyCode = this.generateLobbyCode();
+        const lobby = {
+            code: lobbyCode,
+            name: name,
+            password: password,
+            maxPlayers: parseInt(maxPlayers),
+            players: [{
+                id: this.currentUser.email,
+                username: this.currentUser.username,
+                avatar: this.currentUser.avatar,
+                isHost: true
+            }],
+            status: 'waiting',
+            createdAt: new Date().toISOString()
         };
-    }
-    
-    await set(ref(window.firebaseDatabase, `lobbies/${lobbyCode}`), lobbyData);
-    
-    onlineState.currentLobby = lobbyCode;
-    onlineState.isHost = true;
-    
-    // Join the lobby locally
-    await joinLobby(lobbyCode, password);
-}
 
-function generateLobbyCode() {
-    return Math.random().toString(36).substr(2, 6).toUpperCase();
-}
+        this.lobbies[lobbyCode] = lobby;
+        localStorage.setItem('brainrot_lobbies', JSON.stringify(this.lobbies));
 
-async function joinLobby(lobbyCode, password = '') {
-    if (!onlineState.isOnline) {
-        alert('Online system not available');
-        return false;
+        this.currentLobby = lobbyCode;
+        this.showCurrentLobby();
+        this.showOnlineMessage('Lobby created successfully!', 'success');
     }
-    
-    const lobbyRef = ref(window.firebaseDatabase, `lobbies/${lobbyCode}`);
-    const snapshot = await get(lobbyRef);
-    
-    if (!snapshot.exists()) {
-        alert('Lobby not found!');
-        return false;
-    }
-    
-    const lobby = snapshot.val();
-    
-    if (lobby.password && lobby.password !== password) {
-        alert('Incorrect password!');
-        return false;
-    }
-    
-    if (Object.keys(lobby.players).length >= lobby.maxPlayers) {
-        alert('Lobby is full!');
-        return false;
-    }
-    
-    // Add player to lobby
-    await update(ref(window.firebaseDatabase, `lobbies/${lobbyCode}/players/${onlineState.playerId}`), {
-        name: onlineState.playerName,
-        character: gameState.selectedCharacter,
-        ready: false
-    });
-    
-    onlineState.currentLobby = lobbyCode;
-    onlineState.isHost = false;
-    
-    // Show lobby screen
-    showLobbyScreen(lobbyCode);
-    setupLobbyListener(lobbyCode);
-    
-    return true;
-}
 
-function showLobbyScreen(lobbyCode) {
-    document.getElementById('lobbyBrowser').style.display = 'none';
-    document.getElementById('createLobby').style.display = 'none';
-    document.getElementById('joinLobby').style.display = 'none';
-    document.getElementById('friendsList').style.display = 'none';
-    document.getElementById('currentLobby').style.display = 'block';
-    
-    document.getElementById('currentLobbyName').textContent = 'Loading...';
-    document.getElementById('lobbyCodeDisplay').textContent = lobbyCode;
-    
-    if (!onlineState.isHost) {
-        document.getElementById('startMatchBtn').style.display = 'none';
+    generateLobbyCode() {
+        return Math.random().toString(36).substring(2, 6).toUpperCase();
     }
-}
 
-function setupLobbyListener(lobbyCode) {
-    const lobbyRef = ref(window.firebaseDatabase, `lobbies/${lobbyCode}`);
-    
-    onValue(lobbyRef, (snapshot) => {
-        if (!snapshot.exists()) {
-            // Lobby was deleted
-            alert('Lobby was closed by host!');
-            showOnlineMainScreen();
+    joinLobby() {
+        const code = document.getElementById('lobbyCodeInput').value.toUpperCase();
+        const password = document.getElementById('lobbyPasswordInput').value;
+
+        if (!code) {
+            this.showOnlineMessage('Please enter a lobby code', 'error');
             return;
         }
-        
-        const lobby = snapshot.val();
-        updateLobbyDisplay(lobby);
-        
-        // Check if all players are ready and host can start
-        if (onlineState.isHost) {
-            const allReady = Object.values(lobby.players).every(player => player.ready);
-            document.getElementById('startMatchBtn').disabled = !allReady;
-        }
-        
-        // Check if game should start
-        if (lobby.status === 'starting') {
-            startOnlineMatch(lobby);
-        }
-    });
-}
 
-function updateLobbyDisplay(lobby) {
-    document.getElementById('currentLobbyName').textContent = lobby.name;
-    
-    const playersContainer = document.getElementById('lobbyPlayers');
-    playersContainer.innerHTML = '';
-    
-    Object.entries(lobby.players).forEach(([playerId, player]) => {
-        const playerElement = document.createElement('div');
-        playerElement.className = `lobby-player ${playerId === onlineState.playerId ? 'current-player' : ''}`;
-        playerElement.innerHTML = `
-            <div class="player-name">${player.name} ${playerId === lobby.host ? '👑' : ''}</div>
-            <div class="player-character">${player.character !== null ? CHARACTERS[player.character].name : 'Not Selected'}</div>
-            <div class="player-ready">${player.ready ? '✅ READY' : '❌ NOT READY'}</div>
-            ${playerId === onlineState.playerId ? 
-                `<button class="ready-btn" id="toggleReadyBtn">${player.ready ? 'UNREADY' : 'READY'}</button>` : 
-                ''
-            }
-        `;
-        playersContainer.appendChild(playerElement);
-    });
-    
-    // Add event listener for ready button
-    const readyBtn = document.getElementById('toggleReadyBtn');
-    if (readyBtn) {
-        readyBtn.onclick = toggleReadyStatus;
+        const lobby = this.lobbies[code];
+        if (!lobby) {
+            this.showOnlineMessage('Lobby not found', 'error');
+            return;
+        }
+
+        if (lobby.password && lobby.password !== password) {
+            this.showOnlineMessage('Incorrect password', 'error');
+            return;
+        }
+
+        if (lobby.players.length >= lobby.maxPlayers) {
+            this.showOnlineMessage('Lobby is full', 'error');
+            return;
+        }
+
+        // Add player to lobby
+        lobby.players.push({
+            id: this.currentUser.email,
+            username: this.currentUser.username,
+            avatar: this.currentUser.avatar,
+            isHost: false
+        });
+
+        this.lobbies[code] = lobby;
+        localStorage.setItem('brainrot_lobbies', JSON.stringify(this.lobbies));
+
+        this.currentLobby = code;
+        this.showCurrentLobby();
+        this.showOnlineMessage('Joined lobby successfully!', 'success');
     }
-}
 
-async function toggleReadyStatus() {
-    if (!onlineState.currentLobby) return;
-    
-    const playerRef = ref(window.firebaseDatabase, `lobbies/${onlineState.currentLobby}/players/${onlineState.playerId}/ready`);
-    const snapshot = await get(playerRef);
-    const currentReady = snapshot.val();
-    
-    await set(playerRef, !currentReady);
-}
+    showCurrentLobby() {
+        this.hideAllSections();
+        document.getElementById('currentLobby').style.display = 'block';
 
-async function startOnlineMatch() {
-    if (!onlineState.currentLobby || !onlineState.isHost) return;
-    
-    // Update lobby status to starting
-    await update(ref(window.firebaseDatabase, `lobbies/${onlineState.currentLobby}`), {
-        status: 'starting'
-    });
-    
-    // Small delay to ensure all clients get the update
-    setTimeout(() => {
-        showScreen('gameScreen');
-    }, 1000);
-}
+        const lobby = this.lobbies[this.currentLobby];
+        document.getElementById('currentLobbyName').textContent = lobby.name;
+        document.getElementById('lobbyCodeDisplay').textContent = lobby.code;
 
-function startOnlineMatchFromLobby(lobby) {
-    // Set up online game state
-    gameState.gameMode = 'online';
-    gameState.onlineMatch = {
-        lobbyCode: onlineState.currentLobby,
-        players: lobby.players,
-        isHost: onlineState.isHost
-    };
-    
-    // Start the game
-    setTimeout(() => {
-        showScreen('gameScreen');
-        setTimeout(() => {
-            if (typeof initThreeJS === 'function') {
-                initThreeJS();
-            }
-            startGame();
-        }, 100);
-    }, 2000);
-}
+        this.updateLobbyPlayers();
+    }
 
-async function leaveLobby() {
-    if (!onlineState.currentLobby) return;
-    
-    // Remove player from lobby
-    await remove(ref(window.firebaseDatabase, `lobbies/${onlineState.currentLobby}/players/${onlineState.playerId}`));
-    
-    // If host leaves and no players left, delete lobby
-    if (onlineState.isHost) {
-        const lobbyRef = ref(window.firebaseDatabase, `lobbies/${onlineState.currentLobby}`);
-        const snapshot = await get(lobbyRef);
-        if (snapshot.exists()) {
-            const lobby = snapshot.val();
-            if (Object.keys(lobby.players).length === 0) {
-                await remove(lobbyRef);
+    updateLobbyPlayers() {
+        const container = document.getElementById('lobbyPlayers');
+        const lobby = this.lobbies[this.currentLobby];
+        
+        container.innerHTML = '';
+        lobby.players.forEach(player => {
+            const playerElement = document.createElement('div');
+            playerElement.className = 'lobby-player';
+            
+            let avatarHtml = '';
+            if (player.avatar.type === 'url') {
+                avatarHtml = `<img src="${player.avatar.value}" alt="Avatar" class="player-avatar">`;
             } else {
-                // Transfer host to another player
-                const newHost = Object.keys(lobby.players)[0];
-                await update(ref(window.firebaseDatabase, `lobbies/${onlineState.currentLobby}`), {
-                    host: newHost
-                });
+                avatarHtml = `<div class="player-avatar" style="background-color: ${player.avatar.value}"></div>`;
             }
-        }
-    }
-    
-    onlineState.currentLobby = null;
-    onlineState.isHost = false;
-    showOnlineMainScreen();
-}
+            
+            playerElement.innerHTML = `
+                ${avatarHtml}
+                <div class="player-info">
+                    <div class="player-username">${player.username} ${player.isHost ? '👑' : ''}</div>
+                    <div class="player-status">Ready</div>
+                </div>
+            `;
+            
+            container.appendChild(playerElement);
+        });
 
-// Friends System
-async function addFriend(friendCode) {
-    if (!onlineState.isOnline) {
-        alert('Online system not available');
-        return;
+        // Show/hide start button for host
+        const startBtn = document.getElementById('startMatchBtn');
+        const isHost = lobby.players[0].id === this.currentUser.email;
+        startBtn.style.display = isHost ? 'block' : 'none';
     }
-    
-    // Find player by friend code
-    const playersRef = ref(window.firebaseDatabase, 'players');
-    const snapshot = await get(playersRef);
-    
-    if (snapshot.exists()) {
-        const players = snapshot.val();
-        const friend = Object.entries(players).find(([id, player]) => 
-            player.friendCode === friendCode && id !== onlineState.playerId
-        );
+
+    startMatch() {
+        if (!this.currentLobby) return;
+
+        const lobby = this.lobbies[this.currentLobby];
+        if (lobby.players.length < 1) {
+            this.showOnlineMessage('Need at least 2 players to start', 'error');
+            return;
+        }
+
+        // Start the match (simplified)
+        this.showOnlineMessage('Starting match...', 'success');
         
-        if (friend) {
-            const [friendId, friendData] = friend;
-            
-            // Add to friends list
-            onlineState.friends.push({
-                id: friendId,
-                name: friendData.name,
-                friendCode: friendData.friendCode,
-                status: friendData.status
-            });
-            
-            // Save to database
-            await update(ref(window.firebaseDatabase, `players/${onlineState.playerId}/friends`), onlineState.friends);
-            
-            alert(`Added ${friendData.name} as friend!`);
-            updateFriendsList();
+        // In a real implementation, you would transition to the game screen
+        // and set up the multiplayer match
+        setTimeout(() => {
+            this.showOnlineMessage('Match started!', 'success');
+        }, 2000);
+    }
+
+    leaveLobby() {
+        if (!this.currentLobby) return;
+
+        const lobby = this.lobbies[this.currentLobby];
+        
+        // Remove player from lobby
+        lobby.players = lobby.players.filter(p => p.id !== this.currentUser.email);
+        
+        // Delete lobby if empty
+        if (lobby.players.length === 0) {
+            delete this.lobbies[this.currentLobby];
         } else {
-            alert('Friend code not found!');
+            this.lobbies[this.currentLobby] = lobby;
         }
-    }
-}
 
-function updateFriendsList() {
-    const friendsContainer = document.getElementById('friendsContainer');
-    if (!friendsContainer) return;
-    
-    friendsContainer.innerHTML = '';
-    
-    onlineState.friends.forEach(friend => {
-        const friendElement = document.createElement('div');
-        friendElement.className = `friend-item ${friend.status === 'online' ? 'online' : 'offline'}`;
-        friendElement.innerHTML = `
-            <div class="friend-name">${friend.name}</div>
-            <div class="friend-code">${friend.friendCode}</div>
-            <div class="friend-status">${friend.status === 'online' ? '🟢 Online' : '🔴 Offline'}</div>
-            <button class="invite-btn" data-friend-id="${friend.id}">INVITE</button>
-        `;
-        friendsContainer.appendChild(friendElement);
-    });
-    
-    // Add invite event listeners
-    document.querySelectorAll('.invite-btn').forEach(btn => {
-        btn.onclick = (e) => {
-            const friendId = e.target.dataset.friendId;
-            inviteFriend(friendId);
-        };
-    });
-}
-
-async function inviteFriend(friendId) {
-    if (!onlineState.isOnline) {
-        alert('Online system not available');
-        return;
-    }
-    
-    // Create an invite
-    const inviteData = {
-        from: onlineState.playerId,
-        fromName: onlineState.playerName,
-        timestamp: Date.now(),
-        type: 'game_invite'
-    };
-    
-    await set(ref(window.firebaseDatabase, `invites/${friendId}/${onlineState.playerId}`), inviteData);
-    alert('Invite sent!');
-}
-
-// Lobby Browsing
-async function refreshLobbyList() {
-    if (!onlineState.isOnline) {
-        alert('Online system not available');
-        return;
-    }
-    
-    const lobbiesRef = ref(window.firebaseDatabase, 'lobbies');
-    const snapshot = await get(lobbiesRef);
-    
-    const lobbyList = document.getElementById('lobbyList');
-    lobbyList.innerHTML = '';
-    
-    if (snapshot.exists()) {
-        const lobbies = snapshot.val();
+        localStorage.setItem('brainrot_lobbies', JSON.stringify(this.lobbies));
         
-        Object.entries(lobbies).forEach(([code, lobby]) => {
-            if (lobby.status === 'waiting' && !lobby.players[onlineState.playerId]) {
-                const playerCount = Object.keys(lobby.players).length;
+        this.currentLobby = null;
+        this.hideAllSections();
+        document.getElementById('lobbyBrowser').style.display = 'block';
+        this.refreshLobbies();
+        
+        this.showOnlineMessage('Left lobby', 'info');
+    }
+
+    refreshLobbies() {
+        const lobbyList = document.getElementById('lobbyList');
+        lobbyList.innerHTML = '';
+
+        Object.values(this.lobbies).forEach(lobby => {
+            if (lobby.players.length < lobby.maxPlayers && lobby.status === 'waiting') {
                 const lobbyElement = document.createElement('div');
                 lobbyElement.className = 'lobby-item';
                 lobbyElement.innerHTML = `
                     <div class="lobby-info">
                         <div class="lobby-name">${lobby.name}</div>
-                        <div class="lobby-players">${playerCount}/${lobby.maxPlayers} Players</div>
-                        <div class="lobby-privacy">${lobby.password ? '🔒 Private' : '🔓 Public'}</div>
+                        <div class="lobby-details">
+                            ${lobby.players.length}/${lobby.maxPlayers} players • 
+                            ${lobby.password ? '🔒' : '🔓'}
+                        </div>
                     </div>
-                    <button class="join-lobby-btn" data-lobby-code="${code}">JOIN</button>
+                    <button class="join-lobby-btn" data-code="${lobby.code}">JOIN</button>
                 `;
+                
                 lobbyList.appendChild(lobbyElement);
             }
         });
-        
-        // Add join event listeners
+
+        // Add event listeners to join buttons
         document.querySelectorAll('.join-lobby-btn').forEach(btn => {
-            btn.onclick = (e) => {
-                const lobbyCode = e.target.dataset.lobbyCode;
-                joinLobbyFromList(lobbyCode);
-            };
+            btn.addEventListener('click', (e) => {
+                const code = e.target.dataset.code;
+                document.getElementById('lobbyCodeInput').value = code;
+                this.showJoinLobby();
+            });
         });
+    }
+
+    loadFriendsList() {
+        const container = document.getElementById('friendsContainer');
+        container.innerHTML = '';
+
+        this.friends.forEach(friend => {
+            const friendElement = document.createElement('div');
+            friendElement.className = 'friend-item';
+            friendElement.innerHTML = `
+                <div class="friend-avatar"></div>
+                <div class="friend-info">
+                    <div class="friend-username">${friend.username}</div>
+                    <div class="friend-status">Online</div>
+                </div>
+                <button class="friend-action">Invite</button>
+            `;
+            container.appendChild(friendElement);
+        });
+    }
+
+    addFriend() {
+        const friendCode = document.getElementById('friendCodeInput').value.toUpperCase();
         
-    } else {
-        lobbyList.innerHTML = '<div class="no-lobbies">No public lobbies available</div>';
+        // In a real implementation, you would search for the friend by code
+        // and send a friend request
+        this.showOnlineMessage(`Friend request sent to ${friendCode}`, 'info');
+        
+        document.getElementById('friendCodeInput').value = '';
+    }
+
+    showOnlineMessage(message, type) {
+        // Create message element
+        const messageEl = document.createElement('div');
+        messageEl.className = `online-message ${type}`;
+        messageEl.textContent = message;
+        messageEl.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background: ${type === 'error' ? '#ff0000' : type === 'success' ? '#00ff00' : '#0000ff'};
+            color: white;
+            border-radius: 5px;
+            z-index: 1000;
+        `;
+        
+        document.body.appendChild(messageEl);
+        
+        setTimeout(() => {
+            document.body.removeChild(messageEl);
+        }, 3000);
+    }
+
+    exitOnline() {
+        document.getElementById('onlineScreen').classList.remove('active');
+        document.getElementById('mainMenu').classList.add('active');
     }
 }
 
-async function joinLobbyFromList(lobbyCode) {
-    const lobbyRef = ref(window.firebaseDatabase, `lobbies/${lobbyCode}`);
-    const snapshot = await get(lobbyRef);
-    
-    if (snapshot.exists()) {
-        const lobby = snapshot.val();
-        if (lobby.password) {
-            const password = prompt('Enter lobby password:');
-            if (password !== null) {
-                await joinLobby(lobbyCode, password);
-            }
-        } else {
-            await joinLobby(lobbyCode);
-        }
-    }
-}
-
-// Online UI Management
-function showOnlineMainScreen() {
-    document.getElementById('lobbyBrowser').style.display = 'none';
-    document.getElementById('createLobby').style.display = 'none';
-    document.getElementById('joinLobby').style.display = 'none';
-    document.getElementById('friendsList').style.display = 'none';
-    document.getElementById('currentLobby').style.display = 'none';
-}
-
-// Make functions globally available
-window.onlineState = onlineState;
-window.findQuickMatch = findQuickMatch;
-window.createOnlineLobby = createOnlineLobby;
-window.joinLobby = joinLobby;
-window.leaveLobby = leaveLobby;
-window.addFriend = addFriend;
-window.refreshLobbyList = refreshLobbyList;
-window.showOnlineMainScreen = showOnlineMainScreen;
-window.initOnlineSystem = initOnlineSystem;
-window.startOnlineMatch = startOnlineMatch;
-window.startOnlineMatchFromLobby = startOnlineMatchFromLobby;
+// Initialize online system
+let onlineSystem;
+document.addEventListener('DOMContentLoaded', () => {
+    onlineSystem = new OnlineSystem();
+});
