@@ -7,41 +7,10 @@
     <link rel="stylesheet" href="css/style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/gsap.min.js"></script>
-    <!-- Firebase SDK -->
-    <script type="module" src="js/firebase.js"></script>
 </head>
 <body>
-    <!-- Login/Signup Screen -->
-    <div id="authScreen" class="screen active">
-        <div class="auth-content">
-            <div class="pixel-logo">BRAINROT FIGHTERS v4.6</div>
-            <div class="auth-form">
-                <input type="text" id="authEmail" placeholder="Email" class="auth-input">
-                <input type="password" id="authPassword" placeholder="Password" class="auth-input">
-                <input type="text" id="authUsername" placeholder="Username" class="auth-input">
-                <div class="auth-buttons">
-                    <button class="auth-btn" id="loginBtn">LOGIN</button>
-                    <button class="auth-btn" id="signupBtn">SIGN UP</button>
-                </div>
-                <div class="auth-status" id="authStatus"></div>
-            </div>
-            <div class="profile-setup" id="profileSetup" style="display: none;">
-                <h3>SETUP PROFILE</h3>
-                <div class="profile-avatar">
-                    <div class="avatar-preview" id="avatarPreview"></div>
-                    <div class="avatar-options">
-                        <input type="color" id="avatarColor" value="#ff0000">
-                        <input type="text" id="avatarUrl" placeholder="Custom Avatar URL (GIF supported)">
-                        <button class="nav-btn" id="saveAvatarBtn">SAVE AVATAR</button>
-                    </div>
-                </div>
-                <button class="nav-btn" id="continueToGameBtn">CONTINUE TO GAME</button>
-            </div>
-        </div>
-    </div>
-
     <!-- Device Detection -->
-    <div id="deviceDetection" class="screen">
+    <div id="deviceDetection" class="screen active">
         <div class="device-content">
             <div class="pixel-logo">BRAINROT FIGHTERS v4.6</div>
             <div class="device-type" id="deviceType">DETECTING DEVICE...</div>
@@ -70,10 +39,10 @@
             <h1 class="main-title">BRAINROT FIGHTERS v4.6</h1>
             <div class="user-profile">
                 <div class="profile-display">
-                    <img id="userAvatar" src="" alt="Avatar" class="user-avatar">
+                    <div class="user-avatar"></div>
                     <div class="user-info">
-                        <div id="userName">Player</div>
-                        <div class="user-coins">Coins: <span id="userCoins">0</span></div>
+                        <div>Player</div>
+                        <div class="user-coins">Coins: <span id="userCoins">1000</span></div>
                     </div>
                 </div>
             </div>
@@ -93,10 +62,19 @@
         </div>
     </div>
 
-    <!-- Admin Panel (Mobile) -->
-    <div id="adminPanelMobile" class="admin-panel-mobile">
-        <input type="text" id="adminCodeMobile" placeholder="Admin Code (231213)" class="admin-input">
-        <button class="admin-btn" id="adminSubmitMobile">SUBMIT</button>
+    <!-- Tiny Admin Panel -->
+    <div id="adminPanel" class="admin-panel">
+        <div class="admin-toggle">ADMIN</div>
+        <div class="admin-content" style="display: none;">
+            <input type="text" id="adminCode" placeholder="Code: 231213" class="admin-input">
+            <button class="admin-btn" id="adminSubmit">SUBMIT</button>
+            <div class="admin-features" id="adminFeatures" style="display: none;">
+                <button class="admin-feature-btn" id="infiniteCoinsBtn">INFINITE COINS</button>
+                <button class="admin-feature-btn" id="infiniteHpBtn">INFINITE HP</button>
+                <button class="admin-feature-btn" id="infiniteParryBtn">INFINITE PARRY</button>
+                <button class="admin-feature-btn" id="unlockAllBtn">UNLOCK ALL</button>
+            </div>
+        </div>
     </div>
 
     <!-- Online Multiplayer Screen -->
@@ -105,13 +83,12 @@
             <h1 class="main-title">ONLINE MULTIPLAYER</h1>
             <div class="online-status" id="onlineStatus">
                 <div class="status-offline">🔴 OFFLINE</div>
-                <div class="status-online" style="display: none;">🟢 ONLINE - <span id="playerName">Player</span></div>
+                <div class="status-online" style="display: none;">🟢 ONLINE</div>
             </div>
             
             <div class="online-options">
                 <button class="menu-btn" id="createLobbyBtn">CREATE LOBBY</button>
                 <button class="menu-btn" id="joinLobbyBtn">JOIN LOBBY</button>
-                <button class="menu-btn" id="friendsBtn">FRIENDS</button>
             </div>
 
             <!-- Lobby Browser -->
@@ -147,18 +124,6 @@
                 <button class="nav-btn" id="confirmJoinLobby">JOIN</button>
             </div>
 
-            <!-- Friends List -->
-            <div class="friends-list" id="friendsList" style="display: none;">
-                <h3>FRIENDS</h3>
-                <div class="friends-container" id="friendsContainer">
-                    <!-- Friends will be populated here -->
-                </div>
-                <div class="add-friend">
-                    <input type="text" id="friendCodeInput" placeholder="Friend Code">
-                    <button class="nav-btn" id="addFriendBtn">ADD FRIEND</button>
-                </div>
-            </div>
-
             <!-- Current Lobby -->
             <div class="current-lobby" id="currentLobby" style="display: none;">
                 <h3>LOBBY: <span id="currentLobbyName">Unknown</span></h3>
@@ -188,7 +153,7 @@
                         <option value="medium" selected>MEDIUM</option>
                         <option value="hard">HARD</option>
                         <option value="insane">INSANE</option>
-                        <!-- 67 BOSS option will be added dynamically when unlocked -->
+                        <option value="67boss">67 BOSS</option>
                     </select>
                 </div>
             </div>
@@ -201,14 +166,8 @@
                     <div class="char-name" id="previewName">SELECT BRAINROTTER</div>
                     <div class="char-style" id="previewStyle">-</div>
                     <div class="char-desc" id="previewDesc">Choose your brainrot warrior</div>
-                    <div class="boss-unlock" id="bossUnlockInfo" style="display: none; color: #ff0000; margin-top: 1rem; font-size: 0.9rem;">
-                        🔒 Defeat Insane mode with 67 to unlock 67 BOSS!
-                    </div>
-                    <div class="boss-unlocked" id="bossUnlockedInfo" style="display: none; color: #00ff00; margin-top: 1rem; font-size: 0.9rem;">
-                        ✅ 67 BOSS UNLOCKED! Select 67 character and 67 BOSS difficulty to fight!
-                    </div>
                     <div class="boss-warning" id="bossWarningInfo" style="display: none; color: #ff9900; margin-top: 1rem; font-size: 0.9rem; font-weight: bold;">
-                        ⚠️ 67 BOSS: SURVIVAL MODE - Boss stuns every 40s with 1% damage, Second Life at 20% HP!
+                        ⚠️ 67 BOSS: SURVIVAL MODE - Jump over platforms, 4s parry cooldown!
                     </div>
                 </div>
             </div>
@@ -274,7 +233,7 @@
         <div class="shop-content">
             <h1 class="main-title">BRAINROT SHOP</h1>
             <div class="shop-info">
-                <div class="coins-display">COINS: <span id="coinsAmount">0</span></div>
+                <div class="coins-display">COINS: <span id="coinsAmount">1000</span></div>
             </div>
             <div class="shop-categories">
                 <button class="category-btn active" data-category="backgrounds">BACKGROUNDS</button>
@@ -381,18 +340,18 @@
             <h1 class="main-title">UPDATE LOG</h1>
             <div class="updates-scroll">
                 <div class="update-version">
-                    <h3>v4.6.0 - PROFILE SYSTEM & ONLINE MULTIPLAYER</h3>
+                    <h3>v4.6.0 - STREAMLINED EDITION</h3>
                     <ul>
-                        <li>👤 PROFILE SYSTEM - Sign up/login with email, custom avatars (colors/GIFs)</li>
-                        <li>🌐 WORKING ONLINE MULTIPLAYER - Real lobbies and friends system</li>
+                        <li>🔧 TINY ADMIN PANEL - Minimal design in top-left corner</li>
+                        <li>🚫 REMOVED LOGIN/FRIENDS - Simplified user experience</li>
                         <li>🏞️ 67 BOSS FOREST STAGE - Jump over the boss in new forest environment</li>
                         <li>⏱️ 20-SECOND CUTSCENE - Extended 67 BOSS introduction</li>
                         <li>🛡️ 67 BOSS NERF - Parry cooldown reduced to 4 seconds</li>
                         <li>🎨 CUSTOM BACKGROUNDS - Color picker and URL backgrounds in shop</li>
-                        <li>🔧 ADMIN PANEL UPDATE - Code 231213, infinite coins, mobile textbox</li>
+                        <li>🔧 ADMIN PANEL UPDATE - Code 231213, infinite coins</li>
                         <li>🎯 PRACTICE MODE - Working training against AI</li>
                         <li>💰 INFINITE COINS - Admin feature for unlimited currency</li>
-                        <li>📱 MOBILE ADMIN - Text input for admin commands on mobile</li>
+                        <li>🌐 ONLINE MULTIPLAYER - Create and join lobbies</li>
                     </ul>
                 </div>
                 <div class="update-version">
@@ -401,15 +360,9 @@
                         <li>🔧 ADMIN PANEL - Enter code 231214 for admin features</li>
                         <li>♾️ Infinite Parry - No cooldown on parry attacks</li>
                         <li>❤️ Infinite HP - Never take damage</li>
-                        <li>🌍 Global Messages - Send messages to all players</li>
                         <li>🎨 CUSTOM BACKGROUNDS - 5 new background themes in shop</li>
                         <li>⏱️ 67 BOSS Extended - 19-second cutscene with more story</li>
                         <li>🔄 Second Life - Auto-revive at 20% HP in boss fights</li>
-                        <li>⚡ Boss Stun Phases - 1% damage during stun phases</li>
-                        <li>🎵 Music Sync - Boss fight lasts exactly 1:52 minutes</li>
-                        <li>🛡️ Enhanced Survival - Progressive difficulty over 112 seconds</li>
-                        <li>🎮 Improved Boss AI - Better attack patterns and movement</li>
-                        <li>✨ Visual Effects - New animations for all new features</li>
                     </ul>
                 </div>
             </div>
@@ -444,22 +397,6 @@
         <div id="cutsceneText">THE LEGEND OF 67...</div>
     </div>
 
-    <!-- Admin Panel Overlay -->
-    <div id="adminPanel" class="admin-panel" style="display: none;">
-        <div class="admin-content">
-            <h3>ADMIN PANEL</h3>
-            <input type="text" id="adminCode" placeholder="Enter Admin Code (231213)" class="admin-input">
-            <button class="admin-btn" id="adminSubmit">SUBMIT</button>
-            <div class="admin-features" id="adminFeatures" style="display: none;">
-                <button class="admin-feature-btn" id="infiniteCoinsBtn">INFINITE COINS</button>
-                <button class="admin-feature-btn" id="infiniteHpBtn">INFINITE HP</button>
-                <button class="admin-feature-btn" id="infiniteParryBtn">INFINITE PARRY</button>
-                <button class="admin-feature-btn" id="unlockAllBtn">UNLOCK ALL</button>
-                <button class="admin-feature-btn" id="globalMessageBtn">SEND GLOBAL MESSAGE</button>
-            </div>
-        </div>
-    </div>
-
     <!-- Audio Elements -->
     <audio id="bossMusic" loop>
         <source src="Finale.mp3" type="audio/mpeg">
@@ -472,490 +409,6 @@
     </audio>
 
     <!-- JavaScript Files -->
-    <script src="js/auth.js"></script>
-    <script src="js/characters.js"></script>
-    <script src="js/game.js"></script>
-    <script src="js/shop.js"></script>
-    <script src="js/online.js"></script>
-    <script src="js/threejs-renderer.js"></script>
-    <script src="js/touch-controls.js"></script>
-    <script src="js/admin.js"></script>
-</body>
-</html><!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Brainrot Fighters v4.6</title>
-    <link rel="stylesheet" href="css/style.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/gsap.min.js"></script>
-    <!-- Firebase SDK -->
-    <script type="module" src="js/firebase.js"></script>
-</head>
-<body>
-    <!-- Login/Signup Screen -->
-    <div id="authScreen" class="screen active">
-        <div class="auth-content">
-            <div class="pixel-logo">BRAINROT FIGHTERS v4.6</div>
-            <div class="auth-form">
-                <input type="text" id="authEmail" placeholder="Email" class="auth-input">
-                <input type="password" id="authPassword" placeholder="Password" class="auth-input">
-                <input type="text" id="authUsername" placeholder="Username" class="auth-input">
-                <div class="auth-buttons">
-                    <button class="auth-btn" id="loginBtn">LOGIN</button>
-                    <button class="auth-btn" id="signupBtn">SIGN UP</button>
-                </div>
-                <div class="auth-status" id="authStatus"></div>
-            </div>
-            <div class="profile-setup" id="profileSetup" style="display: none;">
-                <h3>SETUP PROFILE</h3>
-                <div class="profile-avatar">
-                    <div class="avatar-preview" id="avatarPreview"></div>
-                    <div class="avatar-options">
-                        <input type="color" id="avatarColor" value="#ff0000">
-                        <input type="text" id="avatarUrl" placeholder="Custom Avatar URL (GIF supported)">
-                        <button class="nav-btn" id="saveAvatarBtn">SAVE AVATAR</button>
-                    </div>
-                </div>
-                <button class="nav-btn" id="continueToGameBtn">CONTINUE TO GAME</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Device Detection -->
-    <div id="deviceDetection" class="screen">
-        <div class="device-content">
-            <div class="pixel-logo">BRAINROT FIGHTERS v4.6</div>
-            <div class="device-type" id="deviceType">DETECTING DEVICE...</div>
-            <div class="device-controls">
-                <button class="device-btn" id="forceTablet">TABLET MODE</button>
-                <button class="device-btn" id="forceDesktop">DESKTOP MODE</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Loading Screen -->
-    <div id="loading" class="screen">
-        <div class="loading-content">
-            <div class="pixel-logo">BRAINROT FIGHTERS v4.6</div>
-            <div class="loading-bar-container">
-                <div class="loading-bar" id="loadingBar"></div>
-            </div>
-            <div class="loading-text" id="loadingText">INITIALIZING BRAINROT ENGINE...</div>
-            <div class="tip">TIP: Spam combos for maximum brainrot!</div>
-        </div>
-    </div>
-
-    <!-- Main Menu -->
-    <div id="mainMenu" class="screen">
-        <div class="menu-content">
-            <h1 class="main-title">BRAINROT FIGHTERS v4.6</h1>
-            <div class="user-profile">
-                <div class="profile-display">
-                    <img id="userAvatar" src="" alt="Avatar" class="user-avatar">
-                    <div class="user-info">
-                        <div id="userName">Player</div>
-                        <div class="user-coins">Coins: <span id="userCoins">0</span></div>
-                    </div>
-                </div>
-            </div>
-            <div class="menu-options">
-                <button class="menu-btn" id="arcadeBtn">ARCADE MODE</button>
-                <button class="menu-btn" id="onlineBtn">ONLINE MODE</button>
-                <button class="menu-btn" id="practiceBtn">PRACTICE MODE</button>
-                <button class="menu-btn" id="shopBtn">SHOP</button>
-                <button class="menu-btn" id="controlsBtn">CONTROLS</button>
-                <button class="menu-btn" id="updatesBtn">UPDATE LOG</button>
-                <button class="menu-btn" id="creditsBtn">CREDITS</button>
-            </div>
-            <div class="menu-footer">
-                <div class="high-score">HIGH SCORE: <span id="highScore">0</span></div>
-                <div class="version">v4.6.0 | ULTIMATE BRAINROT EDITION</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Admin Panel (Mobile) -->
-    <div id="adminPanelMobile" class="admin-panel-mobile">
-        <input type="text" id="adminCodeMobile" placeholder="Admin Code (231213)" class="admin-input">
-        <button class="admin-btn" id="adminSubmitMobile">SUBMIT</button>
-    </div>
-
-    <!-- Online Multiplayer Screen -->
-    <div id="onlineScreen" class="screen">
-        <div class="online-content">
-            <h1 class="main-title">ONLINE MULTIPLAYER</h1>
-            <div class="online-status" id="onlineStatus">
-                <div class="status-offline">🔴 OFFLINE</div>
-                <div class="status-online" style="display: none;">🟢 ONLINE - <span id="playerName">Player</span></div>
-            </div>
-            
-            <div class="online-options">
-                <button class="menu-btn" id="createLobbyBtn">CREATE LOBBY</button>
-                <button class="menu-btn" id="joinLobbyBtn">JOIN LOBBY</button>
-                <button class="menu-btn" id="friendsBtn">FRIENDS</button>
-            </div>
-
-            <!-- Lobby Browser -->
-            <div class="lobby-browser" id="lobbyBrowser">
-                <h3>AVAILABLE LOBBIES</h3>
-                <div class="lobby-list" id="lobbyList">
-                    <!-- Lobbies will be populated here -->
-                </div>
-                <button class="nav-btn" id="refreshLobbiesBtn">REFRESH</button>
-            </div>
-
-            <!-- Create Lobby -->
-            <div class="create-lobby" id="createLobby" style="display: none;">
-                <h3>CREATE PRIVATE LOBBY</h3>
-                <div class="lobby-settings">
-                    <input type="text" id="lobbyName" placeholder="Lobby Name" maxlength="20">
-                    <input type="password" id="lobbyPassword" placeholder="Password (optional)">
-                    <select id="lobbyMaxPlayers">
-                        <option value="2">2 Players</option>
-                        <option value="4">4 Players (Tournament)</option>
-                    </select>
-                </div>
-                <button class="nav-btn" id="confirmCreateLobby">CREATE</button>
-            </div>
-
-            <!-- Join Lobby -->
-            <div class="join-lobby" id="joinLobby" style="display: none;">
-                <h3>JOIN LOBBY</h3>
-                <div class="join-settings">
-                    <input type="text" id="lobbyCodeInput" placeholder="Lobby Code">
-                    <input type="password" id="lobbyPasswordInput" placeholder="Password (if required)">
-                </div>
-                <button class="nav-btn" id="confirmJoinLobby">JOIN</button>
-            </div>
-
-            <!-- Friends List -->
-            <div class="friends-list" id="friendsList" style="display: none;">
-                <h3>FRIENDS</h3>
-                <div class="friends-container" id="friendsContainer">
-                    <!-- Friends will be populated here -->
-                </div>
-                <div class="add-friend">
-                    <input type="text" id="friendCodeInput" placeholder="Friend Code">
-                    <button class="nav-btn" id="addFriendBtn">ADD FRIEND</button>
-                </div>
-            </div>
-
-            <!-- Current Lobby -->
-            <div class="current-lobby" id="currentLobby" style="display: none;">
-                <h3>LOBBY: <span id="currentLobbyName">Unknown</span></h3>
-                <div class="lobby-players" id="lobbyPlayers">
-                    <!-- Players will be populated here -->
-                </div>
-                <div class="lobby-controls">
-                    <button class="nav-btn" id="startMatchBtn">START MATCH</button>
-                    <button class="nav-btn" id="leaveLobbyBtn">LEAVE LOBBY</button>
-                </div>
-                <div class="lobby-code">LOBBY CODE: <span id="lobbyCodeDisplay">XXXX</span></div>
-            </div>
-
-            <button class="nav-btn" id="onlineBackBtn">BACK TO MENU</button>
-        </div>
-    </div>
-
-    <!-- Character Selection -->
-    <div id="characterSelect" class="screen">
-        <div class="select-ui">
-            <div class="select-header">
-                <div class="player-tag">PLAYER 1</div>
-                <div class="select-title">CHOOSE YOUR BRAINROTTER</div>
-                <div class="difficulty-select">
-                    <select id="difficultySelect">
-                        <option value="easy">EASY</option>
-                        <option value="medium" selected>MEDIUM</option>
-                        <option value="hard">HARD</option>
-                        <option value="insane">INSANE</option>
-                        <!-- 67 BOSS option will be added dynamically when unlocked -->
-                    </select>
-                </div>
-            </div>
-            
-            <div class="character-grid" id="characterGrid"></div>
-            
-            <div class="character-preview">
-                <div class="preview-model" id="previewModel"></div>
-                <div class="character-info">
-                    <div class="char-name" id="previewName">SELECT BRAINROTTER</div>
-                    <div class="char-style" id="previewStyle">-</div>
-                    <div class="char-desc" id="previewDesc">Choose your brainrot warrior</div>
-                    <div class="boss-unlock" id="bossUnlockInfo" style="display: none; color: #ff0000; margin-top: 1rem; font-size: 0.9rem;">
-                        🔒 Defeat Insane mode with 67 to unlock 67 BOSS!
-                    </div>
-                    <div class="boss-unlocked" id="bossUnlockedInfo" style="display: none; color: #00ff00; margin-top: 1rem; font-size: 0.9rem;">
-                        ✅ 67 BOSS UNLOCKED! Select 67 character and 67 BOSS difficulty to fight!
-                    </div>
-                    <div class="boss-warning" id="bossWarningInfo" style="display: none; color: #ff9900; margin-top: 1rem; font-size: 0.9rem; font-weight: bold;">
-                        ⚠️ 67 BOSS: SURVIVAL MODE - Boss stuns every 40s with 1% damage, Second Life at 20% HP!
-                    </div>
-                </div>
-            </div>
-            
-            <div class="select-controls">
-                <button class="nav-btn" id="backBtn">BACK</button>
-                <button class="nav-btn confirm" id="confirmBtn" disabled>FIGHT!</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Game Screen -->
-    <div id="gameScreen" class="screen">
-        <canvas id="gameCanvas"></canvas>
-        <div class="hud">
-            <div class="player-hud">
-                <div class="player-name" id="p1Name">PLAYER</div>
-                <div class="health-container">
-                    <div class="health-bar" id="p1Health"></div>
-                    <div class="health-text" id="p1HealthText">100%</div>
-                </div>
-            </div>
-            
-            <div class="round-info">
-                <div class="round-text" id="roundText">ROUND 1</div>
-                <div class="timer" id="roundTimer">99</div>
-            </div>
-            
-            <div class="player-hud">
-                <div class="player-name" id="p2Name">CPU</div>
-                <div class="health-container">
-                    <div class="health-bar" id="p2Health"></div>
-                    <div class="health-text" id="p2HealthText">100%</div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Touch Controls for Tablet -->
-        <div id="touchControls" class="touch-controls">
-            <div class="touch-left">
-                <div class="movement-buttons">
-                    <button class="touch-btn movement-btn left" data-direction="left">←</button>
-                    <button class="touch-btn movement-btn right" data-direction="right">→</button>
-                    <button class="touch-btn jump-btn" data-action="jump">JUMP</button>
-                </div>
-            </div>
-            <div class="touch-right">
-                <div class="action-buttons">
-                    <button class="touch-btn punch" data-action="punch">PUNCH</button>
-                    <button class="touch-btn kick" data-action="kick">KICK</button>
-                    <button class="touch-btn special" data-action="special">COMBO</button>
-                    <button class="touch-btn parry" data-action="parry">PARRY</button>
-                </div>
-            </div>
-        </div>
-        
-        <div class="combo-display" id="comboDisplay">BRAINROT COMBO!</div>
-        <button class="nav-btn" id="exitBattleBtn">EXIT BATTLE</button>
-    </div>
-
-    <!-- Shop Screen -->
-    <div id="shopScreen" class="screen">
-        <div class="shop-content">
-            <h1 class="main-title">BRAINROT SHOP</h1>
-            <div class="shop-info">
-                <div class="coins-display">COINS: <span id="coinsAmount">0</span></div>
-            </div>
-            <div class="shop-categories">
-                <button class="category-btn active" data-category="backgrounds">BACKGROUNDS</button>
-                <button class="category-btn" data-category="characters">CHARACTERS</button>
-                <button class="category-btn" data-category="effects">EFFECTS</button>
-            </div>
-            <div class="shop-items" id="shopItems">
-                <!-- Background Customization -->
-                <div class="shop-section" id="backgroundSection">
-                    <h3>CUSTOM BACKGROUND</h3>
-                    <div class="background-customizer">
-                        <div class="color-picker">
-                            <label>Background Color:</label>
-                            <input type="color" id="bgColorPicker" value="#1a1a2e">
-                            <button class="nav-btn small" id="applyBgColor">APPLY COLOR</button>
-                        </div>
-                        <div class="url-picker">
-                            <label>Custom Background URL:</label>
-                            <input type="text" id="bgUrlInput" placeholder="https://example.com/background.jpg">
-                            <button class="nav-btn small" id="applyBgUrl">APPLY URL</button>
-                        </div>
-                        <div class="bg-preview" id="bgPreview">
-                            <div class="preview-text">PREVIEW</div>
-                        </div>
-                    </div>
-                    <div class="purchase-options">
-                        <button class="menu-btn" id="purchaseBgColor" data-price="100">UNLOCK COLOR PICKER - 100 COINS</button>
-                        <button class="menu-btn" id="purchaseBgUrl" data-price="500">UNLOCK CUSTOM URL - 500 COINS</button>
-                    </div>
-                </div>
-            </div>
-            <button class="nav-btn" id="shopBackBtn">BACK TO MENU</button>
-        </div>
-    </div>
-
-    <!-- Controls Screen -->
-    <div id="controlsScreen" class="screen">
-        <div class="controls-content">
-            <div class="controls-header">CONTROLS & MOVES</div>
-            
-            <div class="controls-scroll">
-                <div class="controls-grid">
-                    <div class="control-group">
-                        <div class="control-title">BASIC CONTROLS</div>
-                        <div class="control-item">
-                            <div class="control-key">← →</div>
-                            <div class="control-action">Move Left/Right</div>
-                        </div>
-                        <div class="control-item">
-                            <div class="control-key">↑</div>
-                            <div class="control-action">Jump (67 BOSS Forest Only)</div>
-                        </div>
-                        <div class="control-item">
-                            <div class="control-key">Z</div>
-                            <div class="control-action">Left Punch</div>
-                        </div>
-                        <div class="control-item">
-                            <div class="control-key">X</div>
-                            <div class="control-action">Right Punch</div>
-                        </div>
-                        <div class="control-item">
-                            <div class="control-key">A</div>
-                            <div class="control-action">Left Kick</div>
-                        </div>
-                        <div class="control-item">
-                            <div class="control-key">S</div>
-                            <div class="control-action">Right Kick</div>
-                        </div>
-                        <div class="control-item">
-                            <div class="control-key">SPACE</div>
-                            <div class="control-action">Parry (+10% HP, 20% Damage, 4s Cooldown for 67 BOSS)</div>
-                        </div>
-                        <div class="control-item">
-                            <div class="control-key">C</div>
-                            <div class="control-action">Special Combo</div>
-                        </div>
-                    </div>
-                    
-                    <div class="control-group">
-                        <div class="control-title">BRAINROT COMBOS</div>
-                        <ul class="combo-list">
-                            <li class="combo-item">→ → + Z : Dragon Uppercut</li>
-                            <li class="combo-item">↓ → + X : Fireball</li>
-                            <li class="combo-item">Z + X : Double Punch</li>
-                            <li class="combo-item">A + S : Spin Kick</li>
-                            <li class="combo-item">↓ ↓ + A : Low Sweep</li>
-                            <li class="combo-item">← ← + S : Back Kick</li>
-                            <li class="combo-item">Z → X → A : ULTIMATE BRAINROT</li>
-                            <li class="combo-item">SPAM ANY BUTTONS : RANDOM BRAINROT</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="controls-footer">
-                <button class="nav-btn" id="controlsBackBtn">BACK TO MAIN MENU</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Update Log Screen -->
-    <div id="updatesScreen" class="screen">
-        <div class="updates-content">
-            <h1 class="main-title">UPDATE LOG</h1>
-            <div class="updates-scroll">
-                <div class="update-version">
-                    <h3>v4.6.0 - PROFILE SYSTEM & ONLINE MULTIPLAYER</h3>
-                    <ul>
-                        <li>👤 PROFILE SYSTEM - Sign up/login with email, custom avatars (colors/GIFs)</li>
-                        <li>🌐 WORKING ONLINE MULTIPLAYER - Real lobbies and friends system</li>
-                        <li>🏞️ 67 BOSS FOREST STAGE - Jump over the boss in new forest environment</li>
-                        <li>⏱️ 20-SECOND CUTSCENE - Extended 67 BOSS introduction</li>
-                        <li>🛡️ 67 BOSS NERF - Parry cooldown reduced to 4 seconds</li>
-                        <li>🎨 CUSTOM BACKGROUNDS - Color picker and URL backgrounds in shop</li>
-                        <li>🔧 ADMIN PANEL UPDATE - Code 231213, infinite coins, mobile textbox</li>
-                        <li>🎯 PRACTICE MODE - Working training against AI</li>
-                        <li>💰 INFINITE COINS - Admin feature for unlimited currency</li>
-                        <li>📱 MOBILE ADMIN - Text input for admin commands on mobile</li>
-                    </ul>
-                </div>
-                <div class="update-version">
-                    <h3>v4.5.0 - ADMIN PANEL & CUSTOM BACKGROUNDS</h3>
-                    <ul>
-                        <li>🔧 ADMIN PANEL - Enter code 231214 for admin features</li>
-                        <li>♾️ Infinite Parry - No cooldown on parry attacks</li>
-                        <li>❤️ Infinite HP - Never take damage</li>
-                        <li>🌍 Global Messages - Send messages to all players</li>
-                        <li>🎨 CUSTOM BACKGROUNDS - 5 new background themes in shop</li>
-                        <li>⏱️ 67 BOSS Extended - 19-second cutscene with more story</li>
-                        <li>🔄 Second Life - Auto-revive at 20% HP in boss fights</li>
-                        <li>⚡ Boss Stun Phases - 1% damage during stun phases</li>
-                        <li>🎵 Music Sync - Boss fight lasts exactly 1:52 minutes</li>
-                        <li>🛡️ Enhanced Survival - Progressive difficulty over 112 seconds</li>
-                        <li>🎮 Improved Boss AI - Better attack patterns and movement</li>
-                        <li>✨ Visual Effects - New animations for all new features</li>
-                    </ul>
-                </div>
-            </div>
-            <button class="nav-btn" id="updatesBackBtn">BACK TO MENU</button>
-        </div>
-    </div>
-
-    <!-- Credits Screen -->
-    <div id="creditsScreen" class="screen">
-        <div class="credits-content">
-            <h1 class="main-title">CREDITS</h1>
-            <div class="credits-list">
-                <div class="credit-item">
-                    <div class="credit-name">IAN</div>
-                    <div class="credit-role">Director And Idea Management team</div>
-                </div>
-                <div class="credit-item">
-                    <div class="credit-name">ZIAD</div>
-                    <div class="credit-role">AI Programming & Combat System</div>
-                </div>
-                <div class="credit-item">
-                    <div class="credit-name">AAHIL</div>
-                    <div class="credit-role">3D Graphics & Big Improvement</div>
-                </div>
-            </div>
-            <button class="nav-btn" id="creditsBackBtn">BACK TO MENU</button>
-        </div>
-    </div>
-
-    <!-- Cutscene Overlay -->
-    <div id="cutsceneOverlay" class="screen" style="display: none;">
-        <div id="cutsceneText">THE LEGEND OF 67...</div>
-    </div>
-
-    <!-- Admin Panel Overlay -->
-    <div id="adminPanel" class="admin-panel" style="display: none;">
-        <div class="admin-content">
-            <h3>ADMIN PANEL</h3>
-            <input type="text" id="adminCode" placeholder="Enter Admin Code (231213)" class="admin-input">
-            <button class="admin-btn" id="adminSubmit">SUBMIT</button>
-            <div class="admin-features" id="adminFeatures" style="display: none;">
-                <button class="admin-feature-btn" id="infiniteCoinsBtn">INFINITE COINS</button>
-                <button class="admin-feature-btn" id="infiniteHpBtn">INFINITE HP</button>
-                <button class="admin-feature-btn" id="infiniteParryBtn">INFINITE PARRY</button>
-                <button class="admin-feature-btn" id="unlockAllBtn">UNLOCK ALL</button>
-                <button class="admin-feature-btn" id="globalMessageBtn">SEND GLOBAL MESSAGE</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Audio Elements -->
-    <audio id="bossMusic" loop>
-        <source src="Finale.mp3" type="audio/mpeg">
-        Your browser does not support the audio element.
-    </audio>
-    
-    <audio id="menuMusic" loop>
-        <source src="Menu.mp3" type="audio/mpeg">
-        Your browser does not support the audio element.
-    </audio>
-
-    <!-- JavaScript Files -->
-    <script src="js/auth.js"></script>
     <script src="js/characters.js"></script>
     <script src="js/game.js"></script>
     <script src="js/shop.js"></script>
