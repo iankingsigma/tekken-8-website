@@ -1,4 +1,4 @@
-// Admin Panel System
+// Admin Panel System - Tiny Version
 class AdminSystem {
     constructor() {
         this.adminCode = '231213';
@@ -8,18 +8,17 @@ class AdminSystem {
 
     init() {
         this.setupEventListeners();
-        this.setupMobileAdmin();
     }
 
     setupEventListeners() {
-        // Desktop admin panel
-        document.getElementById('adminSubmit').addEventListener('click', () => {
-            this.checkAdminCode();
+        // Admin panel toggle
+        document.querySelector('.admin-toggle').addEventListener('click', () => {
+            this.toggleAdminPanel();
         });
 
-        // Mobile admin panel
-        document.getElementById('adminSubmitMobile').addEventListener('click', () => {
-            this.checkAdminCodeMobile();
+        // Admin code submission
+        document.getElementById('adminSubmit').addEventListener('click', () => {
+            this.checkAdminCode();
         });
 
         // Admin features
@@ -39,10 +38,6 @@ class AdminSystem {
             this.unlockAll();
         });
 
-        document.getElementById('globalMessageBtn').addEventListener('click', () => {
-            this.sendGlobalMessage();
-        });
-
         // Keyboard shortcut for admin panel (Ctrl+Shift+A)
         document.addEventListener('keydown', (e) => {
             if (e.ctrlKey && e.shiftKey && e.key === 'A') {
@@ -52,23 +47,12 @@ class AdminSystem {
         });
     }
 
-    setupMobileAdmin() {
-        // Show mobile admin panel on mobile devices
-        if (this.isMobileDevice()) {
-            document.getElementById('adminPanelMobile').style.display = 'block';
-        }
-    }
-
-    isMobileDevice() {
-        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    }
-
     toggleAdminPanel() {
-        const panel = document.getElementById('adminPanel');
-        if (panel.style.display === 'none') {
-            panel.style.display = 'block';
+        const content = document.querySelector('.admin-content');
+        if (content.style.display === 'none') {
+            content.style.display = 'block';
         } else {
-            panel.style.display = 'none';
+            content.style.display = 'none';
         }
     }
 
@@ -79,38 +63,17 @@ class AdminSystem {
             document.getElementById('adminFeatures').style.display = 'block';
             this.showAdminMessage('Admin access granted!', 'success');
         } else {
-            this.showAdminMessage('Invalid admin code!', 'error');
+            this.showAdminMessage('Invalid code!', 'error');
         }
-    }
-
-    checkAdminCodeMobile() {
-        const code = document.getElementById('adminCodeMobile').value;
-        if (code === this.adminCode) {
-            this.isAdmin = true;
-            this.showAdminMessage('Admin access granted! Features activated.', 'success');
-            this.enableAllAdminFeatures();
-        } else {
-            this.showAdminMessage('Invalid admin code!', 'error');
-        }
-    }
-
-    enableAllAdminFeatures() {
-        this.enableInfiniteCoins();
-        this.enableInfiniteHP();
-        this.enableInfiniteParry();
-        this.unlockAll();
     }
 
     enableInfiniteCoins() {
-        const user = authSystem.getUser();
-        if (user) {
-            authSystem.updateUserCoins(999999);
-            this.showAdminMessage('Infinite coins activated!', 'success');
-        }
+        document.getElementById('userCoins').textContent = '999999';
+        document.getElementById('coinsAmount').textContent = '999999';
+        this.showAdminMessage('Infinite coins activated!', 'success');
     }
 
     enableInfiniteHP() {
-        // This would be implemented in the game system
         if (gameSystem) {
             gameSystem.infiniteHP = true;
             this.showAdminMessage('Infinite HP activated!', 'success');
@@ -118,7 +81,6 @@ class AdminSystem {
     }
 
     enableInfiniteParry() {
-        // This would be implemented in the game system
         if (gameSystem) {
             gameSystem.infiniteParry = true;
             this.showAdminMessage('Infinite Parry activated!', 'success');
@@ -126,50 +88,22 @@ class AdminSystem {
     }
 
     unlockAll() {
-        const user = authSystem.getUser();
-        if (user) {
-            user.unlockedCharacters = ['67', '41', '21', '201', '67boss'];
-            user.unlockedBackgrounds = ['color', 'url'];
-            authSystem.updateUser(user);
-            this.showAdminMessage('All content unlocked!', 'success');
+        // Unlock all characters and backgrounds
+        const difficultySelect = document.getElementById('difficultySelect');
+        if (!difficultySelect.querySelector('option[value="67boss"]')) {
+            const bossOption = document.createElement('option');
+            bossOption.value = '67boss';
+            bossOption.textContent = '67 BOSS';
+            difficultySelect.appendChild(bossOption);
         }
-    }
-
-    sendGlobalMessage() {
-        const message = prompt('Enter global message:');
-        if (message) {
-            // In a real implementation, this would send to all online players
-            this.showGlobalMessage(message);
-        }
-    }
-
-    showGlobalMessage(message) {
-        const messageEl = document.createElement('div');
-        messageEl.className = 'global-message';
-        messageEl.innerHTML = `
-            <div class="global-message-content">
-                <strong>ADMIN MESSAGE:</strong> ${message}
-            </div>
-        `;
-        messageEl.style.cssText = `
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0,0,0,0.9);
-            color: #ff0000;
-            padding: 20px;
-            border-radius: 10px;
-            z-index: 10000;
-            font-size: 24px;
-            text-align: center;
-        `;
         
-        document.body.appendChild(messageEl);
+        // Unlock shop items
+        document.getElementById('purchaseBgColor').style.display = 'none';
+        document.getElementById('purchaseBgUrl').style.display = 'none';
+        document.querySelector('.color-picker').style.display = 'block';
+        document.querySelector('.url-picker').style.display = 'block';
         
-        setTimeout(() => {
-            document.body.removeChild(messageEl);
-        }, 5000);
+        this.showAdminMessage('All content unlocked!', 'success');
     }
 
     showAdminMessage(message, type) {
@@ -178,21 +112,24 @@ class AdminSystem {
         messageEl.textContent = message;
         messageEl.style.cssText = `
             position: fixed;
-            top: 20px;
+            top: 50%;
             left: 50%;
-            transform: translateX(-50%);
-            padding: 10px 20px;
+            transform: translate(-50%, -50%);
+            padding: 15px 30px;
             background: ${type === 'error' ? '#ff0000' : '#00ff00'};
-            color: white;
-            border-radius: 5px;
-            z-index: 1000;
+            color: ${type === 'error' ? 'white' : 'black'};
+            border-radius: 8px;
+            z-index: 10000;
+            font-weight: bold;
+            font-size: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
         `;
         
         document.body.appendChild(messageEl);
         
         setTimeout(() => {
             document.body.removeChild(messageEl);
-        }, 3000);
+        }, 2000);
     }
 }
 
