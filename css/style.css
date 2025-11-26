@@ -403,97 +403,91 @@ body {
     font-style: italic;
 }
 
-/* Admin Panel Styles */
+/* Brainrot Fighters v4.6 - COMPLETE STYLESHEET */
+/* Only showing the updated admin panel styles - keep all other styles the same */
+
+/* Tiny Admin Panel */
 .admin-panel {
     position: fixed;
-    top: 20px;
-    left: 20px;
-    background: rgba(0, 0, 0, 0.95);
-    padding: 20px;
-    border-radius: 15px;
-    z-index: 1000;
-    border: 3px solid var(--error-color);
-    box-shadow: 0 10px 30px rgba(255, 0, 0, 0.3);
-    display: none;
-    max-width: 300px;
+    top: 10px;
+    left: 10px;
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 8px;
+    z-index: 10000;
+    border: 2px solid #ff0000;
+    box-shadow: 0 4px 12px rgba(255, 0, 0, 0.3);
+    font-size: 12px;
+    max-width: 180px;
+    transition: all 0.3s ease;
+    overflow: hidden;
 }
 
-.admin-panel-mobile {
-    position: fixed;
-    bottom: 20px;
-    left: 20px;
-    right: 20px;
-    background: rgba(0, 0, 0, 0.95);
-    padding: 15px;
-    border-radius: 15px;
-    z-index: 1000;
-    border: 3px solid var(--error-color);
-    box-shadow: 0 10px 30px rgba(255, 0, 0, 0.3);
-    display: none;
-}
-
-.admin-content h3 {
-    color: var(--error-color);
-    margin-bottom: 15px;
+.admin-toggle {
+    padding: 6px 10px;
+    background: #ff0000;
+    color: white;
+    cursor: pointer;
+    font-weight: bold;
     text-align: center;
-    font-size: 1.3rem;
+    font-size: 11px;
+    border-bottom: 1px solid #cc0000;
+}
+
+.admin-content {
+    padding: 8px;
 }
 
 .admin-input {
     width: 100%;
-    padding: 12px;
-    margin: 8px 0;
+    padding: 6px;
+    margin: 4px 0;
     background: #333;
-    border: 2px solid #666;
+    border: 1px solid #666;
     color: white;
-    border-radius: var(--border-radius);
+    border-radius: 4px;
+    font-size: 11px;
     font-family: 'Courier New', monospace;
-    font-size: 1rem;
 }
 
 .admin-btn {
-    background: var(--error-color);
+    background: #ff0000;
     color: white;
     border: none;
-    padding: 12px 20px;
-    margin: 10px 0;
-    border-radius: var(--border-radius);
+    padding: 6px 10px;
+    margin: 4px 0;
+    border-radius: 4px;
     cursor: pointer;
     width: 100%;
+    font-size: 11px;
     font-family: 'Courier New', monospace;
     font-weight: bold;
-    transition: var(--transition);
+    transition: background 0.2s ease;
 }
 
 .admin-btn:hover {
     background: #cc0000;
-    transform: translateY(-2px);
 }
 
 .admin-features {
-    margin-top: 15px;
-    display: none;
+    margin-top: 8px;
 }
 
 .admin-feature-btn {
     background: #444;
     color: white;
     border: none;
-    padding: 12px 15px;
-    margin: 8px 0;
-    border-radius: var(--border-radius);
+    padding: 5px 8px;
+    margin: 3px 0;
+    border-radius: 3px;
     cursor: pointer;
     width: 100%;
-    font-size: 0.9rem;
+    font-size: 10px;
     font-family: 'Courier New', monospace;
-    transition: var(--transition);
-    border: 2px solid transparent;
+    transition: background 0.2s ease;
 }
 
 .admin-feature-btn:hover {
     background: #666;
-    border-color: var(--accent-color);
-    transform: translateY(-2px);
 }
 
 /* Online Screen Styles */
