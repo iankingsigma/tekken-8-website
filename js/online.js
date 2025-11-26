@@ -1,9 +1,7 @@
-// Updated Online System with Working Multiplayer
+// Updated Online System - No Friends Feature
 class OnlineSystem {
     constructor() {
-        this.currentUser = null;
         this.lobbies = JSON.parse(localStorage.getItem('brainrot_lobbies')) || {};
-        this.friends = {};
         this.currentLobby = null;
         
         this.init();
@@ -11,7 +9,6 @@ class OnlineSystem {
 
     init() {
         this.setupEventListeners();
-        this.loadOnlineData();
     }
 
     setupEventListeners() {
@@ -28,20 +25,12 @@ class OnlineSystem {
             this.showJoinLobby();
         });
 
-        document.getElementById('friendsBtn').addEventListener('click', () => {
-            this.showFriendsList();
-        });
-
         document.getElementById('confirmCreateLobby').addEventListener('click', () => {
             this.createLobby();
         });
 
         document.getElementById('confirmJoinLobby').addEventListener('click', () => {
             this.joinLobby();
-        });
-
-        document.getElementById('addFriendBtn').addEventListener('click', () => {
-            this.addFriend();
         });
 
         document.getElementById('startMatchBtn').addEventListener('click', () => {
@@ -61,34 +50,18 @@ class OnlineSystem {
         });
     }
 
-    loadOnlineData() {
-        this.currentUser = authSystem.getUser();
-        if (this.currentUser) {
-            this.friends = this.currentUser.friends || [];
-        }
-    }
-
     showOnlineScreen() {
         document.getElementById('mainMenu').classList.remove('active');
         document.getElementById('onlineScreen').classList.add('active');
         
-        // Update online status
         this.updateOnlineStatus();
         this.refreshLobbies();
     }
 
     updateOnlineStatus() {
-        const offlineStatus = document.querySelector('.status-offline');
-        const onlineStatus = document.querySelector('.status-online');
-        
-        if (this.currentUser) {
-            offlineStatus.style.display = 'none';
-            onlineStatus.style.display = 'block';
-            document.getElementById('playerName').textContent = this.currentUser.username;
-        } else {
-            offlineStatus.style.display = 'block';
-            onlineStatus.style.display = 'none';
-        }
+        // Simple online status
+        document.querySelector('.status-offline').style.display = 'block';
+        document.querySelector('.status-online').style.display = 'none';
     }
 
     showCreateLobby() {
@@ -101,17 +74,10 @@ class OnlineSystem {
         document.getElementById('joinLobby').style.display = 'block';
     }
 
-    showFriendsList() {
-        this.hideAllSections();
-        document.getElementById('friendsList').style.display = 'block';
-        this.loadFriendsList();
-    }
-
     hideAllSections() {
         document.getElementById('lobbyBrowser').style.display = 'none';
         document.getElementById('createLobby').style.display = 'none';
         document.getElementById('joinLobby').style.display = 'none';
-        document.getElementById('friendsList').style.display = 'none';
         document.getElementById('currentLobby').style.display = 'none';
     }
 
@@ -131,12 +97,7 @@ class OnlineSystem {
             name: name,
             password: password,
             maxPlayers: parseInt(maxPlayers),
-            players: [{
-                id: this.currentUser.email,
-                username: this.currentUser.username,
-                avatar: this.currentUser.avatar,
-                isHost: true
-            }],
+            players: ['Player 1'],
             status: 'waiting',
             createdAt: new Date().toISOString()
         };
@@ -179,12 +140,7 @@ class OnlineSystem {
         }
 
         // Add player to lobby
-        lobby.players.push({
-            id: this.currentUser.email,
-            username: this.currentUser.username,
-            avatar: this.currentUser.avatar,
-            isHost: false
-        });
+        lobby.players.push('Player ' + (lobby.players.length + 1));
 
         this.lobbies[code] = lobby;
         localStorage.setItem('brainrot_lobbies', JSON.stringify(this.lobbies));
@@ -210,32 +166,22 @@ class OnlineSystem {
         const lobby = this.lobbies[this.currentLobby];
         
         container.innerHTML = '';
-        lobby.players.forEach(player => {
+        lobby.players.forEach((player, index) => {
             const playerElement = document.createElement('div');
             playerElement.className = 'lobby-player';
-            
-            let avatarHtml = '';
-            if (player.avatar.type === 'url') {
-                avatarHtml = `<img src="${player.avatar.value}" alt="Avatar" class="player-avatar">`;
-            } else {
-                avatarHtml = `<div class="player-avatar" style="background-color: ${player.avatar.value}"></div>`;
-            }
-            
             playerElement.innerHTML = `
-                ${avatarHtml}
+                <div class="player-avatar"></div>
                 <div class="player-info">
-                    <div class="player-username">${player.username} ${player.isHost ? '👑' : ''}</div>
+                    <div class="player-username">${player} ${index === 0 ? '👑' : ''}</div>
                     <div class="player-status">Ready</div>
                 </div>
             `;
-            
             container.appendChild(playerElement);
         });
 
         // Show/hide start button for host
         const startBtn = document.getElementById('startMatchBtn');
-        const isHost = lobby.players[0].id === this.currentUser.email;
-        startBtn.style.display = isHost ? 'block' : 'none';
+        startBtn.style.display = 'block';
     }
 
     startMatch() {
@@ -247,11 +193,9 @@ class OnlineSystem {
             return;
         }
 
-        // Start the match (simplified)
         this.showOnlineMessage('Starting match...', 'success');
         
         // In a real implementation, you would transition to the game screen
-        // and set up the multiplayer match
         setTimeout(() => {
             this.showOnlineMessage('Match started!', 'success');
         }, 2000);
@@ -262,14 +206,12 @@ class OnlineSystem {
 
         const lobby = this.lobbies[this.currentLobby];
         
-        // Remove player from lobby
-        lobby.players = lobby.players.filter(p => p.id !== this.currentUser.email);
-        
-        // Delete lobby if empty
-        if (lobby.players.length === 0) {
-            delete this.lobbies[this.currentLobby];
-        } else {
+        // Remove player from lobby (simplified)
+        if (lobby.players.length > 1) {
+            lobby.players.pop();
             this.lobbies[this.currentLobby] = lobby;
+        } else {
+            delete this.lobbies[this.currentLobby];
         }
 
         localStorage.setItem('brainrot_lobbies', JSON.stringify(this.lobbies));
@@ -315,37 +257,7 @@ class OnlineSystem {
         });
     }
 
-    loadFriendsList() {
-        const container = document.getElementById('friendsContainer');
-        container.innerHTML = '';
-
-        this.friends.forEach(friend => {
-            const friendElement = document.createElement('div');
-            friendElement.className = 'friend-item';
-            friendElement.innerHTML = `
-                <div class="friend-avatar"></div>
-                <div class="friend-info">
-                    <div class="friend-username">${friend.username}</div>
-                    <div class="friend-status">Online</div>
-                </div>
-                <button class="friend-action">Invite</button>
-            `;
-            container.appendChild(friendElement);
-        });
-    }
-
-    addFriend() {
-        const friendCode = document.getElementById('friendCodeInput').value.toUpperCase();
-        
-        // In a real implementation, you would search for the friend by code
-        // and send a friend request
-        this.showOnlineMessage(`Friend request sent to ${friendCode}`, 'info');
-        
-        document.getElementById('friendCodeInput').value = '';
-    }
-
     showOnlineMessage(message, type) {
-        // Create message element
         const messageEl = document.createElement('div');
         messageEl.className = `online-message ${type}`;
         messageEl.textContent = message;
