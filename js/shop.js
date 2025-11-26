@@ -1,364 +1,225 @@
-// Shop System - FIXED AND WORKING v4.0
-const SHOP_ITEMS = [
-    {
-        id: 'damageBoost',
-        name: 'Damage Boost',
-        description: 'Permanently increase your damage by 20%',
-        price: 100,
-        type: 'permanent',
-        effect: 'damage'
-    },
-    {
-        id: 'healthBoost',
-        name: 'Health Boost',
-        description: 'Permanently increase your health by 15%',
-        price: 150,
-        type: 'permanent',
-        effect: 'health'
-    },
-    {
-        id: 'comboMaster',
-        name: 'Combo Master',
-        description: 'Combo damage increased by 25%',
-        price: 200,
-        type: 'permanent',
-        effect: 'combo'
-    },
-    {
-        id: 'parryCharm',
-        name: 'Parry Charm',
-        description: 'Reduces CPU parry chance by 20%',
-        price: 120,
-        type: 'permanent',
-        effect: 'parry'
-    },
-    {
-        id: 'doubleCoins',
-        name: 'Double Coins',
-        description: 'Earn double coins for 5 matches',
-        price: 80,
-        type: 'temporary',
-        duration: 5,
-        effect: 'coins'
-    },
-    {
-        id: 'bossUnlock',
-        name: '67 BOSS Unlock',
-        description: 'Instantly unlock 67 BOSS mode',
-        price: 500,
-        type: 'permanent',
-        effect: 'boss'
-    },
-    {
-        id: 'bgSpace',
-        name: 'Space Background',
-        description: 'Unlock cosmic space background theme',
-        price: 300,
-        type: 'permanent',
-        effect: 'background',
-        bgId: 'space'
-    },
-    {
-        id: 'bgNeon',
-        name: 'Neon City Background',
-        description: 'Unlock vibrant neon city background',
-        price: 350,
-        type: 'permanent',
-        effect: 'background',
-        bgId: 'neon'
-    },
-    {
-        id: 'bgMatrix',
-        name: 'Matrix Background',
-        description: 'Unlock digital matrix code background',
-        price: 400,
-        type: 'permanent',
-        effect: 'background',
-        bgId: 'matrix'
-    },
-    {
-        id: 'bgFire',
-        name: 'Fire Arena Background',
-        description: 'Unlock fiery lava arena background',
-        price: 450,
-        type: 'permanent',
-        effect: 'background',
-        bgId: 'fire'
-    },
-    {
-        id: 'bgIce',
-        name: 'Ice Palace Background',
-        description: 'Unlock frozen ice palace background',
-        price: 450,
-        type: 'permanent',
-        effect: 'background',
-        bgId: 'ice'
-    }
-];
-
-// Initialize Shop
-function initShop() {
-    console.log('Initializing shop system...');
-    
-    // Ensure gameState exists
-    if (!window.gameState) {
-        console.error('gameState not found');
-        return;
-    }
-    
-    // Initialize coins if not set
-    if (!gameState.coins) {
-        gameState.coins = parseInt(localStorage.getItem('brainrotCoins')) || 1000;
-    }
-    
-    // Initialize inventory if not set
-    if (!gameState.playerInventory) {
-        gameState.playerInventory = JSON.parse(localStorage.getItem('playerInventory')) || {};
-    }
-    
-    console.log('Shop initialized with coins:', gameState.coins);
-}
-
-// Load Shop Items - FIXED VERSION
-function loadShopItems() {
-    console.log('Loading shop items...');
-    const shopItems = document.getElementById('shopItems');
-    if (!shopItems) {
-        console.error('Shop items container not found');
-        return;
-    }
-    
-    // Ensure shop is initialized
-    initShop();
-    
-    // Clear the container first
-    shopItems.innerHTML = '';
-    
-    console.log('Game state coins:', gameState.coins);
-    console.log('Player inventory:', gameState.playerInventory);
-    
-    // Create shop items
-    SHOP_ITEMS.forEach(item => {
-        const isOwned = gameState.playerInventory[item.id];
-        const canAfford = gameState.coins >= item.price;
-        const isActive = item.effect === 'background' && gameState.customBackground === item.bgId;
+// Updated Shop System with Custom Backgrounds
+class ShopSystem {
+    constructor() {
+        this.currentCategory = 'backgrounds';
+        this.unlockedBgColor = false;
+        this.unlockedBgUrl = false;
         
-        const itemElement = document.createElement('div');
-        itemElement.className = 'shop-item';
-        if (isActive) {
-            itemElement.classList.add('active-background');
-        }
-        itemElement.innerHTML = `
-            <div class="item-name">${item.name}</div>
-            <div class="item-desc">${item.description}</div>
-            <div class="item-price">${item.price} COINS</div>
-            <button class="buy-btn" data-id="${item.id}" ${isOwned || !canAfford ? 'disabled' : ''}>
-                ${isOwned ? (item.effect === 'background' ? (isActive ? 'ACTIVE' : 'SELECT') : 'OWNED') : (canAfford ? 'BUY NOW' : 'NEED COINS')}
-            </button>
-            ${isOwned ? `<div class="owned-badge">${item.effect === 'background' ? (isActive ? 'ACTIVE' : 'OWNED') : 'OWNED'}</div>` : ''}
-        `;
-        
-        shopItems.appendChild(itemElement);
-    });
-    
-    // Add event listeners to buy buttons
-    document.querySelectorAll('.buy-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const itemId = e.target.dataset.id;
-            buyItem(itemId);
+        this.init();
+    }
+
+    init() {
+        this.setupEventListeners();
+        this.loadShopItems();
+    }
+
+    setupEventListeners() {
+        // Category buttons
+        document.querySelectorAll('.category-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                this.switchCategory(e.target.dataset.category);
+            });
         });
-    });
-    
-    // Update coins display
-    updateCoinsDisplay();
-}
 
-// Update Coins Display
-function updateCoinsDisplay() {
-    const coinsDisplay = document.getElementById('coinsAmount');
-    if (coinsDisplay) {
-        coinsDisplay.textContent = gameState.coins;
-        console.log('Updated coins display to:', gameState.coins);
-    }
-}
+        // Background customization
+        document.getElementById('applyBgColor').addEventListener('click', () => {
+            this.applyBackgroundColor();
+        });
 
-// Buy Item - FIXED VERSION
-function buyItem(itemId) {
-    const item = SHOP_ITEMS.find(i => i.id === itemId);
-    if (!item) {
-        console.error('Item not found:', itemId);
-        alert('Item not found!');
-        return;
+        document.getElementById('applyBgUrl').addEventListener('click', () => {
+            this.applyBackgroundUrl();
+        });
+
+        document.getElementById('purchaseBgColor').addEventListener('click', () => {
+            this.purchaseBackgroundColor();
+        });
+
+        document.getElementById('purchaseBgUrl').addEventListener('click', () => {
+            this.purchaseBackgroundUrl();
+        });
+
+        // Back button
+        document.getElementById('shopBackBtn').addEventListener('click', () => {
+            this.exitShop();
+        });
     }
-    
-    // Handle background selection
-    if (item.effect === 'background' && gameState.playerInventory[itemId]) {
-        gameState.customBackground = item.bgId;
-        localStorage.setItem('customBackground', item.bgId);
-        applyCustomBackground();
-        loadShopItems(); // Refresh to show active state
-        showPurchaseSuccess(`${item.name} activated!`);
-        return;
-    }
-    
-    // Check if already owned (except for backgrounds which can be selected)
-    if (gameState.playerInventory[itemId] && item.effect !== 'background') {
-        alert('You already own this item!');
-        return;
-    }
-    
-    // Check if player can afford
-    if (gameState.coins < item.price) {
-        alert('Not enough coins!');
-        return;
-    }
-    
-    // Process purchase
-    gameState.coins -= item.price;
-    
-    if (item.type === 'permanent') {
-        gameState.playerInventory[itemId] = true;
+
+    switchCategory(category) {
+        this.currentCategory = category;
         
-        // Apply immediate effects for certain items
-        if (item.id === 'bossUnlock') {
-            gameState.bossUnlocked = true;
-            localStorage.setItem('boss67Unlocked', 'true');
-            alert('67 BOSS UNLOCKED! You can now play 67 BOSS Survival Mode!');
-        } else if (item.effect === 'background') {
-            gameState.customBackground = item.bgId;
-            localStorage.setItem('customBackground', item.bgId);
-            applyCustomBackground();
-        }
-    } else {
-        if (!gameState.playerInventory[itemId]) {
-            gameState.playerInventory[itemId] = 0;
-        }
-        gameState.playerInventory[itemId] += item.duration;
-    }
-    
-    // Save to localStorage
-    localStorage.setItem('brainrotCoins', gameState.coins);
-    localStorage.setItem('playerInventory', JSON.stringify(gameState.playerInventory));
-    
-    // Update UI
-    loadShopItems();
-    
-    // Show purchase success
-    showPurchaseSuccess(item.name);
-}
-
-// Show Purchase Success
-function showPurchaseSuccess(itemName) {
-    const successDiv = document.createElement('div');
-    successDiv.className = 'purchase-success';
-    successDiv.innerHTML = `
-        <div class="success-message">
-            <h3>✅ PURCHASE SUCCESSFUL!</h3>
-            <p>You bought: ${itemName}</p>
-            <button class="nav-btn" id="closeSuccess">CLOSE</button>
-        </div>
-    `;
-    
-    successDiv.style.position = 'fixed';
-    successDiv.style.top = '0';
-    successDiv.style.left = '0';
-    successDiv.style.width = '100%';
-    successDiv.style.height = '100%';
-    successDiv.style.backgroundColor = 'rgba(0,0,0,0.8)';
-    successDiv.style.display = 'flex';
-    successDiv.style.justifyContent = 'center';
-    successDiv.style.alignItems = 'center';
-    successDiv.style.zIndex = '1000';
-    
-    document.body.appendChild(successDiv);
-    
-    document.getElementById('closeSuccess').addEventListener('click', () => {
-        document.body.removeChild(successDiv);
-    });
-}
-
-// Apply Shop Effects in Game
-function applyShopEffects() {
-    if (!gameState.player || !gameState.playerInventory) return;
-    
-    const inventory = gameState.playerInventory;
-    
-    // Damage Boost
-    if (inventory.damageBoost) {
-        if (!gameState.player.damageMultiplier) {
-            gameState.player.damageMultiplier = 1.0;
-        }
-        gameState.player.damageMultiplier = 1.2;
-    }
-    
-    // Health Boost
-    if (inventory.healthBoost) {
-        if (gameState.player.character) {
-            const originalHP = gameState.player.character.hp;
-            gameState.player.maxHealth = Math.floor(originalHP * 1.15);
-            gameState.player.health = gameState.player.maxHealth;
-        }
-    }
-    
-    // Combo Master
-    if (inventory.comboMaster) {
-        gameState.player.comboMultiplier = 1.25;
-    }
-    
-    // Parry Charm
-    if (inventory.parryCharm) {
-        if (gameState.cpu && gameState.cpu.difficulty) {
-            gameState.cpu.difficulty.parryChance *= 0.8;
-        }
-    }
-    
-    // Double Coins
-    if (inventory.doubleCoins && inventory.doubleCoins > 0) {
-        gameState.coinMultiplier = 2;
-    }
-}
-
-// Update Double Coins Counter
-function updateDoubleCoins() {
-    if (gameState.playerInventory.doubleCoins > 0) {
-        gameState.playerInventory.doubleCoins--;
+        // Update active button
+        document.querySelectorAll('.category-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.querySelector(`[data-category="${category}"]`).classList.add('active');
         
-        if (gameState.playerInventory.doubleCoins <= 0) {
-            delete gameState.playerInventory.doubleCoins;
-            alert('Double Coins effect has expired!');
+        // Show/hide sections
+        document.querySelectorAll('.shop-section').forEach(section => {
+            section.style.display = 'none';
+        });
+        
+        if (category === 'backgrounds') {
+            document.getElementById('backgroundSection').style.display = 'block';
+        }
+    }
+
+    loadShopItems() {
+        // Load user's unlocked status
+        const user = authSystem.getUser();
+        if (user) {
+            this.unlockedBgColor = user.unlockedBackgrounds.includes('color');
+            this.unlockedBgUrl = user.unlockedBackgrounds.includes('url');
+            
+            this.updateShopUI();
+        }
+    }
+
+    updateShopUI() {
+        // Update purchase buttons based on what's unlocked
+        const colorBtn = document.getElementById('purchaseBgColor');
+        const urlBtn = document.getElementById('purchaseBgUrl');
+        
+        if (this.unlockedBgColor) {
+            colorBtn.style.display = 'none';
+            document.querySelector('.color-picker').style.display = 'block';
+        } else {
+            colorBtn.style.display = 'block';
+            document.querySelector('.color-picker').style.display = 'none';
         }
         
-        localStorage.setItem('playerInventory', JSON.stringify(gameState.playerInventory));
+        if (this.unlockedBgUrl) {
+            urlBtn.style.display = 'none';
+            document.querySelector('.url-picker').style.display = 'block';
+        } else {
+            urlBtn.style.display = 'block';
+            document.querySelector('.url-picker').style.display = 'none';
+        }
     }
-}
 
-// Initialize shop when DOM is loaded
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM loaded, initializing shop...');
-    initShop();
-    
-    // Load shop items if on shop screen
-    if (document.getElementById('shopScreen') && document.getElementById('shopScreen').classList.contains('active')) {
-        console.log('Shop screen is active, loading items...');
-        loadShopItems();
+    applyBackgroundColor() {
+        if (!this.unlockedBgColor) return;
+        
+        const color = document.getElementById('bgColorPicker').value;
+        document.body.style.backgroundColor = color;
+        
+        // Update preview
+        document.getElementById('bgPreview').style.backgroundColor = color;
+        
+        // Save to user preferences
+        this.saveBackgroundPreference('color', color);
     }
-});
 
-// Override showScreen to load shop items when shop screen is shown
-const originalShowScreen = window.showScreen;
-window.showScreen = function(screenId) {
-    originalShowScreen(screenId);
-    
-    if (screenId === 'shopScreen') {
-        console.log('Shop screen shown, loading items...');
+    applyBackgroundUrl() {
+        if (!this.unlockedBgUrl) return;
+        
+        const url = document.getElementById('bgUrlInput').value;
+        if (url) {
+            document.body.style.backgroundImage = `url('${url}')`;
+            document.body.style.backgroundSize = 'cover';
+            document.body.style.backgroundPosition = 'center';
+            
+            // Update preview
+            document.getElementById('bgPreview').style.backgroundImage = `url('${url}')`;
+            
+            // Save to user preferences
+            this.saveBackgroundPreference('url', url);
+        }
+    }
+
+    saveBackgroundPreference(type, value) {
+        const user = authSystem.getUser();
+        if (user) {
+            user.backgroundPreference = { type, value };
+            authSystem.updateUser(user);
+        }
+    }
+
+    purchaseBackgroundColor() {
+        const user = authSystem.getUser();
+        const price = 100;
+        
+        if (user.coins >= price) {
+            authSystem.updateUserCoins(user.coins - price);
+            this.unlockedBgColor = true;
+            user.unlockedBackgrounds.push('color');
+            authSystem.updateUser(user);
+            this.updateShopUI();
+            this.showPurchaseSuccess('Color Picker Unlocked!');
+        } else {
+            this.showPurchaseError('Not enough coins!');
+        }
+    }
+
+    purchaseBackgroundUrl() {
+        const user = authSystem.getUser();
+        const price = 500;
+        
+        if (user.coins >= price) {
+            authSystem.updateUserCoins(user.coins - price);
+            this.unlockedBgUrl = true;
+            user.unlockedBackgrounds.push('url');
+            authSystem.updateUser(user);
+            this.updateShopUI();
+            this.showPurchaseSuccess('Custom URL Unlocked!');
+        } else {
+            this.showPurchaseError('Not enough coins!');
+        }
+    }
+
+    showPurchaseSuccess(message) {
+        // Show success message
+        const success = document.createElement('div');
+        success.className = 'purchase-success';
+        success.textContent = message;
+        success.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #00ff00;
+            color: #000;
+            padding: 20px;
+            border-radius: 10px;
+            z-index: 1000;
+        `;
+        document.body.appendChild(success);
+        
         setTimeout(() => {
-            loadShopItems();
-        }, 100);
+            document.body.removeChild(success);
+        }, 2000);
     }
-};
 
-// Make functions globally available
-window.loadShopItems = loadShopItems;
-window.buyItem = buyItem;
-window.applyShopEffects = applyShopEffects;
-window.updateDoubleCoins = updateDoubleCoins;
+    showPurchaseError(message) {
+        // Show error message
+        const error = document.createElement('div');
+        error.className = 'purchase-error';
+        error.textContent = message;
+        error.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #ff0000;
+            color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            z-index: 1000;
+        `;
+        document.body.appendChild(error);
+        
+        setTimeout(() => {
+            document.body.removeChild(error);
+        }, 2000);
+    }
+
+    exitShop() {
+        document.getElementById('shopScreen').classList.remove('active');
+        document.getElementById('mainMenu').classList.add('active');
+    }
+}
+
+// Initialize shop system
+let shopSystem;
+document.addEventListener('DOMContentLoaded', () => {
+    shopSystem = new ShopSystem();
+});
