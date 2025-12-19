@@ -14,8 +14,8 @@
             <div class="pixel-logo">BRAINROT FIGHTERS v5.0</div>
             <div class="device-type" id="deviceType">DETECTING DEVICE...</div>
             <div class="device-controls">
-                <div id="deviceMessage" style="color: #ffcc00; margin-top: 1rem;">Checking compatibility...</div>
-                <button class="device-btn" id="enterGameBtn" style="display:none; margin-top: 1rem;">ENTER GAME</button>
+                <div id="lockMessage" style="color: #ff0033; font-size: 1.2rem; margin: 20px;"></div>
+                <button class="device-btn" id="enterGameBtn" style="display:none;">ENTER GAME</button>
             </div>
         </div>
     </div>
@@ -29,12 +29,28 @@
                 <button class="menu-btn" id="shopBtn">SHOP</button>
                 <button class="menu-btn" id="bgChangeBtn">CHANGE BG</button>
                 <button class="menu-btn" id="controlsBtn">CONTROLS</button>
+                <button class="menu-btn" id="updatesBtn">UPDATE LOG</button>
                 <button class="menu-btn" id="creditsBtn">CREDITS</button>
             </div>
             <div class="menu-footer">
                 <div class="high-score">HIGH SCORE: <span id="highScore">0</span></div>
                 <div class="version">v5.0 | BOSS BATTLE EDITION</div>
             </div>
+        </div>
+    </div>
+
+    <div id="bgSelectScreen" class="screen">
+        <div class="menu-content">
+            <h1 class="main-title">SELECT BACKGROUND</h1>
+            <div class="shop-items">
+                <button class="menu-btn bg-option" data-bg="default">DEFAULT</button>
+                <button class="menu-btn bg-option" data-bg="space">SPACE</button>
+                <button class="menu-btn bg-option" data-bg="neon">NEON CITY</button>
+                <button class="menu-btn bg-option" data-bg="matrix">MATRIX</button>
+                <button class="menu-btn bg-option" data-bg="fire">FIRE ARENA</button>
+                <button class="menu-btn bg-option" data-bg="ice">ICE PALACE</button>
+            </div>
+            <button class="nav-btn" id="bgBackBtn">BACK</button>
         </div>
     </div>
 
@@ -49,7 +65,7 @@
                         <option value="medium" selected>MEDIUM</option>
                         <option value="hard">HARD</option>
                         <option value="insane">INSANE</option>
-                    </select>
+                        </select>
                 </div>
             </div>
             
@@ -61,7 +77,9 @@
                     <div class="char-name" id="previewName">SELECT FIGHTER</div>
                     <div class="char-style" id="previewStyle">-</div>
                     <div class="char-desc" id="previewDesc">Choose your warrior</div>
-                    <div class="boss-unlock-status" id="bossUnlockInfo" style="margin-top: 10px; font-weight: bold;"></div>
+                    <div class="boss-unlock" id="bossUnlockInfo" style="display: none; color: #ff0000; margin-top: 1rem;">
+                        🔒 Defeat Insane mode with 67 to unlock 67 BOSS!
+                    </div>
                 </div>
             </div>
             
@@ -75,7 +93,9 @@
     <div id="gameScreen" class="screen">
         <canvas id="gameCanvas"></canvas>
         
-        <div class="hud" id="standardHud">
+        <div id="dodgeIndicator" class="dodge-indicator" style="display: none;">!</div>
+
+        <div class="hud">
             <div class="player-hud">
                 <div class="player-name" id="p1Name">PLAYER</div>
                 <div class="health-container">
@@ -97,9 +117,7 @@
                 </div>
             </div>
         </div>
-
-        <div id="dodgeIndicator" class="dodge-indicator" style="display: none;">!</div>
-
+        
         <div id="touchControls" class="touch-controls">
             <div class="touch-left">
                 <div class="movement-buttons">
@@ -118,28 +136,31 @@
         </div>
         
         <div class="combo-display" id="comboDisplay"></div>
-        <button class="nav-btn" id="exitBattleBtn" style="position: absolute; top: 10px; right: 10px; z-index: 100;">EXIT</button>
+        <button class="nav-btn" id="exitBattleBtn">EXIT BATTLE</button>
     </div>
 
     <div id="boss21Screen" class="screen" style="background: #000;">
         <div class="boss-scene">
-            <div class="boss-sprite"></div> <div class="boss-dialog-box" id="bossDialogBox">
-                I am Number 21... Prepare to perish.
+            <div class="boss-visual">
+                <div style="font-size: 10rem; color: red; text-shadow: 0 0 30px red;">21</div>
+            </div>
+            <div class="boss-dialog-box" id="bossDialogBox">
+                I am Number 21...
             </div>
         </div>
 
         <div class="turn-hud">
             <div class="turn-bars">
                 <div class="turn-stat">
-                    <span>YOU HP:</span>
+                    <span>YOU HP</span>
                     <div class="hp-bar-bg"><div id="turnPlayerHp" class="hp-bar-fill" style="width: 100%;"></div></div>
                 </div>
                 <div class="turn-stat">
-                    <span>BOSS HP:</span>
+                    <span>BOSS HP</span>
                     <div class="hp-bar-bg"><div id="turnBossHp" class="hp-bar-fill" style="width: 100%;"></div></div>
                 </div>
                 <div class="turn-stat">
-                    <span>CHARGE:</span>
+                    <span>CHARGE</span>
                     <div class="charge-bar-bg"><div id="turnPlayerCharge" class="charge-bar-fill" style="width: 0%;"></div></div>
                 </div>
             </div>
@@ -155,37 +176,21 @@
                     <div class="qte-target"></div>
                     <div class="qte-cursor" id="qteCursor"></div>
                 </div>
-                <div style="color: #fff; text-align: center; margin-top: 5px;">HOLD & RELEASE IN GREEN!</div>
+                <div style="color: #fff; text-align: center; font-size: 1.5rem; margin-top: 10px;">RELEASE IN GREEN!</div>
             </div>
             
-            <div id="boss21DodgeBtn" class="dodge-overlay" style="display: none;">DODGE!</div>
+            <div id="boss21DodgeBtn" class="dodge-overlay" style="display: none;">CLICK TO DODGE!</div>
         </div>
     </div>
 
     <div id="shopScreen" class="screen">
         <div class="shop-content">
-            <h1 class="main-title">SHOP</h1>
+            <h1 class="main-title">BRAINROT SHOP</h1>
             <div class="shop-info">
                 <div class="coins-display">COINS: <span id="coinsAmount">0</span></div>
             </div>
-            <div class="shop-items" id="shopItems">
-                </div>
+            <div class="shop-items" id="shopItems"></div>
             <button class="nav-btn" id="shopBackBtn">BACK TO MENU</button>
-        </div>
-    </div>
-
-    <div id="bgSelectScreen" class="screen">
-        <div class="menu-content">
-            <h1 class="main-title">SELECT BACKGROUND</h1>
-            <div class="shop-items">
-                <button class="menu-btn bg-option" data-bg="default">DEFAULT</button>
-                <button class="menu-btn bg-option" data-bg="space">SPACE</button>
-                <button class="menu-btn bg-option" data-bg="neon">NEON CITY</button>
-                <button class="menu-btn bg-option" data-bg="matrix">MATRIX</button>
-                <button class="menu-btn bg-option" data-bg="fire">FIRE ARENA</button>
-                <button class="menu-btn bg-option" data-bg="ice">ICE PALACE</button>
-            </div>
-            <button class="nav-btn" id="bgBackBtn">BACK</button>
         </div>
     </div>
 
@@ -194,16 +199,57 @@
             <div class="controls-header">CONTROLS</div>
             <div class="controls-scroll">
                 <div class="control-group">
-                    <div class="control-title">PC CONTROLS</div>
+                    <div class="control-title">COMBAT</div>
                     <div class="control-item"><span class="control-key">Arrows</span> Move</div>
-                    <div class="control-item"><span class="control-key">Z / X</span> Punch</div>
-                    <div class="control-item"><span class="control-key">A / S</span> Kick</div>
-                    <div class="control-item"><span class="control-key">SPACE</span> Heal</div>
+                    <div class="control-item"><span class="control-key">Z/X</span> Punch</div>
+                    <div class="control-item"><span class="control-key">A/S</span> Kick</div>
+                    <div class="control-item"><span class="control-key">SPACE</span> Heal (Cooldown)</div>
                     <div class="control-item"><span class="control-key">C</span> Combo</div>
                     <div class="control-item"><span class="control-key">CLICK</span> Dodge (When ! appears)</div>
                 </div>
             </div>
-            <button class="nav-btn" id="controlsBackBtn">BACK</button>
+            <button class="nav-btn" id="controlsBackBtn">BACK TO MAIN MENU</button>
+        </div>
+    </div>
+
+    <div id="updatesScreen" class="screen">
+        <div class="updates-content">
+            <h1 class="main-title">UPDATE LOG</h1>
+            <div class="updates-scroll">
+                <div class="update-version">
+                    <h3>v5.0 - BOSS EDITION</h3>
+                    <ul>
+                        <li>🔥 Removed Online Mode</li>
+                        <li>🤖 Added 21 BOSS (Turn Based Strategy)</li>
+                        <li>⚡ Added Dodge Mechanic</li>
+                        <li>🔒 Device Lock (PC/Tablet exclusive modes)</li>
+                        <li>❤️ Parry changed to Heal</li>
+                        <li>🎨 Background Selector added</li>
+                    </ul>
+                </div>
+            </div>
+            <button class="nav-btn" id="updatesBackBtn">BACK TO MENU</button>
+        </div>
+    </div>
+
+    <div id="creditsScreen" class="screen">
+        <div class="credits-content">
+            <h1 class="main-title">CREDITS</h1>
+            <div class="credits-list">
+                <div class="credit-item">
+                    <div class="credit-name">IAN</div>
+                    <div class="credit-role">Director</div>
+                </div>
+                <div class="credit-item">
+                    <div class="credit-name">ZIAD</div>
+                    <div class="credit-role">Combat System</div>
+                </div>
+                <div class="credit-item">
+                    <div class="credit-name">AAHIL</div>
+                    <div class="credit-role">Graphics</div>
+                </div>
+            </div>
+            <button class="nav-btn" id="creditsBackBtn">BACK TO MENU</button>
         </div>
     </div>
 
@@ -216,9 +262,9 @@
     <audio id="menuMusic" loop><source src="Menu.mp3" type="audio/mpeg"></audio>
 
     <script src="js/characters.js"></script>
-    <script src="js/shop.js"></script>
-    <script src="js/touch-controls.js"></script>
-    <script src="js/threejs-renderer.js"></script>
     <script src="js/game.js"></script>
+    <script src="js/shop.js"></script>
+    <script src="js/threejs-renderer.js"></script>
+    <script src="js/touch-controls.js"></script>
 </body>
 </html>
