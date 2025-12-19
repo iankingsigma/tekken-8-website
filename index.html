@@ -3,23 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Brainrot Fighters v5.0 - BOSS EDITION</title>
+    <title>Brainrot Fighters v5.0</title>
     <link rel="stylesheet" href="css/style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/gsap.min.js"></script>
 </head>
 <body>
+    <!-- Device Detection -->
     <div id="deviceDetection" class="screen active">
         <div class="device-content">
             <div class="pixel-logo">BRAINROT FIGHTERS v5.0</div>
             <div class="device-type" id="deviceType">DETECTING DEVICE...</div>
-            <div class="device-controls">
-                <div id="lockMessage" style="color: #ff0033; font-size: 1.2rem; margin: 20px;"></div>
-                <button class="device-btn" id="enterGameBtn" style="display:none;">ENTER GAME</button>
-            </div>
         </div>
     </div>
 
+    <!-- Loading Screen -->
+    <div id="loading" class="screen">
+        <div class="loading-content">
+            <div class="pixel-logo">BRAINROT FIGHTERS v5.0</div>
+            <div class="loading-bar-container">
+                <div class="loading-bar" id="loadingBar"></div>
+            </div>
+            <div class="loading-text" id="loadingText">INITIALIZING BRAINROT ENGINE...</div>
+            <div class="tip">TIP: Master dodge timing for perfect defense!</div>
+        </div>
+    </div>
+
+    <!-- Main Menu -->
     <div id="mainMenu" class="screen">
         <div class="menu-content">
             <h1 class="main-title">BRAINROT FIGHTERS v5.0</h1>
@@ -27,45 +37,65 @@
                 <button class="menu-btn" id="arcadeBtn">ARCADE MODE</button>
                 <button class="menu-btn" id="practiceBtn">PRACTICE MODE</button>
                 <button class="menu-btn" id="shopBtn">SHOP</button>
-                <button class="menu-btn" id="bgChangeBtn">CHANGE BG</button>
                 <button class="menu-btn" id="controlsBtn">CONTROLS</button>
                 <button class="menu-btn" id="updatesBtn">UPDATE LOG</button>
                 <button class="menu-btn" id="creditsBtn">CREDITS</button>
+                <button class="menu-btn" id="backgroundBtn">CHANGE BACKGROUND</button>
             </div>
             <div class="menu-footer">
                 <div class="high-score">HIGH SCORE: <span id="highScore">0</span></div>
-                <div class="version">v5.0 | BOSS BATTLE EDITION</div>
+                <div class="version">v5.0.0 | TURN-BASED BOSS EDITION</div>
             </div>
         </div>
     </div>
 
-    <div id="bgSelectScreen" class="screen">
-        <div class="menu-content">
-            <h1 class="main-title">SELECT BACKGROUND</h1>
-            <div class="shop-items">
-                <button class="menu-btn bg-option" data-bg="default">DEFAULT</button>
-                <button class="menu-btn bg-option" data-bg="space">SPACE</button>
-                <button class="menu-btn bg-option" data-bg="neon">NEON CITY</button>
-                <button class="menu-btn bg-option" data-bg="matrix">MATRIX</button>
-                <button class="menu-btn bg-option" data-bg="fire">FIRE ARENA</button>
-                <button class="menu-btn bg-option" data-bg="ice">ICE PALACE</button>
+    <!-- Background Selection -->
+    <div id="backgroundScreen" class="screen">
+        <div class="background-content">
+            <h1 class="main-title">BACKGROUND SELECTION</h1>
+            <div class="background-grid" id="backgroundGrid">
+                <div class="bg-option" data-bg="default">
+                    <div class="bg-preview default-bg"></div>
+                    <div class="bg-name">Default</div>
+                </div>
+                <div class="bg-option" data-bg="space">
+                    <div class="bg-preview space-bg"></div>
+                    <div class="bg-name">Space</div>
+                </div>
+                <div class="bg-option" data-bg="neon">
+                    <div class="bg-preview neon-bg"></div>
+                    <div class="bg-name">Neon City</div>
+                </div>
+                <div class="bg-option" data-bg="matrix">
+                    <div class="bg-preview matrix-bg"></div>
+                    <div class="bg-name">Matrix</div>
+                </div>
+                <div class="bg-option" data-bg="fire">
+                    <div class="bg-preview fire-bg"></div>
+                    <div class="bg-name">Fire Arena</div>
+                </div>
+                <div class="bg-option" data-bg="ice">
+                    <div class="bg-preview ice-bg"></div>
+                    <div class="bg-name">Ice Palace</div>
+                </div>
             </div>
-            <button class="nav-btn" id="bgBackBtn">BACK</button>
+            <button class="nav-btn" id="backgroundBackBtn">BACK TO MENU</button>
         </div>
     </div>
 
+    <!-- Character Selection -->
     <div id="characterSelect" class="screen">
         <div class="select-ui">
             <div class="select-header">
                 <div class="player-tag">PLAYER 1</div>
-                <div class="select-title">CHOOSE YOUR FIGHTER</div>
+                <div class="select-title">CHOOSE YOUR BRAINROTTER</div>
                 <div class="difficulty-select">
                     <select id="difficultySelect">
                         <option value="easy">EASY</option>
                         <option value="medium" selected>MEDIUM</option>
                         <option value="hard">HARD</option>
                         <option value="insane">INSANE</option>
-                        </select>
+                    </select>
                 </div>
             </div>
             
@@ -74,11 +104,23 @@
             <div class="character-preview">
                 <div class="preview-model" id="previewModel"></div>
                 <div class="character-info">
-                    <div class="char-name" id="previewName">SELECT FIGHTER</div>
+                    <div class="char-name" id="previewName">SELECT BRAINROTTER</div>
                     <div class="char-style" id="previewStyle">-</div>
-                    <div class="char-desc" id="previewDesc">Choose your warrior</div>
-                    <div class="boss-unlock" id="bossUnlockInfo" style="display: none; color: #ff0000; margin-top: 1rem;">
+                    <div class="char-desc" id="previewDesc">Choose your brainrot warrior</div>
+                    <div class="boss-unlock" id="bossUnlockInfo" style="display: none; color: #ff0000; margin-top: 1rem; font-size: 0.9rem;">
                         🔒 Defeat Insane mode with 67 to unlock 67 BOSS!
+                    </div>
+                    <div class="boss-unlocked" id="bossUnlockedInfo" style="display: none; color: #00ff00; margin-top: 1rem; font-size: 0.9rem;">
+                        ✅ 67 BOSS UNLOCKED! Select 67 character and 67 BOSS difficulty to fight!
+                    </div>
+                    <div class="boss-warning" id="bossWarningInfo" style="display: none; color: #ff9900; margin-top: 1rem; font-size: 0.9rem; font-weight: bold;">
+                        ⚠️ 67 BOSS: SURVIVAL MODE - Boss attacks every phase with dodge mechanics!
+                    </div>
+                    <div class="boss-unlock" id="boss21UnlockInfo" style="display: none; color: #00ccff; margin-top: 1rem; font-size: 0.9rem;">
+                        🔒 Defeat Hard mode with 21 to unlock 21 BOSS!
+                    </div>
+                    <div class="boss-unlocked" id="boss21UnlockedInfo" style="display: none; color: #00ff00; margin-top: 1rem; font-size: 0.9rem;">
+                        ✅ 21 BOSS UNLOCKED! Turn-based combat mode!
                     </div>
                 </div>
             </div>
@@ -90,11 +132,9 @@
         </div>
     </div>
 
+    <!-- Game Screen -->
     <div id="gameScreen" class="screen">
         <canvas id="gameCanvas"></canvas>
-        
-        <div id="dodgeIndicator" class="dodge-indicator" style="display: none;">!</div>
-
         <div class="hud">
             <div class="player-hud">
                 <div class="player-name" id="p1Name">PLAYER</div>
@@ -118,6 +158,31 @@
             </div>
         </div>
         
+        <!-- Dodge Warning -->
+        <div id="dodgeWarning" class="dodge-warning">!</div>
+        
+        <!-- Turn-Based UI (for 21 Boss) -->
+        <div id="turnBasedUI" class="turn-based-ui" style="display: none;">
+            <div class="turn-indicator" id="turnIndicator">YOUR TURN</div>
+            <div class="turn-actions">
+                <button class="turn-btn" id="fightBtn" disabled>FIGHT</button>
+                <button class="turn-btn" id="healBtn" disabled>HEAL</button>
+                <button class="turn-btn" id="chargeBtn">CHARGE</button>
+            </div>
+            <div class="charge-counter" id="chargeCounter">CHARGES: 0</div>
+            <div class="boss-action" id="bossAction"></div>
+        </div>
+        
+        <!-- Fight Timing Bar -->
+        <div id="timingBar" class="timing-bar" style="display: none;">
+            <div class="timing-bar-container">
+                <div class="timing-bar-fill" id="timingBarFill"></div>
+                <div class="timing-bar-target" id="timingBarTarget"></div>
+            </div>
+            <div class="timing-text">HOLD SPACE TO ATTACK!</div>
+        </div>
+        
+        <!-- Touch Controls for Tablet -->
         <div id="touchControls" class="touch-controls">
             <div class="touch-left">
                 <div class="movement-buttons">
@@ -130,59 +195,17 @@
                     <button class="touch-btn punch" data-action="punch">PUNCH</button>
                     <button class="touch-btn kick" data-action="kick">KICK</button>
                     <button class="touch-btn special" data-action="special">COMBO</button>
-                    <button class="touch-btn parry" data-action="parry">HEAL</button>
+                    <button class="touch-btn heal" data-action="heal">HEAL</button>
+                    <button class="touch-btn dodge" data-action="dodge">DODGE</button>
                 </div>
             </div>
         </div>
         
-        <div class="combo-display" id="comboDisplay"></div>
+        <div class="combo-display" id="comboDisplay">BRAINROT COMBO!</div>
         <button class="nav-btn" id="exitBattleBtn">EXIT BATTLE</button>
     </div>
 
-    <div id="boss21Screen" class="screen" style="background: #000;">
-        <div class="boss-scene">
-            <div class="boss-visual">
-                <div style="font-size: 10rem; color: red; text-shadow: 0 0 30px red;">21</div>
-            </div>
-            <div class="boss-dialog-box" id="bossDialogBox">
-                I am Number 21...
-            </div>
-        </div>
-
-        <div class="turn-hud">
-            <div class="turn-bars">
-                <div class="turn-stat">
-                    <span>YOU HP</span>
-                    <div class="hp-bar-bg"><div id="turnPlayerHp" class="hp-bar-fill" style="width: 100%;"></div></div>
-                </div>
-                <div class="turn-stat">
-                    <span>BOSS HP</span>
-                    <div class="hp-bar-bg"><div id="turnBossHp" class="hp-bar-fill" style="width: 100%;"></div></div>
-                </div>
-                <div class="turn-stat">
-                    <span>CHARGE</span>
-                    <div class="charge-bar-bg"><div id="turnPlayerCharge" class="charge-bar-fill" style="width: 0%;"></div></div>
-                </div>
-            </div>
-
-            <div class="turn-controls" id="turnControls">
-                <button class="turn-btn" id="btnTurnFight">FIGHT</button>
-                <button class="turn-btn" id="btnTurnCharge">CHARGE</button>
-                <button class="turn-btn" id="btnTurnHeal">HEAL</button>
-            </div>
-
-            <div id="qteContainer" style="display: none;">
-                <div class="qte-bar">
-                    <div class="qte-target"></div>
-                    <div class="qte-cursor" id="qteCursor"></div>
-                </div>
-                <div style="color: #fff; text-align: center; font-size: 1.5rem; margin-top: 10px;">RELEASE IN GREEN!</div>
-            </div>
-            
-            <div id="boss21DodgeBtn" class="dodge-overlay" style="display: none;">CLICK TO DODGE!</div>
-        </div>
-    </div>
-
+    <!-- Shop Screen -->
     <div id="shopScreen" class="screen">
         <div class="shop-content">
             <h1 class="main-title">BRAINROT SHOP</h1>
@@ -194,37 +217,98 @@
         </div>
     </div>
 
+    <!-- Controls Screen -->
     <div id="controlsScreen" class="screen">
         <div class="controls-content">
-            <div class="controls-header">CONTROLS</div>
+            <div class="controls-header">CONTROLS & MOVES</div>
+            
             <div class="controls-scroll">
-                <div class="control-group">
-                    <div class="control-title">COMBAT</div>
-                    <div class="control-item"><span class="control-key">Arrows</span> Move</div>
-                    <div class="control-item"><span class="control-key">Z/X</span> Punch</div>
-                    <div class="control-item"><span class="control-key">A/S</span> Kick</div>
-                    <div class="control-item"><span class="control-key">SPACE</span> Heal (Cooldown)</div>
-                    <div class="control-item"><span class="control-key">C</span> Combo</div>
-                    <div class="control-item"><span class="control-key">CLICK</span> Dodge (When ! appears)</div>
+                <div class="controls-grid">
+                    <div class="control-group">
+                        <div class="control-title">BASIC CONTROLS</div>
+                        <div class="control-item">
+                            <div class="control-key">← →</div>
+                            <div class="control-action">Move Left/Right</div>
+                        </div>
+                        <div class="control-item">
+                            <div class="control-key">Z</div>
+                            <div class="control-action">Left Punch</div>
+                        </div>
+                        <div class="control-item">
+                            <div class="control-key">X</div>
+                            <div class="control-action">Right Punch</div>
+                        </div>
+                        <div class="control-item">
+                            <div class="control-key">A</div>
+                            <div class="control-action">Left Kick</div>
+                        </div>
+                        <div class="control-item">
+                            <div class="control-key">S</div>
+                            <div class="control-action">Right Kick</div>
+                        </div>
+                        <div class="control-item">
+                            <div class="control-key">SPACE</div>
+                            <div class="control-action">Heal (+10% HP, 10s Cooldown) / Dodge</div>
+                        </div>
+                        <div class="control-item">
+                            <div class="control-key">C</div>
+                            <div class="control-action">Special Combo</div>
+                        </div>
+                    </div>
+                    
+                    <div class="control-group">
+                        <div class="control-title">TURN-BASED (21 BOSS)</div>
+                        <ul class="combo-list">
+                            <li class="combo-item">CHARGE: Build up power</li>
+                            <li class="combo-item">FIGHT: Use charges to attack (timing bar)</li>
+                            <li class="combo-item">HEAL: Use charges to restore HP</li>
+                            <li class="combo-item">DODGE: Press SPACE when ! appears</li>
+                        </ul>
+                        
+                        <div class="control-title">COMBOS</div>
+                        <ul class="combo-list">
+                            <li class="combo-item">→ → + Z : Dragon Uppercut</li>
+                            <li class="combo-item">↓ → + X : Fireball</li>
+                            <li class="combo-item">Z + X : Double Punch</li>
+                            <li class="combo-item">A + S : Spin Kick</li>
+                        </ul>
+                    </div>
                 </div>
             </div>
-            <button class="nav-btn" id="controlsBackBtn">BACK TO MAIN MENU</button>
+            
+            <div class="controls-footer">
+                <button class="nav-btn" id="controlsBackBtn">BACK TO MAIN MENU</button>
+            </div>
         </div>
     </div>
 
+    <!-- Update Log Screen -->
     <div id="updatesScreen" class="screen">
         <div class="updates-content">
             <h1 class="main-title">UPDATE LOG</h1>
             <div class="updates-scroll">
                 <div class="update-version">
-                    <h3>v5.0 - BOSS EDITION</h3>
+                    <h3>v5.0.0 - TURN-BASED BOSS & DODGE SYSTEM</h3>
                     <ul>
-                        <li>🔥 Removed Online Mode</li>
-                        <li>🤖 Added 21 BOSS (Turn Based Strategy)</li>
-                        <li>⚡ Added Dodge Mechanic</li>
-                        <li>🔒 Device Lock (PC/Tablet exclusive modes)</li>
-                        <li>❤️ Parry changed to Heal</li>
-                        <li>🎨 Background Selector added</li>
+                        <li>🎮 21 BOSS - Turn-based combat mode with charge system</li>
+                        <li>⏱️ Timing-based attack system with green zone targeting</li>
+                        <li>🛡️ New dodge mechanic - dodge attacks right before impact</li>
+                        <li>⚠️ Exclamation warning system for incoming attacks</li>
+                        <li>🎬 Extended 67 Boss cutscene - 20 seconds of story</li>
+                        <li>🎵 New 25.mp3 music for 21 Boss fights</li>
+                        <li>💚 Heal system replaces parry mechanic</li>
+                        <li>🎨 Direct background selection from main menu</li>
+                        <li>📱 Auto device detection - no mode selection needed</li>
+                        <li>🚫 Removed online mode for streamlined experience</li>
+                    </ul>
+                </div>
+                <div class="update-version">
+                    <h3>v4.5.0 - ADMIN PANEL & CUSTOM BACKGROUNDS</h3>
+                    <ul>
+                        <li>Admin panel with special features</li>
+                        <li>Custom background themes</li>
+                        <li>67 Boss extended cutscene</li>
+                        <li>Boss stun phases and second life mechanic</li>
                     </ul>
                 </div>
             </div>
@@ -232,35 +316,47 @@
         </div>
     </div>
 
+    <!-- Credits Screen -->
     <div id="creditsScreen" class="screen">
         <div class="credits-content">
             <h1 class="main-title">CREDITS</h1>
             <div class="credits-list">
                 <div class="credit-item">
                     <div class="credit-name">IAN</div>
-                    <div class="credit-role">Director</div>
+                    <div class="credit-role">Director And Idea Management Team</div>
                 </div>
                 <div class="credit-item">
                     <div class="credit-name">ZIAD</div>
-                    <div class="credit-role">Combat System</div>
+                    <div class="credit-role">AI Programming & Combat System</div>
                 </div>
                 <div class="credit-item">
                     <div class="credit-name">AAHIL</div>
-                    <div class="credit-role">Graphics</div>
+                    <div class="credit-role">3D Graphics & Big Improvement</div>
                 </div>
             </div>
             <button class="nav-btn" id="creditsBackBtn">BACK TO MENU</button>
         </div>
     </div>
 
+    <!-- Cutscene Overlay -->
     <div id="cutsceneOverlay" class="screen" style="display: none;">
-        <div id="cutsceneText"></div>
+        <div id="cutsceneText">THE LEGEND OF 67...</div>
     </div>
 
-    <audio id="bossMusic" loop><source src="Finale.mp3" type="audio/mpeg"></audio>
-    <audio id="boss21Music" loop><source src="25.mp3" type="audio/mpeg"></audio>
-    <audio id="menuMusic" loop><source src="Menu.mp3" type="audio/mpeg"></audio>
+    <!-- Audio Elements -->
+    <audio id="bossMusic" loop>
+        <source src="Finale.mp3" type="audio/mpeg">
+    </audio>
+    
+    <audio id="boss21Music" loop>
+        <source src="25.mp3" type="audio/mpeg">
+    </audio>
+    
+    <audio id="menuMusic" loop>
+        <source src="Menu.mp3" type="audio/mpeg">
+    </audio>
 
+    <!-- JavaScript Files -->
     <script src="js/characters.js"></script>
     <script src="js/game.js"></script>
     <script src="js/shop.js"></script>
