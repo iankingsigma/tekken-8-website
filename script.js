@@ -976,6 +976,13 @@ document.addEventListener('DOMContentLoaded', function() {
     // Check boss unlock status
     checkBossUnlock();
     
+    // Initialize touch controls if in tablet mode
+    if (gameState.deviceType === 'tablet') {
+        if (typeof initTouchControls === 'function') {
+            setTimeout(initTouchControls, 500);
+        }
+    }
+    
     // Start loading simulation
     simulateLoading();
 });
