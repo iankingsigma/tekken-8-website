@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Brainrot Fighters v4.5</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="css/style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/gsap.min.js"></script>
 <base target="_blank">
@@ -312,6 +312,28 @@
         <div id="cutsceneText">THE LEGEND OF 67...</div>
     </div>
 
+    <!-- Mobile Admin Panel (for tablet mode) -->
+    <div id="mobileAdminPanel" class="mobile-admin-panel" style="display: none;">
+        <div class="mobile-admin-content">
+            <div class="mobile-admin-header">
+                <h3>ADMIN PANEL</h3>
+                <button id="closeMobileAdmin" class="close-btn">✕</button>
+            </div>
+            <div class="mobile-admin-options">
+                <label class="admin-option">
+                    <input type="checkbox" id="mobileInfiniteHeal"> Infinite Heal
+                </label>
+                <label class="admin-option">
+                    <input type="checkbox" id="mobileInfiniteHP"> Infinite HP
+                </label>
+                <input type="text" id="mobileGlobalMessage" placeholder="Global Message" class="admin-input">
+                <input type="text" id="mobileCustomBg" placeholder="Custom Background URL" class="admin-input">
+                <button id="mobileSendMessage" class="admin-btn">SEND MESSAGE</button>
+                <button id="mobileSetBg" class="admin-btn">SET BACKGROUND</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Audio Elements -->
     <audio id="bossMusic" loop>
         <source src="Finale.mp3" type="audio/mpeg">
@@ -329,11 +351,12 @@
     </audio>
 
     <!-- JavaScript Files -->
-    <script src="characters.js"></script>
-    <script src="game.js"></script>
-    <script src="shop.js"></script>
-    <script src="threejs-renderer.js"></script>
-    <script src="touch-controls.js"></script>
-    <script src="ui.js"></script>
+    <script src="js/characters.js"></script>
+    <script src="js/game.js"></script>
+    <script src="js/shop.js"></script>
+    <script src="js/threejs-renderer.js"></script>
+    <script src="js/touch-controls.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
