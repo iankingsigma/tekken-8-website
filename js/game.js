@@ -95,6 +95,7 @@ function initAdminPanel() {
     console.log('Initializing admin panel...');
     let adminCode = '';
     
+    // Desktop admin panel (keyboard)
     document.addEventListener('keydown', (e) => {
         if (e.ctrlKey || e.altKey) return;
         
@@ -109,6 +110,9 @@ function initAdminPanel() {
             adminCode = '';
         }
     });
+    
+    // Mobile admin panel (touch)
+    setupMobileAdminPanel();
 }
 
 function toggleAdminPanel() {
@@ -213,6 +217,140 @@ function toggleAdminPanel() {
         adminPanel.remove();
         gameState.adminMode = false;
     });
+}
+
+// Mobile Admin Panel Functions
+function setupMobileAdminPanel() {
+    // Create admin toggle button for tablet mode
+    const adminToggleBtn = document.createElement('button');
+    adminToggleBtn.id = 'adminToggleBtn';
+    adminToggleBtn.className = 'admin-toggle-btn';
+    adminToggleBtn.textContent = 'ADMIN';
+    adminToggleBtn.style.display = 'none';
+    document.body.appendChild(adminToggleBtn);
+    
+    // Show admin button only in tablet mode
+    if (gameState.deviceType === 'tablet') {
+        adminToggleBtn.classList.add('visible');
+    }
+    
+    // Toggle mobile admin panel
+    adminToggleBtn.addEventListener('click', () => {
+        toggleMobileAdminPanel();
+    });
+    
+    // Initialize mobile admin panel elements
+    initMobileAdminPanel();
+}
+
+function initMobileAdminPanel() {
+    const mobileAdminPanel = document.getElementById('mobileAdminPanel');
+    if (!mobileAdminPanel) return;
+    
+    // Close button
+    const closeBtn = document.getElementById('closeMobileAdmin');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+            hideMobileAdminPanel();
+        });
+    }
+    
+    // Infinite heal checkbox
+    const mobileInfiniteHeal = document.getElementById('mobileInfiniteHeal');
+    if (mobileInfiniteHeal) {
+        mobileInfiniteHeal.addEventListener('change', (e) => {
+            gameState.infiniteHeal = e.target.checked;
+            // Sync with desktop panel
+            const desktopCheckbox = document.getElementById('infiniteHealCheckbox');
+            if (desktopCheckbox) desktopCheckbox.checked = e.target.checked;
+            
+            if (gameState.infiniteHeal) {
+                const healButtons = document.querySelectorAll('[data-action="heal"]');
+                healButtons.forEach(btn => {
+                    btn.disabled = false;
+                    btn.style.opacity = '1';
+                    btn.style.background = 'rgba(100, 255, 100, 0.7)';
+                    btn.textContent = 'HEAL';
+                });
+            }
+        });
+    }
+    
+    // Infinite HP checkbox
+    const mobileInfiniteHP = document.getElementById('mobileInfiniteHP');
+    if (mobileInfiniteHP) {
+        mobileInfiniteHP.addEventListener('change', (e) => {
+            gameState.infiniteHP = e.target.checked;
+            // Sync with desktop panel
+            const desktopCheckbox = document.getElementById('infiniteHPCheckbox');
+            if (desktopCheckbox) desktopCheckbox.checked = e.target.checked;
+            
+            if (gameState.infiniteHP && gameState.player) {
+                gameState.player.health = gameState.player.maxHealth;
+                gameState.playerRealHP = 100;
+                gameState.playerFakeHP = 100;
+                updateHealthBars();
+            }
+        });
+    }
+    
+    // Send global message
+    const mobileSendMessage = document.getElementById('mobileSendMessage');
+    if (mobileSendMessage) {
+        mobileSendMessage.addEventListener('click', () => {
+            const message = document.getElementById('mobileGlobalMessage').value;
+            if (message.trim()) {
+                showGlobalMessage(message);
+                document.getElementById('mobileGlobalMessage').value = '';
+            }
+        });
+    }
+    
+    // Set custom background
+    const mobileSetBg = document.getElementById('mobileSetBg');
+    if (mobileSetBg) {
+        mobileSetBg.addEventListener('click', () => {
+            const bgUrl = document.getElementById('mobileCustomBg').value;
+            if (bgUrl.trim()) {
+                setCustomBackground(bgUrl);
+                document.getElementById('mobileCustomBg').value = '';
+            }
+        });
+    }
+}
+
+function toggleMobileAdminPanel() {
+    const mobileAdminPanel = document.getElementById('mobileAdminPanel');
+    if (!mobileAdminPanel) return;
+    
+    if (mobileAdminPanel.style.display === 'none' || !mobileAdminPanel.style.display) {
+        showMobileAdminPanel();
+    } else {
+        hideMobileAdminPanel();
+    }
+}
+
+function showMobileAdminPanel() {
+    const mobileAdminPanel = document.getElementById('mobileAdminPanel');
+    if (mobileAdminPanel) {
+        mobileAdminPanel.style.display = 'flex';
+        gameState.adminMode = true;
+        
+        // Sync checkboxes with current state
+        const mobileInfiniteHeal = document.getElementById('mobileInfiniteHeal');
+        const mobileInfiniteHP = document.getElementById('mobileInfiniteHP');
+        
+        if (mobileInfiniteHeal) mobileInfiniteHeal.checked = gameState.infiniteHeal;
+        if (mobileInfiniteHP) mobileInfiniteHP.checked = gameState.infiniteHP;
+    }
+}
+
+function hideMobileAdminPanel() {
+    const mobileAdminPanel = document.getElementById('mobileAdminPanel');
+    if (mobileAdminPanel) {
+        mobileAdminPanel.style.display = 'none';
+        gameState.adminMode = false;
+    }
 }
 
 function setCustomBackground(url) {
