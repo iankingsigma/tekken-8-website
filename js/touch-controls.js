@@ -107,7 +107,7 @@ class TouchControls {
             'punch': ['z', 'x'],
             'kick': ['a', 's'],
             'special': ['c'],
-            'parry': [' ']
+            'heal': [' '] // Changed from 'parry' to 'heal'
         };
         
         if (keyMap[action]) {
@@ -122,8 +122,8 @@ class TouchControls {
                         doPlayerAttack('kick');
                     } else if (action === 'special') {
                         doPlayerAttack('special');
-                    } else if (action === 'parry') {
-                        doPlayerAttack('parry');
+                    } else if (action === 'heal') { // Changed from 'parry' to 'heal'
+                        doPlayerAttack('heal');
                     }
                 }
             });
@@ -139,8 +139,18 @@ function initTouchControls() {
     }
 }
 
-const originalShowScreen = showScreen;
-showScreen = function(screenId) {
+// Override showScreen to handle touch controls properly
+const originalShowScreen = window.showScreen || function(screenId) {
+    // Default implementation if not defined
+    const screens = document.querySelectorAll('.screen');
+    screens.forEach(screen => screen.classList.remove('active'));
+    const targetScreen = document.getElementById(screenId);
+    if (targetScreen) {
+        targetScreen.classList.add('active');
+    }
+};
+
+window.showScreen = function(screenId) {
     originalShowScreen(screenId);
     
     if (screenId === 'gameScreen' && gameState.deviceType === 'tablet') {
@@ -151,3 +161,7 @@ showScreen = function(screenId) {
         }, 100);
     }
 };
+
+// Make functions globally available
+window.TouchControls = TouchControls;
+window.initTouchControls = initTouchControls;
