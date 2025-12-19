@@ -82,7 +82,7 @@ const CHARACTERS = [
     }
 ];
 
-// Boss Character
+// Boss Character - 67
 const BOSS_67 = {
     id: 6667,
     name: "67 BOSS",
@@ -102,3 +102,72 @@ const BOSS_67 = {
         { input: ["down", "right", "punch"], name: "MEGA FIREBALL", damage: 180 }
     ]
 };
+
+// Boss Character - 21
+const BOSS_21 = {
+    id: 2121,
+    name: "21 BOSS",
+    style: "Wind Master",
+    hp: 2000,
+    color: "#00ccff",
+    icon: "21",
+    description: "The master of wind techniques. Uses turn-based combat with devastating attacks.",
+    moves: {
+        punch: 50,
+        kick: 60,
+        special: 100
+    },
+    isBoss: true,
+    isTurnBased: true,
+    combos: [
+        { input: ["gun"], name: "WIND GUN", damage: 150, dodgeable: true },
+        { input: ["dash"], name: "WIND DASH", damage: 120, dodgeable: true },
+        { input: ["combo"], name: "WIND COMBO", damage: 200, dodgeable: true },
+        { input: ["charge"], name: "WIND CHARGE", damage: 0, dodgeable: false }
+    ]
+};
+
+// Difficulty settings
+const DIFFICULTIES = {
+    easy: {
+        aggression: 0.5,
+        parryChance: 0.1,
+        reactionTime: 30
+    },
+    medium: {
+        aggression: 0.7,
+        parryChance: 0.2,
+        reactionTime: 20
+    },
+    hard: {
+        aggression: 0.9,
+        parryChance: 0.3,
+        reactionTime: 15
+    },
+    insane: {
+        aggression: 1.2,
+        parryChance: 0.4,
+        reactionTime: 10
+    },
+    boss67: {
+        aggression: 1.5,
+        parryChance: 0.0,
+        reactionTime: 5,
+        isBoss: true,
+        bossType: '67'
+    },
+    boss21: {
+        aggression: 1.0,
+        parryChance: 0.0,
+        reactionTime: 0,
+        isBoss: true,
+        bossType: '21',
+        isTurnBased: true
+    }
+};
+
+// Make available globally
+window.CHARACTERS = CHARACTERS;
+window.BOSS_67 = BOSS_67;
+window.BOSS_21 = BOSS_21;
+window.DIFFICULTIES = DIFFICULTIES;
