@@ -1,4 +1,4 @@
-// Character Data
+// Character Data for Brainrot Fighters v5.0
 const CHARACTERS = [
     {
         id: 67,
@@ -82,7 +82,7 @@ const CHARACTERS = [
     }
 ];
 
-// Boss Character
+// 67 Boss Character
 const BOSS_67 = {
     id: 6667,
     name: "67 BOSS",
@@ -90,7 +90,7 @@ const BOSS_67 = {
     hp: 3000,
     color: "#ff0000",
     icon: "67",
-    description: "The ultimate 67 manifestation. Defeat it to uncover the truth.",
+    description: "The ultimate 67 manifestation. Survive the onslaught and master the dodge timing.",
     moves: {
         punch: 60,
         kick: 55,
@@ -101,4 +101,23 @@ const BOSS_67 = {
         { input: ["right", "right", "punch"], name: "ULTIMATE UPPERCUT", damage: 200 },
         { input: ["down", "right", "punch"], name: "MEGA FIREBALL", damage: 180 }
     ]
+};
+
+// 21 Boss Character - Turn-Based
+const BOSS_21 = {
+    id: 2121,
+    name: "21 BOSS",
+    style: "Strategic Master",
+    hp: 2500,
+    color: "#00ccff",
+    icon: "21",
+    description: "Master of turn-based combat. Charge your power, time your attacks perfectly, and survive the strategic battle.",
+    moves: {
+        punch: 50,
+        kick: 50,
+        special: 100
+    },
+    isBoss: true,
+    is21Boss: true,
+    combos: []
 };
