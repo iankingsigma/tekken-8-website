@@ -1,4 +1,4 @@
-// Brainrot Fighters v5.0 - Complete Game Logic with Turn-Based System
+// Brainrot Fighters v5.0 - Complete Game Logic with ALL Mechanics
 
 // Game State
 let gameState = {
@@ -41,11 +41,12 @@ let gameState = {
     charges: 0,
     timingBarActive: false,
     timingBarProgress: 0,
-    timingBarSpeed: 0.02,
+    timingBarSpeed: 0.015,
     timingBarDirection: 1,
     targetZoneStart: 0.4,
     targetZoneEnd: 0.6,
     holdingSpace: false,
+    spacePressed: false,
     bossCharges: 0,
     bossNextAction: null
 };
@@ -396,6 +397,8 @@ function initializeGameState(playerChar, cpuChar, difficulty, isBossFight, is21B
         gameState.charges = 0;
         gameState.bossCharges = 0;
         gameState.timingBarActive = false;
+        gameState.spacePressed = false;
+        gameState.holdingSpace = false;
         document.getElementById('turnBasedUI').style.display = 'block';
         document.getElementById('touchControls').style.display = 'none';
         updateChargeCounter();
@@ -609,6 +612,7 @@ function playerCharge() {
     if (!gameState.playerTurn) return;
     gameState.charges++;
     updateChargeCounter();
+    showMessage(`CHARGED! (${gameState.charges} charges)`, '#00ccff');
     endPlayerTurn();
 }
 
@@ -623,6 +627,7 @@ function playerFight() {
     gameState.timingBarProgress = 0;
     gameState.timingBarDirection = 1;
     gameState.holdingSpace = false;
+    gameState.spacePressed = false;
     
     const timingBar = document.getElementById('timingBar');
     if (timingBar) timingBar.style.display = 'block';
@@ -641,7 +646,8 @@ function playerFight() {
 function updateTimingBar() {
     if (!gameState.timingBarActive) return;
     
-    if (gameState.holdingSpace) {
+    // Check if space was pressed (don't automatically check holding)
+    if (gameState.spacePressed) {
         // Check if in target zone
         if (gameState.timingBarProgress >= gameState.targetZoneStart && 
             gameState.timingBarProgress <= gameState.targetZoneEnd) {
@@ -651,21 +657,23 @@ function updateTimingBar() {
             // Miss
             executeTimingAttack(false);
         }
-    } else {
-        // Move bar
-        gameState.timingBarProgress += gameState.timingBarSpeed * gameState.timingBarDirection;
-        
-        if (gameState.timingBarProgress >= 1) {
-            gameState.timingBarProgress = 1;
-            gameState.timingBarDirection = -1;
-        } else if (gameState.timingBarProgress <= 0) {
-            gameState.timingBarProgress = 0;
-            gameState.timingBarDirection = 1;
-        }
-        
-        const fill = document.getElementById('timingBarFill');
-        if (fill) fill.style.width = `${gameState.timingBarProgress * 100}%`;
+        gameState.spacePressed = false;
+        return;
     }
+    
+    // Move bar
+    gameState.timingBarProgress += gameState.timingBarSpeed * gameState.timingBarDirection;
+    
+    if (gameState.timingBarProgress >= 1) {
+        gameState.timingBarProgress = 1;
+        gameState.timingBarDirection = -1;
+    } else if (gameState.timingBarProgress <= 0) {
+        gameState.timingBarProgress = 0;
+        gameState.timingBarDirection = 1;
+    }
+    
+    const fill = document.getElementById('timingBarFill');
+    if (fill) fill.style.width = `${gameState.timingBarProgress * 100}%`;
 }
 
 function executeTimingAttack(success) {
@@ -677,6 +685,7 @@ function executeTimingAttack(success) {
         const damage = Math.floor(gameState.player.character.moves.special * 2);
         gameState.cpu.health = Math.max(0, gameState.cpu.health - damage);
         showMessage(`PERFECT HIT! ${damage} DAMAGE!`, '#00ff00');
+        createBloodEffect(gameState.cpu.x, 1, 0);
     } else {
         const damage = Math.floor(gameState.player.character.moves.punch * 0.5);
         gameState.cpu.health = Math.max(0, gameState.cpu.health - damage);
@@ -684,7 +693,12 @@ function executeTimingAttack(success) {
     }
     
     updateHealthBars();
-    endPlayerTurn();
+    
+    if (gameState.cpu.health <= 0) {
+        endRound();
+    } else {
+        endPlayerTurn();
+    }
 }
 
 function playerHeal() {
@@ -733,17 +747,22 @@ function executeBossTurn() {
                     gameState.player.health = Math.max(0, gameState.player.health - damage);
                     updateHealthBars();
                     showMessage(`BOSS HIT! ${damage} DAMAGE!`, '#ff0033');
+                    createBloodEffect(gameState.player.x, 1, 0);
                 }
                 gameState.dodgeSuccessful = false;
                 gameState.bossCharges = 0;
                 
                 if (bossAction) bossAction.style.display = 'none';
                 
-                setTimeout(() => {
-                    gameState.playerTurn = true;
-                    updateTurnIndicator();
-                    updateChargeCounter();
-                }, 1000);
+                if (gameState.player.health <= 0) {
+                    endRound();
+                } else {
+                    setTimeout(() => {
+                        gameState.playerTurn = true;
+                        updateTurnIndicator();
+                        updateChargeCounter();
+                    }, 1000);
+                }
             }, 1500);
         }, 1000);
     } else {
@@ -762,7 +781,7 @@ function executeBossTurn() {
     }
 }
 
-// Dodge System
+// Dodge System (G key)
 function showDodgeWarning() {
     gameState.dodgeWarningActive = true;
     const warning = document.getElementById('dodgeWarning');
@@ -1014,12 +1033,30 @@ function endRound() {
         }
         
         localStorage.setItem('brainrotCoins', gameState.coins);
+        spawn67();
     }
     
     setTimeout(() => {
         alert(`${message}\nScore: ${gameState.score}\nCoins Earned: 50`);
         showScreen('characterSelect');
     }, 1000);
+}
+
+function spawn67() {
+    for (let i = 0; i < 15; i++) {
+        setTimeout(() => {
+            const element = document.createElement('div');
+            element.className = 'secret-67';
+            element.textContent = '67';
+            element.style.left = `${Math.random() * 80 + 10}%`;
+            element.style.top = `${Math.random() * 80 + 10}%`;
+            document.body.appendChild(element);
+            
+            setTimeout(() => {
+                element.remove();
+            }, 2000);
+        }, i * 100);
+    }
 }
 
 // Background Management
@@ -1082,21 +1119,26 @@ function setupEventListeners() {
         const key = e.key.toLowerCase();
         gameState.keys[key] = true;
         
+        // Turn-based timing bar (SPACE to stop bar)
         if (gameState.turnBased && gameState.timingBarActive && key === ' ') {
-            gameState.holdingSpace = true;
+            e.preventDefault();
+            gameState.spacePressed = true;
         }
         
+        // Dodge with G key
+        if (!gameState.turnBased && key === 'g') {
+            attemptDodge();
+        }
+        
+        // Normal attacks (non-turn-based)
         if (!gameState.turnBased && gameState.gameActive && gameState.player.attackCooldown <= 0) {
             if (key === 'z' || key === 'x') {
                 doPlayerAttack('punch');
             } else if (key === 'a' || key === 's') {
                 doPlayerAttack('kick');
             } else if (key === ' ') {
-                if (gameState.dodgeWarningActive || gameState.dodgeWindow) {
-                    attemptDodge();
-                } else {
-                    doPlayerAttack('heal');
-                }
+                e.preventDefault();
+                doPlayerAttack('heal');
             } else if (key === 'c') {
                 doPlayerAttack('special');
             }
