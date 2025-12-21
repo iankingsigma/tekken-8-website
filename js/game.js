@@ -535,6 +535,10 @@ function update() {
     // Turn-based mode update
     if (gameState.turnBased) {
         updateTurnBased();
+        // CRITICAL: Check ONLY health-based win conditions in turn-based, NO TIMER
+        if (gameState.player.health <= 0 || gameState.cpu.health <= 0) {
+            endRound();
+        }
         return; // CRITICAL: Stop here during turn-based, don't update normal game
     }
     
@@ -573,7 +577,7 @@ function update() {
         }
     }
     
-    // Check win conditions
+    // Check win conditions (normal mode)
     if (gameState.player.health <= 0 || gameState.cpu.health <= 0 || gameState.roundTime <= 0) {
         endRound();
     }
