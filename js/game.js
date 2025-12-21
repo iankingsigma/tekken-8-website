@@ -535,10 +535,10 @@ function update() {
     // Turn-based mode update
     if (gameState.turnBased) {
         updateTurnBased();
-        return;
+        return; // CRITICAL: Stop here during turn-based, don't update normal game
     }
     
-    // Normal mode update
+    // Normal mode update (only runs when NOT turn-based)
     if (gameState.player.attackCooldown > 0) gameState.player.attackCooldown--;
     if (gameState.cpu.attackCooldown > 0) gameState.cpu.attackCooldown--;
     
@@ -581,9 +581,14 @@ function update() {
 
 // Turn-Based System
 function updateTurnBased() {
+    // CRITICAL: Don't update anything else during timing bar
     if (gameState.timingBarActive) {
         updateTimingBar();
+        return; // STOP HERE - don't process anything else
     }
+    
+    // Only update turn-based UI when not in timing bar
+    updateChargeCounter();
 }
 
 function updateChargeCounter() {
@@ -646,7 +651,11 @@ function playerFight() {
 function updateTimingBar() {
     if (!gameState.timingBarActive) return;
     
-    // Check if space was pressed (don't automatically check holding)
+    // PAUSE GAME DURING TIMING BAR
+    if (gameState.player.attackCooldown > 0) gameState.player.attackCooldown = 20;
+    if (gameState.cpu.attackCooldown > 0) gameState.cpu.attackCooldown = 20;
+    
+    // Check if space was pressed
     if (gameState.spacePressed) {
         // Check if in target zone
         if (gameState.timingBarProgress >= gameState.targetZoneStart && 
@@ -661,7 +670,7 @@ function updateTimingBar() {
         return;
     }
     
-    // Move bar
+    // Move bar continuously
     gameState.timingBarProgress += gameState.timingBarSpeed * gameState.timingBarDirection;
     
     if (gameState.timingBarProgress >= 1) {
@@ -741,7 +750,12 @@ function executeBossTurn() {
         
         setTimeout(() => {
             showDodgeWarning();
+            gameState.dodgeWindow = true;
+            
             setTimeout(() => {
+                hideDodgeWarning();
+                gameState.dodgeWindow = false;
+                
                 if (!gameState.dodgeSuccessful) {
                     const damage = Math.floor(gameState.cpu.character.moves.special * 1.5);
                     gameState.player.health = Math.max(0, gameState.player.health - damage);
@@ -763,7 +777,7 @@ function executeBossTurn() {
                         updateChargeCounter();
                     }, 1000);
                 }
-            }, 1500);
+            }, 2000); // Give 2 seconds to dodge
         }, 1000);
     } else {
         // Charge
