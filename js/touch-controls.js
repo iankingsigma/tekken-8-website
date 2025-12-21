@@ -1,4 +1,4 @@
-// Touch Controls for Tablet - FIXED COOLDOWN VERSION
+// Touch Controls for Tablet - Brainrot Fighters v5.0
 class TouchControls {
     constructor() {
         this.movementButtons = document.querySelectorAll('.movement-btn');
@@ -107,7 +107,8 @@ class TouchControls {
             'punch': ['z', 'x'],
             'kick': ['a', 's'],
             'special': ['c'],
-            'parry': [' ']
+            'heal': [' '],
+            'dodge': ['g']
         };
         
         if (keyMap[action]) {
@@ -115,15 +116,17 @@ class TouchControls {
                 gameState.keys[key] = isPressed;
                 
                 // Trigger attack immediately on press
-                if (isPressed && gameState.gameActive && gameState.player.attackCooldown <= 0) {
+                if (isPressed && gameState.gameActive && !gameState.turnBased && gameState.player.attackCooldown <= 0) {
                     if (action === 'punch') {
                         doPlayerAttack('punch');
                     } else if (action === 'kick') {
                         doPlayerAttack('kick');
                     } else if (action === 'special') {
                         doPlayerAttack('special');
-                    } else if (action === 'parry') {
-                        doPlayerAttack('parry');
+                    } else if (action === 'heal') {
+                        doPlayerAttack('heal');
+                    } else if (action === 'dodge') {
+                        attemptDodge();
                     }
                 }
             });
@@ -139,11 +142,16 @@ function initTouchControls() {
     }
 }
 
-const originalShowScreen = showScreen;
-showScreen = function(screenId) {
-    originalShowScreen(screenId);
+// Override showScreen to initialize touch controls when needed
+const originalShowScreen = window.showScreen || showScreen;
+window.showScreen = function(screenId) {
+    if (originalShowScreen) {
+        originalShowScreen(screenId);
+    } else {
+        showScreen(screenId);
+    }
     
-    if (screenId === 'gameScreen' && gameState.deviceType === 'tablet') {
+    if (screenId === 'gameScreen' && gameState.deviceType === 'tablet' && !gameState.turnBased) {
         setTimeout(() => {
             if (!touchControls) {
                 initTouchControls();
