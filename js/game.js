@@ -81,21 +81,34 @@ const BOSS_21_CUTSCENE = [
 // Initialize game
 function init() {
     console.log('Initializing Brainrot Fighters v5.0...');
-    document.getElementById('highScore').textContent = gameState.highScore;
-    document.getElementById('coinsAmount').textContent = gameState.coins;
+    document.getElementById('highScore').textContent = gameState.highScore || 0;
+    document.getElementById('coinsAmount').textContent = gameState.coins || 0;
     detectDevice();
     setupEventListeners();
     renderCharacterSelect();
     applyCustomBackground();
     checkBossUnlock();
     
+    // Ensure canvas has focus for keyboard input
+    const canvas = document.getElementById('gameCanvas');
+    if (canvas) {
+        canvas.setAttribute('tabindex', '0');
+        canvas.style.outline = 'none';
+    }
+    
     if (typeof loadShopItems === 'function') {
         setTimeout(loadShopItems, 100);
     }
     
-    if (menuMusic) {
-        menuMusic.volume = 0.7;
-        menuMusic.play().catch(e => console.log("Menu music play failed:", e));
+    // Try to play menu music
+    try {
+        const menuMusic = document.getElementById('menuMusic');
+        if (menuMusic) {
+            menuMusic.volume = 0.3;
+            menuMusic.play().catch(e => console.log("Menu music autoplay blocked, will play on user interaction"));
+        }
+    } catch (e) {
+        console.log("Menu music error:", e);
     }
 }
 
@@ -111,8 +124,11 @@ function detectDevice() {
         gameState.deviceType = 'desktop';
     }
     
-    document.getElementById('deviceType').textContent = 
-        gameState.deviceType === 'tablet' ? 'TABLET MODE DETECTED' : 'PC MODE DETECTED';
+    const deviceTypeElement = document.getElementById('deviceType');
+    if (deviceTypeElement) {
+        deviceTypeElement.textContent = 
+            gameState.deviceType === 'tablet' ? 'TABLET MODE DETECTED' : 'PC MODE DETECTED';
+    }
     
     // Auto-proceed to loading after 2 seconds
     setTimeout(() => {
@@ -143,8 +159,8 @@ function simulateLoading() {
             }, 500);
         }
         
-        loadingBar.style.width = `${progress}%`;
-        loadingText.textContent = stages[Math.min(Math.floor(progress / 20), stages.length - 1)];
+        if (loadingBar) loadingBar.style.width = `${progress}%`;
+        if (loadingText) loadingText.textContent = stages[Math.min(Math.floor(progress / 20), stages.length - 1)];
     }, 200);
 }
 
@@ -161,43 +177,72 @@ function showScreen(screenId) {
     }
     
     // Music handling
-    if (screenId === 'gameScreen') {
-        if (menuMusic && !menuMusic.paused) menuMusic.pause();
-        
-        if (gameState.is21BossFight) {
-            if (boss21Music) {
-                boss21Music.currentTime = 0;
-                boss21Music.volume = 0.7;
-                boss21Music.play().catch(e => console.log("21 Boss music failed:", e));
+    try {
+        if (screenId === 'gameScreen') {
+            const menuMusic = document.getElementById('menuMusic');
+            if (menuMusic && !menuMusic.paused) menuMusic.pause();
+            
+            if (gameState.is21BossFight) {
+                const boss21Music = document.getElementById('boss21Music');
+                if (boss21Music) {
+                    boss21Music.currentTime = 0;
+                    boss21Music.volume = 0.5;
+                    boss21Music.play().catch(e => console.log("21 Boss music play failed"));
+                }
+            } else if (gameState.isBossFight) {
+                const bossMusic = document.getElementById('bossMusic');
+                if (bossMusic) {
+                    bossMusic.currentTime = 0;
+                    bossMusic.volume = 0.5;
+                    bossMusic.play().catch(e => console.log("Boss music play failed"));
+                }
             }
-        } else if (gameState.isBossFight) {
-            if (bossMusic) {
+        } else {
+            const bossMusic = document.getElementById('bossMusic');
+            const boss21Music = document.getElementById('boss21Music');
+            if (bossMusic && !bossMusic.paused) {
+                bossMusic.pause();
                 bossMusic.currentTime = 0;
-                bossMusic.volume = 0.7;
-                bossMusic.play().catch(e => console.log("Boss music failed:", e));
+            }
+            if (boss21Music && !boss21Music.paused) {
+                boss21Music.pause();
+                boss21Music.currentTime = 0;
+            }
+            
+            if (screenId !== 'gameScreen') {
+                const menuMusic = document.getElementById('menuMusic');
+                if (menuMusic && menuMusic.paused) {
+                    menuMusic.currentTime = 0;
+                    menuMusic.volume = 0.3;
+                    menuMusic.play().catch(e => console.log("Menu music play failed"));
+                }
             }
         }
-    } else {
-        if (bossMusic && !bossMusic.paused) {
-            bossMusic.pause();
-            bossMusic.currentTime = 0;
-        }
-        if (boss21Music && !boss21Music.paused) {
-            boss21Music.pause();
-            boss21Music.currentTime = 0;
-        }
-        if (menuMusic && menuMusic.paused && screenId !== 'gameScreen') {
-            menuMusic.currentTime = 0;
-            menuMusic.volume = 0.7;
-            menuMusic.play().catch(e => console.log("Menu music failed:", e));
-        }
+    } catch (e) {
+        console.log("Music handling error:", e);
     }
     
     if (screenId === 'gameScreen') {
+        console.log("Game screen shown, initializing game...");
         setTimeout(() => {
+            // Try to initialize Three.js if available
             if (typeof initThreeJS === 'function') {
-                initThreeJS();
+                console.log("Calling initThreeJS...");
+                try {
+                    initThreeJS();
+                } catch (e) {
+                    console.error("Three.js initialization failed:", e);
+                    // Continue anyway - we can use fallback
+                }
             }
+            
+            // Focus canvas for keyboard input
+            const canvas = document.getElementById('gameCanvas');
+            if (canvas) {
+                canvas.focus();
+            }
+            
+            // Start the game
             startGame();
         }, 100);
     } else if (screenId === 'shopScreen') {
@@ -222,7 +267,10 @@ function renderCharacterSelect() {
     const grid = document.getElementById('characterGrid');
     const difficultySelect = document.getElementById('difficultySelect');
     
-    if (!grid) return;
+    if (!grid) {
+        console.error("Character grid not found!");
+        return;
+    }
     
     // Add boss difficulties if unlocked
     if (gameState.bossUnlocked && difficultySelect) {
@@ -247,26 +295,31 @@ function renderCharacterSelect() {
     
     grid.innerHTML = '';
     
+    if (!CHARACTERS || !Array.isArray(CHARACTERS)) {
+        console.error("CHARACTERS array not found or not an array!");
+        return;
+    }
+    
     CHARACTERS.forEach((character, index) => {
         const card = document.createElement('div');
         card.className = 'character-card';
         card.innerHTML = `
             <div class="character-icon" style="background: ${character.color}20; border-color: ${character.color}">
-                ${character.icon}
+                ${character.icon || character.name.charAt(0)}
             </div>
             <div class="character-name">${character.name}</div>
             <div class="character-style">${character.style}</div>
             <div class="character-stats">
                 <div class="stat">
-                    <div class="stat-value">${character.moves.punch}</div>
+                    <div class="stat-value">${character.moves?.punch || 0}</div>
                     <div class="stat-label">PUNCH</div>
                 </div>
                 <div class="stat">
-                    <div class="stat-value">${character.moves.kick}</div>
+                    <div class="stat-value">${character.moves?.kick || 0}</div>
                     <div class="stat-label">KICK</div>
                 </div>
                 <div class="stat">
-                    <div class="stat-value">${character.hp}</div>
+                    <div class="stat-value">${character.hp || 0}</div>
                     <div class="stat-label">HP</div>
                 </div>
             </div>
@@ -276,12 +329,14 @@ function renderCharacterSelect() {
             document.querySelectorAll('.character-card').forEach(c => c.classList.remove('selected'));
             card.classList.add('selected');
             gameState.selectedCharacter = index;
-            document.getElementById('confirmBtn').disabled = false;
+            
+            const confirmBtn = document.getElementById('confirmBtn');
+            if (confirmBtn) confirmBtn.disabled = false;
             
             document.getElementById('previewName').textContent = character.name;
             document.getElementById('previewStyle').textContent = character.style;
             document.getElementById('previewDesc').textContent = character.description;
-            document.getElementById('previewModel').textContent = character.icon;
+            document.getElementById('previewModel').textContent = character.icon || character.name.charAt(0);
             document.getElementById('previewModel').style.borderColor = character.color;
             
             updateBossUnlockInfo();
@@ -291,12 +346,15 @@ function renderCharacterSelect() {
     });
     
     if (difficultySelect) {
-        difficultySelect.addEventListener('change', updateBossUnlockInfo);
+        difficultySelect.addEventListener('change', () => {
+            gameState.difficulty = difficultySelect.value;
+            updateBossUnlockInfo();
+        });
     }
 }
 
 function updateBossUnlockInfo() {
-    const difficulty = document.getElementById('difficultySelect').value;
+    const difficulty = document.getElementById('difficultySelect')?.value || 'medium';
     const char = CHARACTERS[gameState.selectedCharacter];
     
     const bossUnlockInfo = document.getElementById('bossUnlockInfo');
@@ -335,45 +393,64 @@ function updateBossUnlockInfo() {
 // Start Game
 function startGame() {
     console.log('Starting game... Mode:', gameState.gameMode);
-    if (gameState.selectedCharacter === null) {
+    
+    if (gameState.selectedCharacter === null || gameState.selectedCharacter === undefined) {
+        console.error("No character selected!");
         alert('Please select a character first!');
         showScreen('characterSelect');
         return;
     }
     
+    const difficultySelect = document.getElementById('difficultySelect');
+    if (difficultySelect) {
+        gameState.difficulty = difficultySelect.value;
+    }
+    
     const playerChar = CHARACTERS[gameState.selectedCharacter];
-    const difficulty = DIFFICULTY_SETTINGS[gameState.difficulty];
+    if (!playerChar) {
+        console.error("Selected character not found!");
+        alert('Character data not found! Please try again.');
+        showScreen('characterSelect');
+        return;
+    }
+    
+    const difficulty = DIFFICULTY_SETTINGS[gameState.difficulty] || DIFFICULTY_SETTINGS.medium;
     
     let cpuChar;
     let isBossFight = false;
     let is21BossFight = false;
     
+    console.log("Starting with character:", playerChar.name, "Difficulty:", gameState.difficulty);
+    
     // Check for 67 Boss
     if (gameState.difficulty === 'sixtyseven' && playerChar.id === 67 && gameState.bossUnlocked) {
-        cpuChar = BOSS_67;
+        console.log("Starting 67 BOSS fight");
+        cpuChar = BOSS_67 || CHARACTERS[0];
         isBossFight = true;
         gameState.isBossFight = true;
         gameState.is21BossFight = false;
         gameState.turnBased = false;
-        startBossCutscene(BOSS_67_CUTSCENE, 20000);
+        startBossCutscene(BOSS_67_CUTSCENE, 10000); // Shorter for testing
         return;
     }
     // Check for 21 Boss
     else if (gameState.difficulty === 'twentyone' && playerChar.id === 21 && gameState.boss21Unlocked) {
-        cpuChar = BOSS_21;
+        console.log("Starting 21 BOSS fight");
+        cpuChar = BOSS_21 || CHARACTERS[0];
         is21BossFight = true;
         gameState.is21BossFight = true;
         gameState.isBossFight = false;
         gameState.turnBased = true;
-        startBossCutscene(BOSS_21_CUTSCENE, 4000);
+        startBossCutscene(BOSS_21_CUTSCENE, 3000);
         return;
     }
     else {
+        console.log("Starting normal fight");
         let cpuIndex;
         do {
             cpuIndex = Math.floor(Math.random() * CHARACTERS.length);
         } while (cpuIndex === gameState.selectedCharacter && CHARACTERS.length > 1);
-        cpuChar = CHARACTERS[cpuIndex];
+        cpuChar = CHARACTERS[cpuIndex] || CHARACTERS[0];
         gameState.isBossFight = false;
         gameState.is21BossFight = false;
         gameState.turnBased = false;
@@ -382,18 +459,22 @@ function startGame() {
     initializeGameState(playerChar, cpuChar, difficulty, isBossFight, is21BossFight);
     
     if (!gameState.cutsceneActive) {
+        console.log("Starting game loop...");
+        startRoundTimer();
         animate();
-        startRoundTimer(); // Start the timer
     }
 }
 
 function initializeGameState(playerChar, cpuChar, difficulty, isBossFight, is21BossFight) {
+    console.log("Initializing game state...");
+    
     gameState.healCooldownActive = false;
     gameState.healCooldownEnd = 0;
     gameState.dodgeWindow = false;
     gameState.dodgeWarningActive = false;
     gameState.nextAttackTime = Date.now() + 3000;
-    gameState.roundTime = 99; // Reset round time
+    gameState.roundTime = 99;
+    gameState.cutsceneActive = false;
     
     // Clear any existing timer
     if (gameState.roundTimerInterval) {
@@ -409,14 +490,20 @@ function initializeGameState(playerChar, cpuChar, difficulty, isBossFight, is21B
         gameState.timingBarActive = false;
         gameState.spacePressed = false;
         gameState.holdingSpace = false;
-        document.getElementById('turnBasedUI').style.display = 'block';
-        document.getElementById('touchControls').style.display = 'none';
+        
+        const turnBasedUI = document.getElementById('turnBasedUI');
+        const touchControls = document.getElementById('touchControls');
+        if (turnBasedUI) turnBasedUI.style.display = 'block';
+        if (touchControls) touchControls.style.display = 'none';
+        
         updateChargeCounter();
         updateTurnIndicator();
     } else {
-        document.getElementById('turnBasedUI').style.display = 'none';
-        if (gameState.deviceType === 'tablet') {
-            document.getElementById('touchControls').style.display = 'flex';
+        const turnBasedUI = document.getElementById('turnBasedUI');
+        const touchControls = document.getElementById('touchControls');
+        if (turnBasedUI) turnBasedUI.style.display = 'none';
+        if (gameState.deviceType === 'tablet' && touchControls) {
+            touchControls.style.display = 'flex';
         }
     }
     
@@ -424,21 +511,21 @@ function initializeGameState(playerChar, cpuChar, difficulty, isBossFight, is21B
         character: playerChar,
         x: -5,
         z: 0,
-        health: playerChar.hp,
-        maxHealth: playerChar.hp,
+        health: playerChar.hp || 100,
+        maxHealth: playerChar.hp || 100,
         facing: 1,
         state: 'idle',
         stateTimer: 0,
         attackCooldown: 0,
-        items: gameState.playerInventory
+        items: gameState.playerInventory || {}
     };
     
     gameState.cpu = {
         character: cpuChar,
         x: 5,
         z: 0,
-        health: Math.floor(cpuChar.hp * difficulty.cpuHpMultiplier),
-        maxHealth: Math.floor(cpuChar.hp * difficulty.cpuHpMultiplier),
+        health: Math.floor((cpuChar.hp || 100) * (difficulty.cpuHpMultiplier || 1)),
+        maxHealth: Math.floor((cpuChar.hp || 100) * (difficulty.cpuHpMultiplier || 1)),
         facing: -1,
         state: 'idle',
         stateTimer: 0,
@@ -448,14 +535,21 @@ function initializeGameState(playerChar, cpuChar, difficulty, isBossFight, is21B
         is21Boss: is21BossFight
     };
     
-    document.getElementById('p1Name').textContent = playerChar.name;
-    document.getElementById('p2Name').textContent = cpuChar.name;
-    document.getElementById('roundText').textContent = is21BossFight ? "TURN-BASED" : (isBossFight ? "SURVIVAL" : `ROUND 1`);
-    document.getElementById('roundTimer').textContent = gameState.roundTime;
+    // Update UI
+    const p1Name = document.getElementById('p1Name');
+    const p2Name = document.getElementById('p2Name');
+    const roundText = document.getElementById('roundText');
+    const roundTimer = document.getElementById('roundTimer');
+    
+    if (p1Name) p1Name.textContent = playerChar.name;
+    if (p2Name) p2Name.textContent = cpuChar.name;
+    if (roundText) roundText.textContent = is21BossFight ? "TURN-BASED" : (isBossFight ? "SURVIVAL" : `ROUND 1`);
+    if (roundTimer) roundTimer.textContent = gameState.roundTime;
     
     updateHealthBars();
     
     gameState.gameActive = true;
+    console.log("Game state initialized. Player HP:", gameState.player.health, "CPU HP:", gameState.cpu.health);
 }
 
 // Start round timer
@@ -467,7 +561,8 @@ function startRoundTimer() {
     gameState.roundTimerInterval = setInterval(() => {
         if (gameState.gameActive && gameState.roundTime > 0 && !gameState.turnBased && !gameState.cutsceneActive) {
             gameState.roundTime--;
-            document.getElementById('roundTimer').textContent = gameState.roundTime;
+            const roundTimer = document.getElementById('roundTimer');
+            if (roundTimer) roundTimer.textContent = gameState.roundTime;
             
             if (gameState.roundTime <= 0) {
                 endRound();
@@ -478,17 +573,20 @@ function startRoundTimer() {
 
 // Boss Cutscene System
 function startBossCutscene(texts, duration) {
+    console.log("Starting boss cutscene...");
     gameState.cutsceneActive = true;
     gameState.cutsceneTexts = texts;
     gameState.cutsceneDuration = duration;
     gameState.cutsceneStartTime = Date.now();
     gameState.cutsceneTextIndex = 0;
     
-    document.getElementById('gameCanvas').style.opacity = '0.3';
-    document.querySelector('.hud').style.opacity = '0.3';
-    
+    const gameCanvas = document.getElementById('gameCanvas');
+    const hud = document.querySelector('.hud');
     const cutsceneOverlay = document.getElementById('cutsceneOverlay');
-    cutsceneOverlay.style.display = 'flex';
+    
+    if (gameCanvas) gameCanvas.style.opacity = '0.3';
+    if (hud) hud.style.opacity = '0.3';
+    if (cutsceneOverlay) cutsceneOverlay.style.display = 'flex';
     
     animateCutscene();
 }
@@ -505,16 +603,22 @@ function animateCutscene() {
     if (currentTextIndex < texts.length) {
         if (currentTextIndex !== gameState.cutsceneTextIndex) {
             gameState.cutsceneTextIndex = currentTextIndex;
-            cutsceneText.textContent = texts[currentTextIndex];
-            cutsceneText.style.opacity = '0';
-            setTimeout(() => cutsceneText.style.opacity = '1', 100);
+            if (cutsceneText) {
+                cutsceneText.textContent = texts[currentTextIndex];
+                cutsceneText.style.opacity = '0';
+                setTimeout(() => {
+                    if (cutsceneText) cutsceneText.style.opacity = '1';
+                }, 100);
+            }
         }
         
         const progressInText = (elapsed % textDuration) / textDuration;
-        if (progressInText > 0.8) {
-            cutsceneText.style.opacity = (1 - ((progressInText - 0.8) * 5)).toString();
-        } else if (progressInText < 0.2) {
-            cutsceneText.style.opacity = (progressInText * 5).toString();
+        if (cutsceneText) {
+            if (progressInText > 0.8) {
+                cutsceneText.style.opacity = (1 - ((progressInText - 0.8) * 5)).toString();
+            } else if (progressInText < 0.2) {
+                cutsceneText.style.opacity = (progressInText * 5).toString();
+            }
         }
         
         requestAnimationFrame(animateCutscene);
@@ -524,26 +628,45 @@ function animateCutscene() {
 }
 
 function endCutscene() {
+    console.log("Ending cutscene...");
     gameState.cutsceneActive = false;
     
     const cutsceneOverlay = document.getElementById('cutsceneOverlay');
-    cutsceneOverlay.style.display = 'none';
+    const gameCanvas = document.getElementById('gameCanvas');
+    const hud = document.querySelector('.hud');
     
-    document.getElementById('gameCanvas').style.opacity = '1';
-    document.querySelector('.hud').style.opacity = '1';
+    if (cutsceneOverlay) cutsceneOverlay.style.display = 'none';
+    if (gameCanvas) gameCanvas.style.opacity = '1';
+    if (hud) hud.style.opacity = '1';
     
     const playerChar = CHARACTERS[gameState.selectedCharacter];
-    const cpuChar = gameState.is21BossFight ? BOSS_21 : BOSS_67;
-    const difficulty = DIFFICULTY_SETTINGS[gameState.difficulty];
+    let cpuChar;
+    
+    if (gameState.is21BossFight) {
+        cpuChar = BOSS_21 || CHARACTERS[0];
+    } else if (gameState.isBossFight) {
+        cpuChar = BOSS_67 || CHARACTERS[0];
+    } else {
+        let cpuIndex;
+        do {
+            cpuIndex = Math.floor(Math.random() * CHARACTERS.length);
+        } while (cpuIndex === gameState.selectedCharacter && CHARACTERS.length > 1);
+        cpuChar = CHARACTERS[cpuIndex] || CHARACTERS[0];
+    }
+    
+    const difficulty = DIFFICULTY_SETTINGS[gameState.difficulty] || DIFFICULTY_SETTINGS.medium;
     
     initializeGameState(playerChar, cpuChar, difficulty, gameState.isBossFight, gameState.is21BossFight);
-    animate();
     startRoundTimer();
+    animate();
 }
 
 // Game Loop
 function animate() {
-    if (!gameState.gameActive) return;
+    if (!gameState.gameActive) {
+        console.log("Game not active, stopping animation");
+        return;
+    }
     
     requestAnimationFrame(animate);
     const delta = window.clock ? window.clock.getDelta() : 0.016;
@@ -564,11 +687,10 @@ function update() {
     // Turn-based mode update
     if (gameState.turnBased) {
         updateTurnBased();
-        // CRITICAL: Check ONLY health-based win conditions in turn-based, NO TIMER
         if (gameState.player.health <= 0 || gameState.cpu.health <= 0) {
             endRound();
         }
-        return; // CRITICAL: Stop here during turn-based, don't update normal game
+        return;
     }
     
     // Normal mode update (only runs when NOT turn-based)
@@ -614,13 +736,11 @@ function update() {
 
 // Turn-Based System
 function updateTurnBased() {
-    // CRITICAL: Don't update anything else during timing bar
     if (gameState.timingBarActive) {
         updateTimingBar();
-        return; // STOP HERE - don't process anything else
+        return;
     }
     
-    // Only update turn-based UI when not in timing bar
     updateChargeCounter();
 }
 
@@ -660,7 +780,6 @@ function playerFight() {
     gameState.charges--;
     updateChargeCounter();
     
-    // Show timing bar
     gameState.timingBarActive = true;
     gameState.timingBarProgress = 0;
     gameState.timingBarDirection = 1;
@@ -670,7 +789,6 @@ function playerFight() {
     const timingBar = document.getElementById('timingBar');
     if (timingBar) timingBar.style.display = 'block';
     
-    // Random target zone
     gameState.targetZoneStart = 0.2 + Math.random() * 0.5;
     gameState.targetZoneEnd = gameState.targetZoneStart + 0.2;
     
@@ -684,26 +802,20 @@ function playerFight() {
 function updateTimingBar() {
     if (!gameState.timingBarActive) return;
     
-    // PAUSE GAME DURING TIMING BAR
     if (gameState.player.attackCooldown > 0) gameState.player.attackCooldown = 20;
     if (gameState.cpu.attackCooldown > 0) gameState.cpu.attackCooldown = 20;
     
-    // Check if space was pressed
     if (gameState.spacePressed) {
-        // Check if in target zone
         if (gameState.timingBarProgress >= gameState.targetZoneStart && 
             gameState.timingBarProgress <= gameState.targetZoneEnd) {
-            // Success!
             executeTimingAttack(true);
         } else {
-            // Miss
             executeTimingAttack(false);
         }
         gameState.spacePressed = false;
         return;
     }
     
-    // Move bar continuously
     gameState.timingBarProgress += gameState.timingBarSpeed * gameState.timingBarDirection;
     
     if (gameState.timingBarProgress >= 1) {
@@ -724,12 +836,12 @@ function executeTimingAttack(success) {
     if (timingBar) timingBar.style.display = 'none';
     
     if (success) {
-        const damage = Math.floor(gameState.player.character.moves.special * 2);
+        const damage = Math.floor((gameState.player.character.moves?.special || 50) * 2);
         gameState.cpu.health = Math.max(0, gameState.cpu.health - damage);
         showMessage(`PERFECT HIT! ${damage} DAMAGE!`, '#00ff00');
-        createBloodEffect(gameState.cpu.x, 1, 0);
+        if (typeof createBloodEffect === 'function') createBloodEffect(gameState.cpu.x, 1, 0);
     } else {
-        const damage = Math.floor(gameState.player.character.moves.punch * 0.5);
+        const damage = Math.floor((gameState.player.character.moves?.punch || 30) * 0.5);
         gameState.cpu.health = Math.max(0, gameState.cpu.health - damage);
         showMessage(`WEAK HIT! ${damage} DAMAGE`, '#ff9900');
     }
@@ -768,11 +880,9 @@ function endPlayerTurn() {
 function executeBossTurn() {
     const bossAction = document.getElementById('bossAction');
     
-    // Boss decision making
     gameState.bossCharges++;
     
     if (gameState.bossCharges >= 2) {
-        // Attack
         const actions = ['GUN', 'CHARGE', 'DASH'];
         const action = actions[Math.floor(Math.random() * actions.length)];
         
@@ -790,11 +900,11 @@ function executeBossTurn() {
                 gameState.dodgeWindow = false;
                 
                 if (!gameState.dodgeSuccessful) {
-                    const damage = Math.floor(gameState.cpu.character.moves.special * 1.5);
+                    const damage = Math.floor((gameState.cpu.character.moves?.special || 60) * 1.5);
                     gameState.player.health = Math.max(0, gameState.player.health - damage);
                     updateHealthBars();
                     showMessage(`BOSS HIT! ${damage} DAMAGE!`, '#ff0033');
-                    createBloodEffect(gameState.player.x, 1, 0);
+                    if (typeof createBloodEffect === 'function') createBloodEffect(gameState.player.x, 1, 0);
                 }
                 gameState.dodgeSuccessful = false;
                 gameState.bossCharges = 0;
@@ -810,10 +920,9 @@ function executeBossTurn() {
                         updateChargeCounter();
                     }, 1000);
                 }
-            }, 2000); // Give 2 seconds to dodge
+            }, 2000);
         }, 1000);
     } else {
-        // Charge
         if (bossAction) {
             bossAction.textContent = `BOSS CHARGES! (${gameState.bossCharges}/2)`;
             bossAction.style.display = 'block';
@@ -852,11 +961,10 @@ function triggerDodgeableAttack() {
     
     setTimeout(() => {
         if (gameState.dodgeWindow && !gameState.dodgeSuccessful) {
-            // Player failed to dodge
-            const damage = Math.floor(gameState.cpu.character.moves.special * 1.2);
+            const damage = Math.floor((gameState.cpu.character.moves?.special || 60) * 1.2);
             gameState.player.health = Math.max(0, gameState.player.health - damage);
             updateHealthBars();
-            createBloodEffect(gameState.player.x, 1, 0);
+            if (typeof createBloodEffect === 'function') createBloodEffect(gameState.player.x, 1, 0);
             showMessage(`HIT! ${damage} DAMAGE`, '#ff0033');
         }
         
@@ -897,13 +1005,13 @@ function updateCPUAI() {
         window.cpuModel.rotation.y = (distance > 0 ? Math.PI : 0);
     }
     
-    if (Math.random() < gameState.cpu.difficulty.aggression * 0.02 && 
+    if (Math.random() < (gameState.cpu.difficulty?.aggression || 0.6) * 0.02 && 
         gameState.cpu.attackCooldown <= 0 && 
         Math.abs(distance) < 3) {
         const attackTypes = ['punch', 'kick', 'special'];
         const attackType = attackTypes[Math.floor(Math.random() * attackTypes.length)];
         doCpuAttack(attackType);
-        gameState.cpu.attackCooldown = 25 / gameState.cpu.difficulty.aggression;
+        gameState.cpu.attackCooldown = 25 / (gameState.cpu.difficulty?.aggression || 0.6);
     }
 }
 
@@ -911,19 +1019,19 @@ function doCpuAttack(type) {
     if (gameState.turnBased) return;
     
     let damage = 0;
-    const difficulty = gameState.cpu.difficulty;
+    const difficulty = gameState.cpu.difficulty || { aggression: 0.6 };
     
     if (type === 'punch') {
-        damage = (gameState.cpu.character.moves.punch + Math.floor(Math.random() * 8)) * difficulty.aggression;
+        damage = ((gameState.cpu.character.moves?.punch || 30) + Math.floor(Math.random() * 8)) * difficulty.aggression;
     } else if (type === 'kick') {
-        damage = (gameState.cpu.character.moves.kick + Math.floor(Math.random() * 8)) * difficulty.aggression;
+        damage = ((gameState.cpu.character.moves?.kick || 30) + Math.floor(Math.random() * 8)) * difficulty.aggression;
     } else if (type === 'special') {
-        damage = (gameState.cpu.character.moves.special + Math.floor(Math.random() * 12)) * difficulty.aggression;
+        damage = ((gameState.cpu.character.moves?.special || 50) + Math.floor(Math.random() * 12)) * difficulty.aggression;
     }
     
     gameState.player.health = Math.max(0, gameState.player.health - damage);
     updateHealthBars();
-    createBloodEffect(gameState.player.x, 1, 0);
+    if (typeof createBloodEffect === 'function') createBloodEffect(gameState.player.x, 1, 0);
     
     if (window.playerModel) {
         const knockback = 0.3;
@@ -977,23 +1085,26 @@ function doPlayerAttack(type) {
     }
     
     const distance = Math.abs(gameState.player.x - gameState.cpu.x);
-    if (distance > 3) return;
+    if (distance > 3) {
+        showMessage('TOO FAR!', '#ff9900');
+        return;
+    }
     
     gameState.player.attackCooldown = 20;
     
     let damage = 0;
     
     if (type === 'punch') {
-        damage = gameState.player.character.moves.punch + Math.floor(Math.random() * 10);
+        damage = (gameState.player.character.moves?.punch || 30) + Math.floor(Math.random() * 10);
     } else if (type === 'kick') {
-        damage = gameState.player.character.moves.kick + Math.floor(Math.random() * 10);
+        damage = (gameState.player.character.moves?.kick || 30) + Math.floor(Math.random() * 10);
     } else if (type === 'special') {
-        damage = gameState.player.character.moves.special + Math.floor(Math.random() * 15);
+        damage = (gameState.player.character.moves?.special || 50) + Math.floor(Math.random() * 15);
     }
     
     gameState.cpu.health = Math.max(0, gameState.cpu.health - damage);
     updateHealthBars();
-    createBloodEffect(gameState.cpu.x, 1, 0);
+    if (typeof createBloodEffect === 'function') createBloodEffect(gameState.cpu.x, 1, 0);
     
     if (window.cpuModel) {
         const knockback = 0.3;
@@ -1004,6 +1115,7 @@ function doPlayerAttack(type) {
     }
     
     gameState.score += damage;
+    showMessage(`${type.toUpperCase()}! ${damage} DAMAGE`, '#ffcc00');
 }
 
 // UI Updates
@@ -1033,6 +1145,7 @@ function showMessage(text, color = '#ffcc00') {
         display.classList.add('active');
         setTimeout(() => display.classList.remove('active'), 2000);
     }
+    console.log("Game Message:", text);
 }
 
 function render() {
@@ -1043,6 +1156,7 @@ function render() {
 
 // End Round
 function endRound() {
+    console.log("Ending round...");
     gameState.gameActive = false;
     
     // Clear the round timer
@@ -1051,31 +1165,40 @@ function endRound() {
         gameState.roundTimerInterval = null;
     }
     
-    if (bossMusic && !bossMusic.paused) {
-        bossMusic.pause();
-        bossMusic.currentTime = 0;
-    }
-    if (boss21Music && !boss21Music.paused) {
-        boss21Music.pause();
-        boss21Music.currentTime = 0;
+    // Stop music
+    try {
+        const bossMusic = document.getElementById('bossMusic');
+        const boss21Music = document.getElementById('boss21Music');
+        if (bossMusic && !bossMusic.paused) {
+            bossMusic.pause();
+            bossMusic.currentTime = 0;
+        }
+        if (boss21Music && !boss21Music.paused) {
+            boss21Music.pause();
+            boss21Music.currentTime = 0;
+        }
+    } catch (e) {
+        console.log("Music stop error:", e);
     }
     
     let message = "TIME OVER!";
+    let coinsEarned = 0;
     
     if (gameState.player.health <= 0) {
         message = "CPU WINS!";
     } else if (gameState.cpu.health <= 0) {
         message = "PLAYER WINS!";
         gameState.score += 1000;
-        gameState.coins += 50;
+        coinsEarned = 50;
+        gameState.coins += coinsEarned;
         
         // Unlock checks
-        if (gameState.difficulty === 'insane' && CHARACTERS[gameState.selectedCharacter].id === 67) {
+        if (gameState.difficulty === 'insane' && CHARACTERS[gameState.selectedCharacter]?.id === 67) {
             gameState.bossUnlocked = true;
             localStorage.setItem('boss67Unlocked', 'true');
         }
         
-        if (gameState.difficulty === 'hard' && CHARACTERS[gameState.selectedCharacter].id === 21) {
+        if (gameState.difficulty === 'hard' && CHARACTERS[gameState.selectedCharacter]?.id === 21) {
             gameState.boss21Unlocked = true;
             localStorage.setItem('boss21Unlocked', 'true');
         }
@@ -1090,7 +1213,7 @@ function endRound() {
     }
     
     setTimeout(() => {
-        alert(`${message}\nScore: ${gameState.score}\nCoins Earned: ${gameState.cpu.health <= 0 ? '50' : '0'}`);
+        alert(`${message}\nScore: ${gameState.score}\nCoins Earned: ${coinsEarned}`);
         showScreen('characterSelect');
     }, 1000);
 }
@@ -1131,30 +1254,98 @@ function selectBackground(bgType) {
 
 // Event Listeners
 function setupEventListeners() {
+    console.log("Setting up event listeners...");
+    
     const buttons = {
-        'arcadeBtn': () => showScreen('characterSelect'),
-        'practiceBtn': () => { gameState.gameMode = 'practice'; showScreen('characterSelect'); },
-        'shopBtn': () => showScreen('shopScreen'),
-        'controlsBtn': () => showScreen('controlsScreen'),
-        'updatesBtn': () => showScreen('updatesScreen'),
-        'creditsBtn': () => showScreen('creditsScreen'),
-        'backgroundBtn': () => showScreen('backgroundScreen'),
-        'backBtn': () => showScreen('mainMenu'),
-        'controlsBackBtn': () => showScreen('mainMenu'),
-        'shopBackBtn': () => showScreen('mainMenu'),
-        'updatesBackBtn': () => showScreen('mainMenu'),
-        'creditsBackBtn': () => showScreen('mainMenu'),
-        'backgroundBackBtn': () => showScreen('mainMenu'),
-        'exitBattleBtn': () => showScreen('characterSelect'),
-        'confirmBtn': () => startGame(),
-        'chargeBtn': () => playerCharge(),
-        'fightBtn': () => playerFight(),
-        'healBtn': () => playerHeal()
+        'arcadeBtn': () => {
+            console.log("Arcade button clicked");
+            gameState.gameMode = 'arcade';
+            showScreen('characterSelect');
+        },
+        'practiceBtn': () => {
+            console.log("Practice button clicked");
+            gameState.gameMode = 'practice';
+            showScreen('characterSelect');
+        },
+        'shopBtn': () => {
+            console.log("Shop button clicked");
+            showScreen('shopScreen');
+        },
+        'controlsBtn': () => {
+            console.log("Controls button clicked");
+            showScreen('controlsScreen');
+        },
+        'updatesBtn': () => {
+            console.log("Updates button clicked");
+            showScreen('updatesScreen');
+        },
+        'creditsBtn': () => {
+            console.log("Credits button clicked");
+            showScreen('creditsScreen');
+        },
+        'backgroundBtn': () => {
+            console.log("Background button clicked");
+            showScreen('backgroundScreen');
+        },
+        'backBtn': () => {
+            console.log("Back button clicked");
+            showScreen('mainMenu');
+        },
+        'controlsBackBtn': () => {
+            console.log("Controls back button clicked");
+            showScreen('mainMenu');
+        },
+        'shopBackBtn': () => {
+            console.log("Shop back button clicked");
+            showScreen('mainMenu');
+        },
+        'updatesBackBtn': () => {
+            console.log("Updates back button clicked");
+            showScreen('mainMenu');
+        },
+        'creditsBackBtn': () => {
+            console.log("Credits back button clicked");
+            showScreen('mainMenu');
+        },
+        'backgroundBackBtn': () => {
+            console.log("Background back button clicked");
+            showScreen('mainMenu');
+        },
+        'exitBattleBtn': () => {
+            console.log("Exit battle button clicked");
+            if (gameState.roundTimerInterval) {
+                clearInterval(gameState.roundTimerInterval);
+                gameState.roundTimerInterval = null;
+            }
+            gameState.gameActive = false;
+            showScreen('characterSelect');
+        },
+        'confirmBtn': () => {
+            console.log("Confirm/Fight button clicked");
+            startGame();
+        },
+        'chargeBtn': () => {
+            console.log("Charge button clicked");
+            playerCharge();
+        },
+        'fightBtn': () => {
+            console.log("Fight button clicked");
+            playerFight();
+        },
+        'healBtn': () => {
+            console.log("Heal button clicked");
+            playerHeal();
+        }
     };
     
     Object.entries(buttons).forEach(([id, handler]) => {
         const btn = document.getElementById(id);
-        if (btn) btn.addEventListener('click', handler);
+        if (btn) {
+            console.log(`Setting up listener for ${id}`);
+            btn.addEventListener('click', handler);
+        } else {
+            console.warn(`Button ${id} not found!`);
+        }
     });
     
     // Background selection
@@ -1201,6 +1392,8 @@ function setupEventListeners() {
     document.addEventListener('keyup', (e) => {
         gameState.keys[e.key.toLowerCase()] = false;
     });
+    
+    console.log("Event listeners setup complete");
 }
 
 // Boss unlock check
@@ -1222,10 +1415,5 @@ const DIFFICULTY_SETTINGS = {
     sixtyseven: { cpuHpMultiplier: 2.5, parryChance: 0.0, aggression: 1.2, isBoss: true },
     twentyone: { cpuHpMultiplier: 2.0, parryChance: 0.0, aggression: 1.0, isBoss: true }
 };
-
-// Music elements
-let bossMusic = document.getElementById('bossMusic');
-let boss21Music = document.getElementById('boss21Music');
-let menuMusic = document.getElementById('menuMusic');
 
 window.addEventListener('load', init);
