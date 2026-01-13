@@ -305,41 +305,45 @@ function createHumanoidModel(color, x, z) {
     
     return group;
 }
-
 function createBloodEffect(x, y, z) {
-    if (!window.scene) return;
+    // Convert 3D position to 2D for canvas
+    if (!gameState.gameActive) return;
     
-    const bloodGeometry = new THREE.SphereGeometry(0.3, 8, 8);
-    const bloodMaterial = new THREE.MeshPhongMaterial({ 
-        color: 0xff0000,
-        transparent: true,
-        opacity: 0.8
-    });
+    const canvas = document.getElementById('gameCanvas');
+    if (!canvas) return;
     
-    const blood = new THREE.Mesh(bloodGeometry, bloodMaterial);
-    blood.position.set(x, y, z);
-    blood.castShadow = true;
-    window.scene.add(blood);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
     
-    // Animate blood effect
-    const startTime = Date.now();
-    const duration = 500; // milliseconds
+    // Convert 3D x position to 2D canvas position
+    const canvasX = (x + 10) * (canvas.width / 20);
+    const canvasY = canvas.height / 2;
     
-    function animateBlood() {
-        const elapsed = Date.now() - startTime;
-        const progress = elapsed / duration;
+    // Draw blood effect
+    const particles = 10;
+    for (let i = 0; i < particles; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const distance = Math.random() * 20;
+        const size = Math.random() * 8 + 2;
+        const particleX = canvasX + Math.cos(angle) * distance;
+        const particleY = canvasY + Math.sin(angle) * distance;
         
-        if (progress < 1) {
-            blood.scale.set(1 + progress, 1 + progress, 1 + progress);
-            blood.material.opacity = 0.8 * (1 - progress);
-            requestAnimationFrame(animateBlood);
-        } else {
-            window.scene.remove(blood);
-        }
+        ctx.fillStyle = '#ff0000';
+        ctx.beginPath();
+        ctx.arc(particleX, particleY, size, 0, Math.PI * 2);
+        ctx.fill();
     }
     
-    animateBlood();
+    // Fade out effect
+    setTimeout(() => {
+        if (ctx) {
+            // Redraw the scene to remove blood
+            // The main render loop will handle this
+        }
+    }, 300);
 }
+
+
 
 function applyDamageFlash(character, color = 0xff0000) {
     let model;
