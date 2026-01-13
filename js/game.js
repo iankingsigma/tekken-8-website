@@ -11,6 +11,7 @@ let gameState = {
     lastKeyTime: 0,
     gameActive: false,
     roundTime: 99,
+    roundTimerInterval: null,
     comboCount: 0,
     score: 0,
     coins: parseInt(localStorage.getItem('brainrotCoins')) || 1000,
@@ -335,6 +336,7 @@ function updateBossUnlockInfo() {
 function startGame() {
     console.log('Starting game... Mode:', gameState.gameMode);
     if (gameState.selectedCharacter === null) {
+        alert('Please select a character first!');
         showScreen('characterSelect');
         return;
     }
@@ -381,6 +383,7 @@ function startGame() {
     
     if (!gameState.cutsceneActive) {
         animate();
+        startRoundTimer(); // Start the timer
     }
 }
 
@@ -390,6 +393,13 @@ function initializeGameState(playerChar, cpuChar, difficulty, isBossFight, is21B
     gameState.dodgeWindow = false;
     gameState.dodgeWarningActive = false;
     gameState.nextAttackTime = Date.now() + 3000;
+    gameState.roundTime = 99; // Reset round time
+    
+    // Clear any existing timer
+    if (gameState.roundTimerInterval) {
+        clearInterval(gameState.roundTimerInterval);
+        gameState.roundTimerInterval = null;
+    }
     
     // Turn-based initialization
     if (is21BossFight) {
@@ -441,11 +451,29 @@ function initializeGameState(playerChar, cpuChar, difficulty, isBossFight, is21B
     document.getElementById('p1Name').textContent = playerChar.name;
     document.getElementById('p2Name').textContent = cpuChar.name;
     document.getElementById('roundText').textContent = is21BossFight ? "TURN-BASED" : (isBossFight ? "SURVIVAL" : `ROUND 1`);
+    document.getElementById('roundTimer').textContent = gameState.roundTime;
     
     updateHealthBars();
     
     gameState.gameActive = true;
-    gameState.roundTime = 99;
+}
+
+// Start round timer
+function startRoundTimer() {
+    if (gameState.roundTimerInterval) {
+        clearInterval(gameState.roundTimerInterval);
+    }
+    
+    gameState.roundTimerInterval = setInterval(() => {
+        if (gameState.gameActive && gameState.roundTime > 0 && !gameState.turnBased && !gameState.cutsceneActive) {
+            gameState.roundTime--;
+            document.getElementById('roundTimer').textContent = gameState.roundTime;
+            
+            if (gameState.roundTime <= 0) {
+                endRound();
+            }
+        }
+    }, 1000);
 }
 
 // Boss Cutscene System
@@ -510,6 +538,7 @@ function endCutscene() {
     
     initializeGameState(playerChar, cpuChar, difficulty, gameState.isBossFight, gameState.is21BossFight);
     animate();
+    startRoundTimer();
 }
 
 // Game Loop
@@ -578,7 +607,7 @@ function update() {
     }
     
     // Check win conditions (normal mode)
-    if (gameState.player.health <= 0 || gameState.cpu.health <= 0 || gameState.roundTime <= 0) {
+    if (gameState.player.health <= 0 || gameState.cpu.health <= 0) {
         endRound();
     }
 }
@@ -1016,6 +1045,12 @@ function render() {
 function endRound() {
     gameState.gameActive = false;
     
+    // Clear the round timer
+    if (gameState.roundTimerInterval) {
+        clearInterval(gameState.roundTimerInterval);
+        gameState.roundTimerInterval = null;
+    }
+    
     if (bossMusic && !bossMusic.paused) {
         bossMusic.pause();
         bossMusic.currentTime = 0;
@@ -1055,7 +1090,7 @@ function endRound() {
     }
     
     setTimeout(() => {
-        alert(`${message}\nScore: ${gameState.score}\nCoins Earned: 50`);
+        alert(`${message}\nScore: ${gameState.score}\nCoins Earned: ${gameState.cpu.health <= 0 ? '50' : '0'}`);
         showScreen('characterSelect');
     }, 1000);
 }
