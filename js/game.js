@@ -1417,3 +1417,141 @@ const DIFFICULTY_SETTINGS = {
 };
 
 window.addEventListener('load', init);
+
+// 2D Fallback Renderer (when Three.js fails)
+function init2DFallback() {
+    console.log("Initializing 2D fallback renderer...");
+    const canvas = document.getElementById('gameCanvas');
+    if (!canvas) return;
+    
+    // Ensure canvas has proper dimensions
+    canvas.width = canvas.clientWidth;
+    canvas.height = canvas.clientHeight;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    // Create a simple 2D render loop
+    function render2D() {
+        if (!gameState.gameActive || !gameState.player || !gameState.cpu) return;
+        
+        // Clear canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Draw arena
+        ctx.fillStyle = '#0a0a1a';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Draw floor
+        ctx.fillStyle = '#222244';
+        ctx.fillRect(0, canvas.height - 50, canvas.width, 50);
+        
+        // Draw grid lines
+        ctx.strokeStyle = '#333366';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < canvas.width; i += 40) {
+            ctx.beginPath();
+            ctx.moveTo(i, 0);
+            ctx.lineTo(i, canvas.height);
+            ctx.stroke();
+        }
+        
+        // Draw fighters
+        const playerX = (gameState.player.x + 10) * (canvas.width / 20);
+        const playerY = canvas.height / 2;
+        const cpuX = (gameState.cpu.x + 10) * (canvas.width / 20);
+        const cpuY = canvas.height / 2;
+        
+        // Player character
+        ctx.fillStyle = gameState.player.character?.color || '#ff0033';
+        ctx.beginPath();
+        ctx.arc(playerX, playerY, 30, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Player name
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 16px Courier New';
+        ctx.textAlign = 'center';
+        ctx.fillText(gameState.player.character?.name || 'PLAYER', playerX, playerY - 40);
+        
+        // CPU character
+        ctx.fillStyle = gameState.cpu.character?.color || '#00ccff';
+        ctx.beginPath();
+        ctx.arc(cpuX, cpuY, 30, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // CPU name
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(gameState.cpu.character?.name || 'CPU', cpuX, cpuY - 40);
+        
+        // Draw health indicators
+        const barWidth = 100;
+        const barHeight = 15;
+        
+        // Player health
+        const playerHealthPercent = gameState.player.health / gameState.player.maxHealth;
+        ctx.fillStyle = '#333333';
+        ctx.fillRect(playerX - barWidth/2, playerY + 40, barWidth, barHeight);
+        ctx.fillStyle = playerHealthPercent > 0.5 ? '#00ff00' : playerHealthPercent > 0.2 ? '#ffff00' : '#ff0000';
+        ctx.fillRect(playerX - barWidth/2, playerY + 40, barWidth * playerHealthPercent, barHeight);
+        
+        // CPU health
+        const cpuHealthPercent = gameState.cpu.health / gameState.cpu.maxHealth;
+        ctx.fillStyle = '#333333';
+        ctx.fillRect(cpuX - barWidth/2, cpuY + 40, barWidth, barHeight);
+        ctx.fillStyle = cpuHealthPercent > 0.5 ? '#00ff00' : cpuHealthPercent > 0.2 ? '#ffff00' : '#ff0000';
+        ctx.fillRect(cpuX - barWidth/2, cpuY + 40, barWidth * cpuHealthPercent, barHeight);
+        
+        // Draw health text
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 12px Courier New';
+        ctx.fillText(`${Math.round(gameState.player.health)}/${gameState.player.maxHealth}`, playerX, playerY + 52);
+        ctx.fillText(`${Math.round(gameState.cpu.health)}/${gameState.cpu.maxHealth}`, cpuX, cpuY + 52);
+        
+        // Draw distance indicator
+        const distance = Math.abs(gameState.player.x - gameState.cpu.x);
+        ctx.fillStyle = distance < 3 ? '#ff9900' : '#00ccff';
+        ctx.font = 'bold 14px Courier New';
+        ctx.fillText(`DISTANCE: ${distance.toFixed(1)}`, canvas.width/2, 30);
+        
+        // Request next frame
+        requestAnimationFrame(render2D);
+    }
+    
+    // Start 2D rendering
+    render2D();
+    console.log("2D fallback renderer started");
+}
+
+// Override the showScreen function to include 2D fallback
+const originalShowScreen = showScreen;
+window.showScreen = function(screenId) {
+    originalShowScreen(screenId);
+    
+    if (screenId === 'gameScreen') {
+        // Try Three.js first, if fails use 2D fallback
+        setTimeout(() => {
+            if (typeof initThreeJS === 'function') {
+                try {
+                    console.log("Attempting Three.js initialization...");
+                    initThreeJS();
+                    
+                    // Check if Three.js succeeded
+                    if (!window.scene || !window.camera || !window.renderer) {
+                        console.log("Three.js objects not created, using 2D fallback");
+                        init2DFallback();
+                    } else {
+                        console.log("Three.js initialized successfully");
+                    }
+                } catch (e) {
+                    console.error("Three.js initialization failed:", e);
+                    console.log("Falling back to 2D renderer");
+                    init2DFallback();
+                }
+            } else {
+                console.log("Three.js not available, using 2D fallback");
+                init2DFallback();
+            }
+        }, 200);
+    }
+};
