@@ -1149,9 +1149,15 @@ function showMessage(text, color = '#ffcc00') {
 }
 
 function render() {
+    // Try Three.js renderer first
     if (window.renderer && window.scene && window.camera) {
-        window.renderer.render(window.scene, window.camera);
+        try {
+            window.renderer.render(window.scene, window.camera);
+        } catch (e) {
+            console.error("Three.js render failed:", e);
+        }
     }
+    // If Three.js fails, the 2D fallback will handle rendering
 }
 
 // End Round
