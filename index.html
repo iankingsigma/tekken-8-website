@@ -7,6 +7,25 @@
     <link rel="stylesheet" href="css/style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/gsap.min.js"></script>
+    <style>
+        /* Additional styles for better display */
+        canvas {
+            display: block;
+            margin: 0 auto;
+        }
+        
+        body {
+            cursor: default;
+        }
+        
+        button {
+            cursor: pointer;
+        }
+        
+        .screen {
+            transition: opacity 0.3s ease;
+        }
+    </style>
 </head>
 <body>
     <!-- Device Detection -->
@@ -102,11 +121,11 @@
             <div class="character-grid" id="characterGrid"></div>
             
             <div class="character-preview">
-                <div class="preview-model" id="previewModel"></div>
+                <div class="preview-model" id="previewModel">?</div>
                 <div class="character-info">
                     <div class="char-name" id="previewName">SELECT BRAINROTTER</div>
                     <div class="char-style" id="previewStyle">-</div>
-                    <div class="char-desc" id="previewDesc">Choose your brainrot warrior</div>
+                    <div class="char-desc" id="previewDesc">Choose your brainrot warrior. Click on a character card to select.</div>
                     <div class="boss-unlock" id="bossUnlockInfo" style="display: none; color: #ff0000; margin-top: 1rem; font-size: 0.9rem;">
                         🔒 Defeat Insane mode with 67 to unlock 67 BOSS!
                     </div>
@@ -126,7 +145,7 @@
             </div>
             
             <div class="select-controls">
-                <button class="nav-btn" id="backBtn">BACK</button>
+                <button class="nav-btn" id="backBtn">BACK TO MENU</button>
                 <button class="nav-btn confirm" id="confirmBtn" disabled>FIGHT!</button>
             </div>
         </div>
@@ -134,7 +153,7 @@
 
     <!-- Game Screen -->
     <div id="gameScreen" class="screen">
-        <canvas id="gameCanvas" tabindex="0"></canvas>
+        <canvas id="gameCanvas" width="1000" height="500" tabindex="0"></canvas>
         <div class="hud">
             <div class="player-hud">
                 <div class="player-name" id="p1Name">PLAYER</div>
@@ -179,7 +198,7 @@
                 <div class="timing-bar-fill" id="timingBarFill"></div>
                 <div class="timing-bar-target" id="timingBarTarget"></div>
             </div>
-            <div class="timing-text">HOLD SPACE TO ATTACK!</div>
+            <div class="timing-text">PRESS SPACE TO ATTACK!</div>
         </div>
         
         <!-- Touch Controls for Tablet -->
@@ -253,6 +272,10 @@
                         <div class="control-item">
                             <div class="control-key">C</div>
                             <div class="control-action">Special Combo</div>
+                        </div>
+                        <div class="control-item">
+                            <div class="control-key">G</div>
+                            <div class="control-action">Dodge (when warning appears)</div>
                         </div>
                     </div>
                     
@@ -333,6 +356,10 @@
                     <div class="credit-name">AAHIL</div>
                     <div class="credit-role">3D Graphics & Big Improvement</div>
                 </div>
+                <div class="credit-item">
+                    <div class="credit-name">THE BRAINROT COMMUNITY</div>
+                    <div class="credit-role">For endless inspiration and memes</div>
+                </div>
             </div>
             <button class="nav-btn" id="creditsBackBtn">BACK TO MENU</button>
         </div>
@@ -362,5 +389,42 @@
     <script src="js/shop.js"></script>
     <script src="js/threejs-renderer.js"></script>
     <script src="js/touch-controls.js"></script>
+    
+    <!-- Auto-focus script for better keyboard controls -->
+    <script>
+        // Auto-focus on clickable elements for better keyboard navigation
+        document.addEventListener('DOMContentLoaded', function() {
+            // Focus management for better keyboard control
+            const buttons = document.querySelectorAll('button');
+            buttons.forEach(button => {
+                button.addEventListener('click', function() {
+                    this.focus();
+                });
+                
+                // Better keyboard navigation
+                button.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        this.click();
+                    }
+                });
+            });
+            
+            // Auto-focus canvas when game starts
+            document.addEventListener('keydown', function(e) {
+                const canvas = document.getElementById('gameCanvas');
+                if (canvas && canvas.style.display !== 'none') {
+                    canvas.focus();
+                }
+            });
+            
+            // Prevent space bar from scrolling page
+            window.addEventListener('keydown', function(e) {
+                if(e.code === 'Space' && e.target === document.body) {
+                    e.preventDefault();
+                }
+            });
+        });
+    </script>
 </body>
 </html>
