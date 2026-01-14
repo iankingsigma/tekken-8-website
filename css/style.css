@@ -1636,3 +1636,13 @@ button:hover:before {
         box-shadow: 0 0 20px currentColor;
     }
 }
+#gameCanvas {
+    width: 100%;
+    max-width: 1000px;
+    height: 500px;
+    background: #000;
+    border: 2px solid #ff0033;
+    box-shadow: 0 0 20px #ff0033;
+    border-radius: 5px;
+    display: block; /* Add this */
+}
