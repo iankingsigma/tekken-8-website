@@ -223,11 +223,10 @@ function showScreen(screenId) {
     }
     
     if (screenId === 'gameScreen') {
-        console.log("Game screen shown, initializing game...");
+        console.log("Game screen shown, preparing renderers...");
         setTimeout(() => {
             // Try to initialize Three.js if available
             if (typeof initThreeJS === 'function') {
-                console.log("Calling initThreeJS...");
                 try {
                     initThreeJS();
                 } catch (e) {
@@ -241,9 +240,6 @@ function showScreen(screenId) {
             if (canvas) {
                 canvas.focus();
             }
-            
-            // Start the game
-            startGame();
         }, 100);
     } else if (screenId === 'shopScreen') {
         setTimeout(() => {
@@ -392,8 +388,11 @@ function updateBossUnlockInfo() {
 
 // Start Game
 function startGame() {
-    // CRITICAL FIX: Show the game screen before initializing the fight
-    showScreen('gameScreen');
+    // Prevent multiple starts
+    if (gameState.gameActive) {
+        console.log("Game already active, not starting again.");
+        return;
+    }
     
     console.log('Starting game... Mode:', gameState.gameMode);
     
@@ -1331,6 +1330,8 @@ function setupEventListeners() {
         },
         'confirmBtn': () => {
             console.log("Confirm/Fight button clicked");
+            // Show the game screen first, then start the game
+            showScreen('gameScreen');
             startGame();
         },
         'chargeBtn': () => {
