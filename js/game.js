@@ -1428,48 +1428,60 @@ const DIFFICULTY_SETTINGS = {
 window.addEventListener('load', init);
 
 // 2D Fallback Renderer (when Three.js fails)
+let fallbackRunning = false;
 function init2DFallback() {
+    if (fallbackRunning) {
+        console.log("2D fallback already running, skipping.");
+        return;
+    }
+    fallbackRunning = true;
+    
     console.log("Initializing 2D fallback renderer...");
     const canvas = document.getElementById('gameCanvas');
     if (!canvas) return;
     
-    // Ensure canvas has proper dimensions
-    canvas.width = canvas.clientWidth;
-    canvas.height = canvas.clientHeight;
+    // Use the canvas's existing pixel dimensions (set by width/height attributes)
+    const canvasWidth = canvas.width;
+    const canvasHeight = canvas.height;
     
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     
     // Create a simple 2D render loop
     function render2D() {
-        if (!gameState.gameActive || !gameState.player || !gameState.cpu) return;
+        if (!gameState.gameActive || !gameState.player || !gameState.cpu) {
+            // If game is not active, still try to draw a placeholder or just clear
+            ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+            requestAnimationFrame(render2D);
+            return;
+        }
         
         // Clear canvas
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.clearRect(0, 0, canvasWidth, canvasHeight);
         
         // Draw arena
         ctx.fillStyle = '#0a0a1a';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
         
         // Draw floor
         ctx.fillStyle = '#222244';
-        ctx.fillRect(0, canvas.height - 50, canvas.width, 50);
+        ctx.fillRect(0, canvasHeight - 50, canvasWidth, 50);
         
         // Draw grid lines
         ctx.strokeStyle = '#333366';
         ctx.lineWidth = 1;
-        for (let i = 0; i < canvas.width; i += 40) {
+        for (let i = 0; i < canvasWidth; i += 40) {
             ctx.beginPath();
             ctx.moveTo(i, 0);
-            ctx.lineTo(i, canvas.height);
+            ctx.lineTo(i, canvasHeight);
             ctx.stroke();
         }
         
         // Draw fighters
-        const playerX = (gameState.player.x + 10) * (canvas.width / 20);
-        const playerY = canvas.height / 2;
-        const cpuX = (gameState.cpu.x + 10) * (canvas.width / 20);
-        const cpuY = canvas.height / 2;
+        const playerX = (gameState.player.x + 10) * (canvasWidth / 20);
+        const playerY = canvasHeight / 2;
+        const cpuX = (gameState.cpu.x + 10) * (canvasWidth / 20);
+        const cpuY = canvasHeight / 2;
         
         // Player character
         ctx.fillStyle = gameState.player.character?.color || '#ff0033';
@@ -1483,15 +1495,20 @@ function init2DFallback() {
         ctx.textAlign = 'center';
         ctx.fillText(gameState.player.character?.name || 'PLAYER', playerX, playerY - 40);
         
-        // CPU character
-        ctx.fillStyle = gameState.cpu.character?.color || '#00ccff';
+        // CPU character - ensure character exists
+        const cpuChar = gameState.cpu.character;
+        if (cpuChar) {
+            ctx.fillStyle = cpuChar.color || '#00ccff';
+        } else {
+            ctx.fillStyle = '#00ccff';
+        }
         ctx.beginPath();
         ctx.arc(cpuX, cpuY, 30, 0, Math.PI * 2);
         ctx.fill();
         
         // CPU name
         ctx.fillStyle = '#ffffff';
-        ctx.fillText(gameState.cpu.character?.name || 'CPU', cpuX, cpuY - 40);
+        ctx.fillText(cpuChar ? cpuChar.name : 'CPU', cpuX, cpuY - 40);
         
         // Draw health indicators
         const barWidth = 100;
@@ -1521,7 +1538,7 @@ function init2DFallback() {
         const distance = Math.abs(gameState.player.x - gameState.cpu.x);
         ctx.fillStyle = distance < 3 ? '#ff9900' : '#00ccff';
         ctx.font = 'bold 14px Courier New';
-        ctx.fillText(`DISTANCE: ${distance.toFixed(1)}`, canvas.width/2, 30);
+        ctx.fillText(`DISTANCE: ${distance.toFixed(1)}`, canvasWidth/2, 30);
         
         // Request next frame
         requestAnimationFrame(render2D);
