@@ -392,6 +392,9 @@ function updateBossUnlockInfo() {
 
 // Start Game
 function startGame() {
+    // CRITICAL FIX: Show the game screen before initializing the fight
+    showScreen('gameScreen');
+    
     console.log('Starting game... Mode:', gameState.gameMode);
     
     if (gameState.selectedCharacter === null || gameState.selectedCharacter === undefined) {
@@ -430,7 +433,7 @@ function startGame() {
         gameState.isBossFight = true;
         gameState.is21BossFight = false;
         gameState.turnBased = false;
-        startBossCutscene(BOSS_67_CUTSCENE, 10000); // Shorter for testing
+        startBossCutscene(BOSS_67_CUTSCENE, 10000);
         return;
     }
     // Check for 21 Boss
